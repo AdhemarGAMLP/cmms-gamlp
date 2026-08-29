@@ -3,8 +3,12 @@ import os
 import openpyxl
 from openpyxl.utils.cell import coordinate_from_string, column_index_from_string
 from openpyxl.styles import Font, Alignment
-import pythoncom
-import win32com.client
+try:
+    import pythoncom
+    import win32com.client
+except ImportError:
+    pythoncom = None
+    win32com = None
 
 def obtener_ruta_plantilla(nombre_archivo):
     """
@@ -98,6 +102,8 @@ def exportar_excel_a_pdf(ruta_excel, ruta_pdf, rango_impresion=None, landscape=F
     Renderiza hojas de Excel a PDF mediante Windows COM API.
     Si rango_impresion es None, respeta estrictamente el área configurada en la plantilla de origen.
     """
+    if not pythoncom or not win32com:
+        return False
     try:
         pythoncom.CoInitialize()
         excel = win32com.client.DispatchEx("Excel.Application")
