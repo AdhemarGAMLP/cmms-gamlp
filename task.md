@@ -1,0 +1,46 @@
+# Tareas de Ajuste: Gestión de Áreas y Optimización del Cronograma Anual
+
+- [x] Corregir base de datos:
+  - [x] Tabla `areas` con campos `nombre`, `piso`, `contacto` y `encargado` creada y pre-poblar.
+  - [x] Columna `fecha_programada` agregada a la tabla `historial_intervenciones` para el control de slots fijos.
+- [x] Implementar módulo de Gestión de Áreas (`📍 Áreas`) con CRUD completo.
+- [x] Integrar Áreas en Formulario de Equipos mediante CTkComboBox dinámico.
+- [x] Mejoras al Historial de Repuestos Usados con columnas "Servicio" y "Área".
+- [x] Optimización y Exportación de Cronograma Anual en Excel.
+- [x] Corregir Mapeo de Frecuencia (Meses) según criticidad.
+- [x] Áreas y Piso en Catálogo (Equipos Médicos).
+- [x] Implementar Buscador de Autocompletado / Autosugestión.
+- [x] Optimización Excepcional de Velocidad del Calendario.
+- [x] Depuración y Limpieza de Nombres de Áreas Redundantes.
+- [x] Implementar Selección Inteligente, Bloqueo de Unidad y Alertas de Duplicado.
+- [x] Ampliar Control de Garantías con Intervalos de Fecha (Inicio y Fin).
+- [x] Auto-llenado de Metadatos de Adquisición/Fabricación.
+- [x] Corregir Mapeo de Categorización en Hoja de Vida (Excel).
+- [x] Habilitar Equipos con Garantía en Cronograma y Proyección Recurrente.
+- [x] Visualizar Únicamente el Mantenimiento Inmediato Siguiente en la Pestaña Resumen.
+- [x] Integrar Nueva Plantilla de Cronograma Anual.
+- [x] Calcular Frecuencia Dinámica en base a las Marcas del Año Seleccionado.
+- [x] Sincronizar Proyección de Mantenimiento con Fin de Garantía.
+- [x] Implementar Sistema de Búsqueda y Ordenación Multi-criterio.
+- [x] Botón Fijo de Actualización en Ficha de Equipos.
+- [x] Selector de Mantenimientos Pendientes en Registro de Intervención.
+- [x] Recarga en Caliente de Mantenimientos Pendientes y Sincronización Inmediata del Cronograma.
+- [x] Vincular el Inicio del Mantenimiento Preventivo con la Fecha de Instalación del Equipo.
+- [x] Plazo de Gracia, Vencimiento y Autorización de Mantenimiento Vencido.
+- [x] Mapeo de Mantenimientos por Slots Fijos sin Desplazamientos.
+- [x] Depurar Dropdown de Pendientes para Excluir Completados en Caliente.
+- [x] Codificación de Colores Avanzada para el Cronograma (Calendario/Mapa).
+- [x] Implementar Estados de Condición y Proyecciones para Activos de Baja.
+- [x] Corrección de Separación de Icono en Menú Lateral.
+- [x] Fila Exclusiva y Rótulo de Baja en Frecuencia de Cronograma Excel.
+- [x] Pestaña de Análisis y Gráficos Estadísticos.
+- [x] Sistema de Respaldos (Backup & Restore) y Backup Semanal Automático.
+- [x] Respaldo Automático al Cerrar la Aplicación.
+- [x] Adaptabilidad y Segmentación del Menú Lateral.
+- [x] Sincronización de Base de Datos y Compatibilidad de Esquemas.
+- [x] Gestión de Usuarios, Permisos Especiales y Seguridad Móvil:
+  - [x] Crear e inicializar al usuario `10955499` (Adhemar Santos) con rol `tecnico` y restricciones.
+  - [x] Añadir el nombre `Rudel Adhemar Santos Medina` debajo de `Red QR` en la cabecera del menú.
+  - [x] Bloquear la edición y eliminación de activos en el inventario para técnicos.
+  - [x] Incorporar validación de credenciales (login obligatorio) en el formulario de registro móvil.
+  - [x] Desarrollar la pestaña `👥 Usuarios` en el panel del Jefe con carga de firmas digitales (sello/firma en formato foto).
