@@ -1700,7 +1700,8 @@ class SistemaMantenimiento(ctk.CTk):
             
         mttr_str = f"{mttr_val:.1f} horas"
 
-        enl = f"http://{self.ip_local}:5000/equipo/{eq_act['id']}"
+        url_base = CONFIG.get("url_base_web", "https://cmms-gamlp.onrender.com")
+        enl = f"{url_base}/equipo/{eq_act['id']}"
         qr = qrcode.QRCode(version=1, box_size=10, border=2)
         qr.add_data(enl)
         qr.make(fit=True)

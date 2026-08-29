@@ -22,7 +22,8 @@ def cargar_config():
         "db_name": "postgres",
         "db_user": "postgres.ieunrjlkdwikabfscudt",
         "db_password": "Adhemarz123",
-        "db_sslmode": "require"
+        "db_sslmode": "require",
+        "url_base_web": "https://cmms-gamlp.onrender.com"
     }
     
     if os.environ.get("DB_HOST"): default["db_host"] = os.environ["DB_HOST"]

@@ -14,7 +14,7 @@ from database import obtener_conexion
 from datetime import date, datetime
 from auth import login
 from excel_utils import obtener_ruta_plantilla, escribir_en_celda_segura, marcar_x, escribir_texto_largo, exportar_excel_a_pdf
-from config import CARPETAS
+from config import CARPETAS, CONFIG
 
 app_web = Flask(__name__)
 app = app_web  # Alias para servidores WSGI de producción (Gunicorn / Render / Vercel)
@@ -403,20 +403,8 @@ def descargar_qr_web(id_equipo):
         import io
         from flask import send_file
         
-        # Obtener IP local para el enlace
-        import socket
-        def obtener_ip_local():
-            try:
-                s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                s.connect(("8.8.8.8", 80))
-                ip = s.getsockname()[0]
-                s.close()
-                return ip
-            except:
-                return "127.0.0.1"
-                
-        ip = obtener_ip_local()
-        enl = f"http://{ip}:5000/equipo/{id_equipo}"
+        url_base = os.environ.get("RENDER_EXTERNAL_URL") or CONFIG.get("url_base_web", "https://cmms-gamlp.onrender.com")
+        enl = f"{url_base}/equipo/{id_equipo}"
         
         qr_base = qrcode.QRCode(version=1, box_size=12, border=1)
         qr_base.add_data(enl)
