@@ -65,6 +65,173 @@ VERSION_APP = "v1.0"
 
 
 # ========================================================
+# SELECTOR TERRITORIAL Y DE SEDE (PREVIO AL ACCESO)
+# ========================================================
+class VentanaSelectorSede(ctk.CTkToplevel):
+    def __init__(self, parent, usuario, on_confirmar_callback):
+        super().__init__(parent)
+        self.parent = parent
+        self.usuario = usuario
+        self.on_confirmar_callback = on_confirmar_callback
+        
+        self.title("SGEM GAMLP - Selección de Sede Territorial")
+        self.geometry("540x660")
+        self.configure(fg_color=C_BG)
+        self.resizable(False, False)
+        self.transient(parent)
+        self.grab_set()
+
+        # Centrar ventana
+        self.update_idletasks()
+        w = 540
+        h = 660
+        x = (self.winfo_screenwidth() // 2) - (w // 2)
+        y = (self.winfo_screenheight() // 2) - (h // 2)
+        self.geometry(f"{w}x{h}+{x}+{y}")
+        
+        # Cargar datos jerárquicos de la base de datos
+        from database import obtener_jerarquia_sedes_db
+        self.sedes_data = obtener_jerarquia_sedes_db()
+
+        self.construir_ui()
+
+    def construir_ui(self):
+        f_top = ctk.CTkFrame(self, fg_color="transparent")
+        f_top.pack(pady=(20, 10), padx=30, fill="x")
+        
+        ctk.CTkLabel(f_top, text="🏥 Selector de Centro y Red de Salud", font=ctk.CTkFont(size=20, weight="bold"), text_color=C_BLUE).pack()
+        ctk.CTkLabel(f_top, text="Selecciona la ubicación territorial para filtrar el inventario\no accede de forma general a todo el municipio:", font=ctk.CTkFont(size=11), text_color=C_SUBTEXT).pack(pady=(4, 0))
+
+        # Tarjeta de Controles en Cascada
+        card = ctk.CTkFrame(self, fg_color=C_CARD, corner_radius=16, border_width=1, border_color=C_BORDER)
+        card.pack(padx=30, pady=10, fill="both", expand=True)
+
+        # 1. DEPARTAMENTO
+        ctk.CTkLabel(card, text="🗺️ 1. Departamento:", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", padx=25, pady=(15, 2))
+        deptos_nombres = [d["nombre"] for d in self.sedes_data.get("departamentos", [])]
+        if not deptos_nombres:
+            deptos_nombres = ["La Paz"]
+        self.combo_depto = ctk.CTkComboBox(card, values=deptos_nombres, command=self.on_depto_cambiado, height=38, corner_radius=10, border_color=C_BORDER, fg_color=C_BG)
+        self.combo_depto.pack(padx=25, fill="x", pady=(0, 10))
+        if "La Paz" in deptos_nombres:
+            self.combo_depto.set("La Paz")
+
+        # 2. MUNICIPIO
+        ctk.CTkLabel(card, text="🏛️ 2. Municipio:", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", padx=25, pady=(0, 2))
+        self.combo_mun = ctk.CTkComboBox(card, values=["La Paz (GAMLP)"], command=self.on_mun_cambiado, height=38, corner_radius=10, border_color=C_BORDER, fg_color=C_BG)
+        self.combo_mun.pack(padx=25, fill="x", pady=(0, 10))
+
+        # 3. RED DE SALUD
+        ctk.CTkLabel(card, text="🌐 3. Red de Salud:", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", padx=25, pady=(0, 2))
+        self.combo_red = ctk.CTkComboBox(card, values=["[ Todas las Redes (Acceso General) ]"], command=self.on_red_cambiada, height=38, corner_radius=10, border_color=C_BORDER, fg_color=C_BG)
+        self.combo_red.pack(padx=25, fill="x", pady=(0, 10))
+
+        # 4. CENTRO DE SALUD
+        ctk.CTkLabel(card, text="🏥 4. Centro de Salud / Hospital:", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", padx=25, pady=(0, 2))
+        self.combo_centro = ctk.CTkComboBox(card, values=["[ Todos los Centros de la Red ]"], command=lambda e: self.actualizar_resumen(), height=38, corner_radius=10, border_color=C_BORDER, fg_color=C_BG)
+        self.combo_centro.pack(padx=25, fill="x", pady=(0, 12))
+
+        # Badge Informativo de Selección
+        self.f_resumen = ctk.CTkFrame(card, fg_color="#F1F5F9", corner_radius=10, border_width=1, border_color="#CBD5E1")
+        self.f_resumen.pack(padx=25, fill="x", pady=(0, 15))
+        self.lbl_resumen = ctk.CTkLabel(self.f_resumen, text="📍 Vista: Acceso General", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_BLUE)
+        self.lbl_resumen.pack(pady=8, padx=12)
+
+        # Botón de Acceso
+        btn_ingresar = ctk.CTkButton(self, text="Ingresar al Sistema ➔", font=ctk.CTkFont(size=14, weight="bold"), height=46, corner_radius=12, fg_color=C_BLUE, hover_color=C_BLUE_HOVER, command=self.confirmar_seleccion)
+        btn_ingresar.pack(padx=30, pady=(5, 20), fill="x")
+
+        # Inicializar cascada con La Paz
+        self.on_depto_cambiado(self.combo_depto.get())
+
+    def on_depto_cambiado(self, depto_sel):
+        depto_obj = next((d for d in self.sedes_data.get("departamentos", []) if d["nombre"] == depto_sel), None)
+        depto_id = depto_obj["id"] if depto_obj else None
+
+        if depto_sel == "La Paz":
+            muns = [m["nombre"] for m in self.sedes_data.get("municipios", []) if m.get("departamento_id") == depto_id]
+            if not muns: muns = ["La Paz (GAMLP)", "El Alto", "Viacha"]
+        else:
+            muns = [f"Capital {depto_sel}", f"Municipio General {depto_sel}"]
+            
+        muns_con_todos = ["Todos los Municipios"] + muns if len(muns) > 1 else muns
+        self.combo_mun.configure(values=muns_con_todos)
+        self.combo_mun.set(muns[0] if muns else "Todos los Municipios")
+        self.on_mun_cambiado(self.combo_mun.get())
+
+    def on_mun_cambiado(self, mun_sel):
+        if mun_sel in ("La Paz (GAMLP)", "Todos los Municipios"):
+            redes = [r["nombre"] for r in self.sedes_data.get("redes", [])]
+            if not redes: redes = ["Red 1 Sur", "Red 2 Noroeste", "Red 3 Cotahuma", "Red 4 San Antonio", "Red 5 Periférica"]
+            redes_con_todas = ["[ Todas las Redes (Acceso General) ]"] + redes
+        else:
+            redes_con_todas = [f"Red Única {mun_sel}"]
+
+        self.combo_red.configure(values=redes_con_todas)
+        self.combo_red.set(redes_con_todas[0])
+        self.on_red_cambiada(self.combo_red.get())
+
+    def on_red_cambiada(self, red_sel):
+        if red_sel.startswith("[ Todas"):
+            self.combo_centro.configure(values=["[ Todos los Centros del Municipio ]"])
+            self.combo_centro.set("[ Todos los Centros del Municipio ]")
+        else:
+            red_obj = next((r for r in self.sedes_data.get("redes", []) if r["nombre"] == red_sel), None)
+            red_id = red_obj["id"] if red_obj else None
+            centros = [c["nombre"] for c in self.sedes_data.get("centros", []) if c.get("red_salud_id") == red_id]
+            if not centros:
+                centros = [f"Hospital Principal {red_sel}", f"C.S. Central {red_sel}"]
+            centros_con_todos = ["[ Todos los Centros de la Red ]"] + centros
+            self.combo_centro.configure(values=centros_con_todos)
+            self.combo_centro.set(centros_con_todos[0])
+            
+        self.actualizar_resumen()
+
+    def actualizar_resumen(self):
+        dep = self.combo_depto.get()
+        mun = self.combo_mun.get()
+        red = self.combo_red.get()
+        cen = self.combo_centro.get()
+
+        if cen.startswith("[ Todos los Centros del Municipio"):
+            res = f"🌐 {dep} • {mun} (Acceso Global - Todas las Redes)"
+        elif cen.startswith("[ Todos los Centros de la Red"):
+            res = f"🌐 {mun} • {red} (Todos los Centros)"
+        else:
+            res = f"📍 {red} • {cen}"
+
+        self.lbl_resumen.configure(text=res)
+
+    def confirmar_seleccion(self):
+        dep = self.combo_depto.get()
+        mun = self.combo_mun.get()
+        red = self.combo_red.get()
+        cen = self.combo_centro.get()
+
+        depto_obj = next((d for d in self.sedes_data.get("departamentos", []) if d["nombre"] == dep), None)
+        mun_obj = next((m for m in self.sedes_data.get("municipios", []) if m["nombre"] == mun), None)
+        red_obj = next((r for r in self.sedes_data.get("redes", []) if r["nombre"] == red), None)
+        cen_obj = next((c for c in self.sedes_data.get("centros", []) if c["nombre"] == cen), None)
+
+        contexto = {
+            "departamento": dep,
+            "departamento_id": depto_obj["id"] if depto_obj else None,
+            "municipio": mun,
+            "municipio_id": mun_obj["id"] if mun_obj else None,
+            "red_salud": red,
+            "red_salud_id": red_obj["id"] if red_obj else None,
+            "centro_salud": cen,
+            "centro_salud_id": cen_obj["id"] if cen_obj else None,
+            "es_global": cen.startswith("[ Todos"),
+            "resumen_texto": self.lbl_resumen.cget("text")
+        }
+
+        self.destroy()
+        if self.on_confirmar_callback:
+            self.on_confirmar_callback(contexto)
+
+
+# ========================================================
 # INTERFAZ DE LOGIN
 # ========================================================
 class VentanaLogin(ctk.CTk):
@@ -83,6 +250,7 @@ class VentanaLogin(ctk.CTk):
         self.geometry(f'{width}x{height}+{x}+{y}')
         
         self.usuario_autenticado = None
+        self.contexto_sede = None
 
         ctk.CTkLabel(self, text="🏛️ SGEM GAMLP", font=ctk.CTkFont(size=24, weight="bold"), text_color=C_BLUE).pack(pady=(25, 2))
         ctk.CTkLabel(self, text=f"Sistema de Gestión de Equipamiento Médico ({VERSION_APP})", font=ctk.CTkFont(size=12), text_color=C_SUBTEXT).pack(pady=(0, 12))
@@ -108,7 +276,14 @@ class VentanaLogin(ctk.CTk):
         u = login(self.e_user.get(), self.e_pass.get())
         if u:
             self.usuario_autenticado = u
-            self.destroy()
+            self.withdraw()
+            
+            def al_confirmar_sede(contexto):
+                self.contexto_sede = contexto
+                self.destroy()
+                
+            v_sel = VentanaSelectorSede(self, u, al_confirmar_sede)
+            v_sel.protocol("WM_DELETE_WINDOW", lambda: (v_sel.destroy(), self.deiconify()))
         else:
             messagebox.showerror("Acceso Denegado", "Usuario o contraseña incorrectos.\n\n(Verifique las credenciales o la conexión al servidor en ⚙️ Configurar Servidor)")
 
@@ -186,9 +361,10 @@ class VentanaLogin(ctk.CTk):
 # NÚCLEO PRINCIPAL DEL SOFTWARE
 # ========================================================
 class SistemaMantenimiento(ctk.CTk):
-    def __init__(self, usuario):
+    def __init__(self, usuario, contexto_sede=None):
         super().__init__()
         self.usuario_actual = usuario
+        self.contexto_sede = contexto_sede or {"resumen_texto": "🌐 Acceso General GAMLP", "es_global": True}
         self.es_jefe = usuario.get("rol") == "jefe"
         self.modo_offline = False
         
@@ -623,7 +799,18 @@ class SistemaMantenimiento(ctk.CTk):
         self.lbl_qr.pack(pady=(0, 1))
         
         self.lbl_name = ctk.CTkLabel(self.top_sidebar, text="Rudel Adhemar Santos Medina", font=ctk.CTkFont(size=10, slant="italic"), text_color=C_SUBTEXT)
-        self.lbl_name.pack(pady=(0, 6))
+        self.lbl_name.pack(pady=(0, 4))
+
+        # Badge de Sede / Centro de Salud Activo
+        self.f_sede_badge = ctk.CTkFrame(self.top_sidebar, fg_color="#F8FAFC", corner_radius=8, border_width=1, border_color="#CBD5E1")
+        self.f_sede_badge.pack(pady=(0, 6), padx=10, fill="x")
+        
+        sede_txt = self.contexto_sede.get("resumen_texto", "🌐 Acceso General GAMLP") if hasattr(self, "contexto_sede") and self.contexto_sede else "🌐 Acceso General GAMLP"
+        self.lbl_sede_badge = ctk.CTkLabel(self.f_sede_badge, text=sede_txt, font=ctk.CTkFont(size=10, weight="bold"), text_color=C_BLUE, wraplength=200)
+        self.lbl_sede_badge.pack(pady=(4, 2), padx=6)
+        
+        self.btn_cambiar_sede = ctk.CTkButton(self.f_sede_badge, text="🔄 Cambiar Sede", font=ctk.CTkFont(size=10, weight="bold"), height=22, fg_color=C_CARD, text_color=C_TEXT, hover_color=C_BORDER, corner_radius=6, command=self.abrir_selector_sede_rapido)
+        self.btn_cambiar_sede.pack(pady=(0, 4), padx=6, fill="x")
 
         self.btn_alertas = ctk.CTkButton(self.top_sidebar, text="🔔 Alertas (0)", height=34, font=ctk.CTkFont(weight="bold", size=12), fg_color=C_BG, text_color=C_TEXT, command=self.mostrar_ventana_alertas)
         self.btn_alertas.pack(pady=(0, 6), padx=12, fill="x")
@@ -684,6 +871,18 @@ class SistemaMantenimiento(ctk.CTk):
 
         self.contenedor_principal = ctk.CTkFrame(self, fg_color=C_BG)
         self.contenedor_principal.pack(side="right", fill="both", expand=True)
+
+    def abrir_selector_sede_rapido(self):
+        def al_cambiar_sede(nuevo_contexto):
+            self.contexto_sede = nuevo_contexto
+            self.lbl_sede_badge.configure(text=nuevo_contexto.get("resumen_texto", "🌐 Acceso General GAMLP"))
+            # Refrescar todas las vistas modulares
+            for nombre_v, v in self.vistas.items():
+                if hasattr(v, "refrescar_datos"):
+                    v.refrescar_datos()
+            messagebox.showinfo("Sede Actualizada", f"Sede activa cambiada a:\n{nuevo_contexto.get('resumen_texto')}")
+
+        VentanaSelectorSede(self, self.usuario_actual, al_cambiar_sede)
 
 
     def crear_vistas_modulares(self):
@@ -2873,6 +3072,6 @@ if __name__ == "__main__":
     login_win = VentanaLogin()
     login_win.mainloop()
     
-    if login_win.usuario_autenticado:
-        app = SistemaMantenimiento(usuario=login_win.usuario_autenticado)
+    if getattr(login_win, "usuario_autenticado", None):
+        app = SistemaMantenimiento(usuario=login_win.usuario_autenticado, contexto_sede=getattr(login_win, "contexto_sede", None))
         app.mainloop()

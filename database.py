@@ -261,11 +261,17 @@ def inicializar_bd():
         );
     """)
 
-    # 9. Columnas adicionales de compatibilidad (por si existen bases anteriores)
+    # 9. Columnas adicionales de compatibilidad
     cur.execute("ALTER TABLE equipos ADD COLUMN IF NOT EXISTS fecha_vencimiento_garantia DATE;")
     cur.execute("ALTER TABLE equipos ADD COLUMN IF NOT EXISTS fecha_inicio_garantia DATE;")
     cur.execute("ALTER TABLE equipos ADD COLUMN IF NOT EXISTS numero_serie VARCHAR(100);")
     cur.execute("ALTER TABLE equipos ADD COLUMN IF NOT EXISTS costo NUMERIC DEFAULT 0;")
+    cur.execute("ALTER TABLE equipos ADD COLUMN IF NOT EXISTS centro_salud_id INTEGER REFERENCES centros_salud(id) ON DELETE SET NULL;")
+    cur.execute("ALTER TABLE equipos ADD COLUMN IF NOT EXISTS red_salud_id INTEGER REFERENCES redes_salud(id) ON DELETE SET NULL;")
+    cur.execute("ALTER TABLE equipos ADD COLUMN IF NOT EXISTS centro_salud_nombre VARCHAR(150);")
+    cur.execute("ALTER TABLE equipos ADD COLUMN IF NOT EXISTS red_salud_nombre VARCHAR(150);")
+    cur.execute("ALTER TABLE equipos ADD COLUMN IF NOT EXISTS municipio_nombre VARCHAR(150);")
+    cur.execute("ALTER TABLE equipos ADD COLUMN IF NOT EXISTS departamento_nombre VARCHAR(100);")
     cur.execute("ALTER TABLE historial_intervenciones ADD COLUMN IF NOT EXISTS repuesto_usado BOOLEAN DEFAULT FALSE;")
     cur.execute("ALTER TABLE historial_intervenciones ADD COLUMN IF NOT EXISTS repuesto_nombre VARCHAR(255);")
     cur.execute("ALTER TABLE historial_intervenciones ADD COLUMN IF NOT EXISTS repuesto_cantidad INTEGER DEFAULT 0;")
@@ -281,6 +287,8 @@ def inicializar_bd():
     cur.execute("CREATE INDEX IF NOT EXISTS idx_equipos_servicio ON equipos(servicio);")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_equipos_area ON equipos(area);")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_equipos_criticidad ON equipos(criticidad);")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_equipos_centro ON equipos(centro_salud_id);")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_equipos_red ON equipos(red_salud_id);")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_historial_equipo_id ON historial_intervenciones(equipo_id);")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_historial_fecha ON historial_intervenciones(fecha);")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_repuestos_tipo_equipo ON repuestos(tipo_equipo);")
@@ -334,6 +342,13 @@ def inicializar_bd():
                 ON CONFLICT (nombre, piso) DO NOTHING;
             """, (name, floor, phone, manager))
         conn.commit()
+
+    # Sembrar Departamentos, Municipios, Redes y Centros de Salud de GAMLP
+    try:
+        sembrar_datos_sedes_gamlp(cur, conn)
+    except Exception as e_seed_sedes:
+        print(f"[WARN] Error al sembrar sedes: {e_seed_sedes}")
+        conn.rollback()
     
     # =========================================================
     # 🚀 MOTOR DE ACTUALIZACIÓN DE VERSIONES (MIGRACIONES)
@@ -429,7 +444,7 @@ def inicializar_bd():
 
 
     # 11. Sincronizar secuencias de auto-incremento (SERIAL) para evitar colisiones de ID
-    tablas_serial = ["areas", "catalogo", "repuestos", "historial_intervenciones", "protocolos", "usuarios", "papelera"]
+    tablas_serial = ["departamentos", "municipios", "redes_salud", "centros_salud", "areas", "catalogo", "repuestos", "historial_intervenciones", "protocolos", "usuarios", "papelera"]
     for ts in tablas_serial:
         try:
             cur.execute(f"SELECT setval(pg_get_serial_sequence('{ts}', 'id'), COALESCE((SELECT MAX(id) FROM \"{ts}\"), 1));")
@@ -440,6 +455,182 @@ def inicializar_bd():
     cur.close()
     conn.close()
     return True
+
+
+def sembrar_datos_sedes_gamlp(cur, conn):
+    """Siembra los 9 Departamentos de Bolivia, Municipios de La Paz, 5 Redes de Salud y Centros de Salud de GAMLP."""
+    # 1. Departamentos
+    deptos = [
+        ("La Paz", "LPZ"),
+        ("Santa Cruz", "SCZ"),
+        ("Cochabamba", "CBB"),
+        ("Chuquisaca", "CHQ"),
+        ("Oruro", "ORU"),
+        ("Potosí", "POT"),
+        ("Tarija", "TJA"),
+        ("Beni", "BEN"),
+        ("Pando", "PND")
+    ]
+    for nom, cod in deptos:
+        cur.execute("INSERT INTO departamentos (nombre, codigo) VALUES (%s, %s) ON CONFLICT (nombre) DO NOTHING;", (nom, cod))
+    conn.commit()
+
+    # Obtener ID de La Paz
+    cur.execute("SELECT id FROM departamentos WHERE nombre = 'La Paz';")
+    row_lpz = cur.fetchone()
+    id_lpz = row_lpz[0] if row_lpz else 1
+
+    # 2. Municipios de La Paz
+    muns_lpz = [
+        ("La Paz (GAMLP)", "GAMLP"),
+        ("El Alto", "GAMEA"),
+        ("Viacha", "VIA"),
+        ("Achocalla", "ACH"),
+        ("Mecapaca", "MEC"),
+        ("Palca", "PAL")
+    ]
+    for nom, cod in muns_lpz:
+        cur.execute("""
+            INSERT INTO municipios (departamento_id, nombre, codigo)
+            VALUES (%s, %s, %s)
+            ON CONFLICT (departamento_id, nombre) DO NOTHING;
+        """, (id_lpz, nom, cod))
+    conn.commit()
+
+    # Obtener ID de GAMLP
+    cur.execute("SELECT id FROM municipios WHERE nombre = 'La Paz (GAMLP)';")
+    row_gamlp = cur.fetchone()
+    id_gamlp = row_gamlp[0] if row_gamlp else 1
+
+    # 3. Redes de Salud de GAMLP
+    redes = [
+        ("Red 1 Sur", "RED-1", "Macrodistritos Sur y Mallasa"),
+        ("Red 2 Noroeste", "RED-2", "Macrodistritos Max Paredes y Centro"),
+        ("Red 3 Cotahuma", "RED-3", "Macrodistrito Cotahuma"),
+        ("Red 4 San Antonio", "RED-4", "Macrodistrito San Antonio"),
+        ("Red 5 Periférica", "RED-5", "Macrodistrito Periférica y Hampaturi")
+    ]
+    for nom, cod, macro in redes:
+        cur.execute("""
+            INSERT INTO redes_salud (municipio_id, departamento_id, nombre, codigo, macrodistrito)
+            VALUES (%s, %s, %s, %s, %s)
+            ON CONFLICT (codigo) DO UPDATE SET nombre = EXCLUDED.nombre, macrodistrito = EXCLUDED.macrodistrito;
+        """, (id_gamlp, id_lpz, nom, cod, macro))
+    conn.commit()
+
+    # Mapear IDs de Redes
+    cur.execute("SELECT id, codigo FROM redes_salud;")
+    red_map = {r[1]: r[0] for r in cur.fetchall()}
+
+    # 4. Centros de Salud y Hospitales Municipales
+    centros = [
+        # Red 1 Sur
+        ("RED-1", "Hospital Municipal Los Pinos", "Segundo Nivel", "Calle 25 de Los Pinos"),
+        ("RED-1", "C.S. Chasquipampa", "Primer Nivel", "Calle 46 Chasquipampa"),
+        ("RED-1", "C.S. Bolognia", "Primer Nivel", "Av. Bolognia"),
+        ("RED-1", "C.S. Ovejuyo", "Primer Nivel", "Ovejuyo Central"),
+        ("RED-1", "C.S. Achumani", "Primer Nivel", "Calle 22 Achumani"),
+        ("RED-1", "C.S. Bella Vista", "Primer Nivel", "Av. Principal Bella Vista"),
+        ("RED-1", "C.S. Cota Cota", "Primer Nivel", "Calle 28 Cota Cota"),
+        ("RED-1", "C.S. Mallasa", "Primer Nivel", "Av. Florida Mallasa"),
+
+        # Red 2 Noroeste
+        ("RED-2", "Hospital Municipal La Portada", "Segundo Nivel", "Av. Naciones Unidas"),
+        ("RED-2", "C.S. Asunción", "Primer Nivel", "Zona Asunción"),
+        ("RED-2", "C.S. El Tejar", "Primer Nivel", "Calle Héroes del Acre"),
+        ("RED-2", "C.S. Chamoco Chico", "Primer Nivel", "Zona Chamoco Chico"),
+        ("RED-2", "C.S. Munaypata", "Primer Nivel", "Av. Naciones Unidas Munaypata"),
+        ("RED-2", "C.S. Villa Victoria", "Primer Nivel", "Plaza Huallparrimachi"),
+        ("RED-2", "C.S. San Pedro", "Primer Nivel", "Zona San Pedro Central"),
+
+        # Red 3 Cotahuma
+        ("RED-3", "Hospital Municipal Cotahuma", "Segundo Nivel", "Av. Jaimes Freyre"),
+        ("RED-3", "C.S. Pasankeri", "Primer Nivel", "Zona Pasankeri"),
+        ("RED-3", "C.S. Tembladerani", "Primer Nivel", "Av. Landaeta"),
+        ("RED-3", "C.S. Alto Tacagua", "Primer Nivel", "Zona Alto Tacagua"),
+        ("RED-3", "C.S. Bajo Llojeta", "Primer Nivel", "Av. Los Sargentos"),
+        ("RED-3", "C.S. Alpacoma", "Primer Nivel", "Zona Alpacoma"),
+
+        # Red 4 San Antonio
+        ("RED-4", "Hospital Municipal La Merced", "Segundo Nivel", "Zona La Merced"),
+        ("RED-4", "C.S. San Antonio", "Primer Nivel", "Av. 31 de Octubre"),
+        ("RED-4", "C.S. Villa Armonía", "Primer Nivel", "Zona Villa Armonía"),
+        ("RED-4", "C.S. Kupini", "Primer Nivel", "Zona Kupini Central"),
+        ("RED-4", "C.S. Pampahasi", "Primer Nivel", "Zona Alto Pampahasi"),
+        ("RED-4", "C.S. Valle Hermoso", "Primer Nivel", "Zona Valle Hermoso"),
+
+        # Red 5 Periférica
+        ("RED-5", "Hospital Municipal La Paz", "Segundo Nivel", "Plaza Garita de Lima"),
+        ("RED-5", "C.S. Kalajahuira", "Primer Nivel", "Carretera a Yungas"),
+        ("RED-5", "C.S. Villa Fátima", "Primer Nivel", "Av. Las Américas"),
+        ("RED-5", "C.S. Achachicala", "Primer Nivel", "Av. Chacaltaya"),
+        ("RED-5", "C.S. Chuquiaguillo", "Primer Nivel", "Zona Chuquiaguillo"),
+        ("RED-5", "C.S. 24 de Junio", "Primer Nivel", "Zona 24 de Junio"),
+    ]
+
+    for red_cod, nom, niv, dir_c in centros:
+        r_id = red_map.get(red_cod)
+        if r_id:
+            cur.execute("""
+                INSERT INTO centros_salud (red_salud_id, nombre, nivel, direccion)
+                VALUES (%s, %s, %s, %s)
+                ON CONFLICT (red_salud_id, nombre) DO UPDATE SET nivel = EXCLUDED.nivel, direccion = EXCLUDED.direccion;
+            """, (r_id, nom, niv, dir_c))
+    conn.commit()
+
+
+def obtener_jerarquia_sedes_db():
+    """Obtiene la jerarquía completa de Departamentos, Municipios, Redes y Centros de Salud."""
+    conn = obtener_conexion()
+    if not conn:
+        return {
+            "departamentos": [{"id": 1, "nombre": "La Paz", "codigo": "LPZ"}],
+            "municipios": [{"id": 1, "departamento_id": 1, "nombre": "La Paz (GAMLP)", "codigo": "GAMLP"}],
+            "redes": [
+                {"id": 1, "municipio_id": 1, "nombre": "Red 1 Sur", "codigo": "RED-1"},
+                {"id": 2, "municipio_id": 1, "nombre": "Red 2 Noroeste", "codigo": "RED-2"},
+                {"id": 3, "municipio_id": 1, "nombre": "Red 3 Cotahuma", "codigo": "RED-3"},
+                {"id": 4, "municipio_id": 1, "nombre": "Red 4 San Antonio", "codigo": "RED-4"},
+                {"id": 5, "municipio_id": 1, "nombre": "Red 5 Periférica", "codigo": "RED-5"},
+            ],
+            "centros": [
+                {"id": 1, "red_salud_id": 1, "nombre": "Hospital Municipal Los Pinos", "nivel": "Segundo Nivel"},
+                {"id": 2, "red_salud_id": 1, "nombre": "C.S. Chasquipampa", "nivel": "Primer Nivel"},
+                {"id": 3, "red_salud_id": 1, "nombre": "C.S. Bolognia", "nivel": "Primer Nivel"},
+                {"id": 4, "red_salud_id": 2, "nombre": "Hospital Municipal La Portada", "nivel": "Segundo Nivel"},
+                {"id": 5, "red_salud_id": 3, "nombre": "Hospital Municipal Cotahuma", "nivel": "Segundo Nivel"},
+                {"id": 6, "red_salud_id": 4, "nombre": "Hospital Municipal La Merced", "nivel": "Segundo Nivel"},
+                {"id": 7, "red_salud_id": 5, "nombre": "Hospital Municipal La Paz", "nivel": "Segundo Nivel"},
+            ]
+        }
+    try:
+        import psycopg2.extras
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute("SELECT id, nombre, codigo FROM departamentos WHERE estado = 'Activo' ORDER BY CASE WHEN nombre='La Paz' THEN 0 ELSE 1 END, nombre ASC;")
+        deptos = [dict(r) for r in cur.fetchall()]
+        
+        cur.execute("SELECT id, departamento_id, nombre, codigo FROM municipios WHERE estado = 'Activo' ORDER BY CASE WHEN nombre='La Paz (GAMLP)' THEN 0 ELSE 1 END, nombre ASC;")
+        muns = [dict(r) for r in cur.fetchall()]
+        
+        cur.execute("SELECT id, municipio_id, departamento_id, nombre, codigo, macrodistrito FROM redes_salud WHERE estado = 'Activo' ORDER BY nombre ASC;")
+        redes = [dict(r) for r in cur.fetchall()]
+        
+        cur.execute("SELECT id, red_salud_id, nombre, nivel, direccion FROM centros_salud WHERE estado = 'Activo' ORDER BY nivel DESC, nombre ASC;")
+        centros = [dict(r) for r in cur.fetchall()]
+        
+        cur.close()
+        conn.close()
+        return {
+            "departamentos": deptos,
+            "municipios": muns,
+            "redes": redes,
+            "centros": centros
+        }
+    except Exception as e:
+        print("[WARN] Error obteniendo jerarquía de sedes:", e)
+        if conn:
+            conn.close()
+        return {"departamentos": [], "municipios": [], "redes": [], "centros": []}
 
 def mover_a_papelera(cur, tabla_origen, id_original, datos_dict, usuario="desconocido"):
     """
