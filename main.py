@@ -1384,17 +1384,17 @@ class SistemaMantenimiento(ctk.CTk):
         
         p_cat = [
             "Intercambiabilidad", 
-            "Régimen operación", 
-            "Nivel de utilización", 
-            "Parámetro principal", 
+            "Funcion Clinica", 
+            "Frecuencia de Uso", 
+            "Impacto en el Servicio", 
             "Mantenibilidad", 
-            "Conservabilidad", 
-            "Grado de automatización", 
+            "Historial de Fallas", 
+            "Complejidad Teconologica", 
             "Valor de compra", 
-            "Factibilidad aprovto", 
-            "Seguridad operacional", 
-            "Condiciones de explot.", 
-            "Protección de MA", 
+            "Exigencia Normativa", 
+            "Seguridad Operacional", 
+            "Vulnerabilidad Ambiental", 
+            "Riesgo a explosiones", 
             "Edad del equipo"
         ]
         f_cat = ctk.CTkFrame(sf, fg_color=C_BG, corner_radius=10)
@@ -1464,12 +1464,12 @@ class SistemaMantenimiento(ctk.CTk):
 
         self.e_voltaje = crear_campo_grid(0, 0, "Voltaje:", "Voltaje (ej: 220V)")
         self.e_corriente = crear_campo_grid(0, 1, "Corriente:", "Corriente (ej: 5A)")
-        self.e_potencia = crear_campo_grid(1, 0, "Potencia Real Consumida:", "Potencia (ej: 500W)")
+        self.e_potencia = crear_campo_grid(1, 0, "Potencia Consumida:", "Potencia (ej: 500W)")
         self.e_peso = crear_campo_grid(1, 1, "Peso:", "Peso (ej: 50 kg)")
-        self.e_temperatura = crear_campo_grid(2, 0, "Temperatura de Funcionamiento:", "Temperatura (ej: 15-30 °C)")
+        self.e_temperatura = crear_campo_grid(2, 0, "Vida Útil Estimada / Temperatura:", "Vida útil o Temp.")
         self.e_dimensiones = crear_campo_grid(2, 1, "Dimensiones:", "Dimensiones (ej: 120x80x90 cm)")
-        self.e_humedad = crear_campo_grid(3, 0, "Humedad de Operación:", "Humedad (ej: 20-80%)")
-        self.e_resolucion = crear_campo_grid(3, 1, "Resolución del Monitor:", "Resolución (ej: 1920x1080)")
+        self.e_humedad = crear_campo_grid(3, 0, "Versión Software / Humedad:", "Versión soft o Humedad")
+        self.e_resolucion = crear_campo_grid(3, 1, "Batería Respaldo / Resolución:", "Batería o Resolución")
 
         # Helper para los 9 campos de texto largo
         def crear_campo_texto(label_text, placeholder):
@@ -1482,11 +1482,11 @@ class SistemaMantenimiento(ctk.CTk):
         self.txt_contexto = crear_campo_texto("Contexto Operacional:", "Describa el contexto operacional...")
         self.txt_funciones = crear_campo_texto("Funciones del Equipo Médico:", "Describa las funciones del equipo...")
         self.txt_acciones_prev = crear_campo_texto("Acciones Preventivas:", "Describa las acciones preventivas...")
-        self.txt_acciones_falla = crear_campo_texto("Acciones si el Fallo no se puede Prevenir:", "Describa las acciones en caso de fallo...")
-        self.txt_fallas_func = crear_campo_texto("Fallas Funcionales:", "Describa las fallas funcionales...")
+        self.txt_acciones_falla = crear_campo_texto("Insumos / Accesorios:", "Describa insumos y accesorios...")
+        self.txt_fallas_func = crear_campo_texto("Fallas Comunes:", "Describa las fallas comunes...")
         self.txt_causas_fallo = crear_campo_texto("Causas de Fallo en el Equipo:", "Describa las causas de fallo...")
-        self.txt_efectos_fallo = crear_campo_texto("Efectos del Fallo en el Equipo:", "Describa los efectos del fallo...")
-        self.txt_efecto_entorno = crear_campo_texto("Efecto de Fallo del Equipo en el Entorno:", "Describa el efecto en el entorno...")
+        self.txt_efectos_fallo = crear_campo_texto("Consecuencias de Fallo en el Equipo:", "Describa las consecuencias de fallo...")
+        self.txt_efecto_entorno = crear_campo_texto("Acciones Correctivas Comunes:", "Describa las acciones correctivas...")
         self.txt_observaciones_ficha = crear_campo_texto("Observaciones:", "Observaciones adicionales...")
 
         def toggle_datos_adicionales():
