@@ -688,12 +688,19 @@ def registrar_mantenimiento(id_equipo):
         cur.execute("""
             SELECT nombre_repuesto, cantidad, tipo_equipo 
             FROM repuestos 
-            WHERE cantidad > 0 AND (tipo_equipo = %s OR tipo_equipo = %s OR tipo_equipo ILIKE %s)
+            WHERE cantidad > 0 
+              AND COALESCE(estado_disponibilidad, 'En Stock') = 'En Stock'
+              AND (tipo_equipo = %s OR tipo_equipo = %s OR tipo_equipo ILIKE %s)
             ORDER BY nombre_repuesto ASC
         """, (cat_str, eq_nom, f"%{eq_nom}%"))
         repuestos_list = [dict(r) for r in cur.fetchall()]
         if not repuestos_list:
-            cur.execute("SELECT nombre_repuesto, cantidad, tipo_equipo FROM repuestos WHERE cantidad > 0 ORDER BY nombre_repuesto ASC")
+            cur.execute("""
+                SELECT nombre_repuesto, cantidad, tipo_equipo 
+                FROM repuestos 
+                WHERE cantidad > 0 AND COALESCE(estado_disponibilidad, 'En Stock') = 'En Stock'
+                ORDER BY nombre_repuesto ASC
+            """)
             repuestos_list = [dict(r) for r in cur.fetchall()]
 
 

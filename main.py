@@ -2304,6 +2304,9 @@ class SistemaMantenimiento(ctk.CTk):
                 cat_full = f"{eq_match.get('nombre', '')} - {eq_match.get('marca', '')} - {eq_match.get('modelo', '')}".strip().lower()
 
                 for r in self.datos.get("repuestos", []):
+                    # Solo repuestos en stock y con cantidad disponible
+                    if str(r.get("estado_disponibilidad", "En Stock")).strip().lower() == "requerido" or int(r.get("cantidad", 0)) <= 0:
+                        continue
                     r_tipo = str(r.get("tipo_equipo", "")).strip().lower()
                     if (r_tipo == cat_full or 
                         r_tipo == eq_nom or 
@@ -2317,14 +2320,14 @@ class SistemaMantenimiento(ctk.CTk):
                     for r in repuestos_compatibles
                 ]
             else:
-                todos_rep = self.datos.get("repuestos", [])
-                if todos_rep:
+                todos_rep_stock = [r for r in self.datos.get("repuestos", []) if str(r.get("estado_disponibilidad", "En Stock")).strip().lower() != "requerido" and int(r.get("cantidad", 0)) > 0]
+                if todos_rep_stock:
                     ops_filtradas = [
                         f"{r.get('nombre_repuesto')} - {r.get('tipo_equipo')} (Disp: {r.get('cantidad')})"
-                        for r in todos_rep
+                        for r in todos_rep_stock
                     ]
                 else:
-                    ops_filtradas = ["No hay repuestos registrados en el sistema"]
+                    ops_filtradas = ["No hay repuestos disponibles en stock"]
                 
             c_repuestos.configure(values=ops_filtradas)
             c_repuestos.set(ops_filtradas[0])

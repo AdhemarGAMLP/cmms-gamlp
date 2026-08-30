@@ -66,8 +66,18 @@ def inicializar_bd():
             nombre_repuesto VARCHAR(150) NOT NULL,
             cantidad INTEGER DEFAULT 0,
             foto TEXT,
+            estado_disponibilidad VARCHAR(50) DEFAULT 'En Stock',
+            modelo_parte VARCHAR(100),
+            costo NUMERIC(12, 2) DEFAULT 0.00,
+            caracteristicas TEXT,
+            observaciones TEXT,
             UNIQUE(tipo_equipo, nombre_repuesto)
         );
+        ALTER TABLE repuestos ADD COLUMN IF NOT EXISTS estado_disponibilidad VARCHAR(50) DEFAULT 'En Stock';
+        ALTER TABLE repuestos ADD COLUMN IF NOT EXISTS modelo_parte VARCHAR(100);
+        ALTER TABLE repuestos ADD COLUMN IF NOT EXISTS costo NUMERIC(12, 2) DEFAULT 0.00;
+        ALTER TABLE repuestos ADD COLUMN IF NOT EXISTS caracteristicas TEXT;
+        ALTER TABLE repuestos ADD COLUMN IF NOT EXISTS observaciones TEXT;
     """)
 
     # 4. Jerarquía Territorial GAMLP y Áreas
