@@ -1012,13 +1012,15 @@ def descargar_ficha_tecnica_excel(id_equipo):
             except:
                 pass
 
-        # 1. Datos Generales de Identificación
+        # 1. Datos Generales de Identificación y Territorio
+        escribir('K4', eq_act.get('red_salud_nombre', ''))
+        escribir('K5', eq_act.get('centro_salud_nombre', ''))
         escribir('K8', eq_act.get('nombre', ''))
         escribir('H11', eq_act.get('area', ''))
         escribir('H12', eq_act.get('servicio', ''))
         escribir('H13', eq_act.get('marca', ''))
         escribir('H14', eq_act.get('modelo', ''))
-        escribir('H15', eq_act['id'])
+        escribir('H15', str(eq_act.get('id', '')))
         escribir('H16', eq_act.get('procedencia', ''))
         escribir('H17', eq_act.get('fabricante', ''))
         escribir('H18', eq_act.get('garantia', ''))
@@ -1028,14 +1030,14 @@ def descargar_ficha_tecnica_excel(id_equipo):
         escribir('H22', str(eq_act.get('fecha_adquisicion') or ''))
 
         # 2. Datos Técnicos del Equipo
-        escribir('E25', eq_act.get('voltaje', '') or '')
-        escribir('K26', eq_act.get('potencia', '') or '')
-        escribir('K27', eq_act.get('temperatura', '') or '')
-        escribir('J28', eq_act.get('humedad', '') or '')
-        escribir('G29', eq_act.get('corriente', '') or '')
-        escribir('E30', eq_act.get('peso', '') or '')
-        escribir('F31', eq_act.get('dimensiones', '') or '')
-        escribir('K32', eq_act.get('resolucion', '') or '')
+        escribir('E24', eq_act.get('voltaje', '') or '')
+        escribir('G25', eq_act.get('corriente', '') or '')
+        escribir('I26', eq_act.get('potencia', '') or '')
+        escribir('H27', eq_act.get('temperatura', '') or '')
+        escribir('D28', eq_act.get('peso', '') or '')
+        escribir('F29', eq_act.get('dimensiones', '') or '')
+        escribir('H30', eq_act.get('resolucion', '') or '')
+        escribir('H31', eq_act.get('humedad', '') or '')
 
         # 3. Repuestos
         cat_str = f"{eq_act['nombre']} - {eq_act.get('marca', '')} - {eq_act.get('modelo', '')}"
@@ -1101,9 +1103,9 @@ def descargar_ficha_tecnica_excel(id_equipo):
                     img_stream = io.BytesIO(img_bytes)
                     from openpyxl.drawing.image import Image as ExcelImage
                     img_excel = ExcelImage(img_stream)
-                    img_excel.width = 175
-                    img_excel.height = 145
-                    hoja.add_image(img_excel, 'B8')
+                    img_excel.width = 220
+                    img_excel.height = 210
+                    hoja.add_image(img_excel, 'Y10')
             except Exception as ex_foto:
                 print(f"[WARN] No se pudo incrustar la foto en Ficha: {ex_foto}")
 

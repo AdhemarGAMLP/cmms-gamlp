@@ -1907,30 +1907,32 @@ class SistemaMantenimiento(ctk.CTk):
                 except:
                     pass
                 
-            # 1. Datos Generales de Identificación
+            # 1. Datos Generales de Identificación y Territorio
+            escribir('K4', eq_act.get('red_salud_nombre', ''))
+            escribir('K5', eq_act.get('centro_salud_nombre', ''))
             escribir('K8', eq_act.get('nombre', ''))
             escribir('H11', eq_act.get('area', ''))
             escribir('H12', eq_act.get('servicio', ''))
             escribir('H13', eq_act.get('marca', ''))
             escribir('H14', eq_act.get('modelo', ''))
-            escribir('H15', eq_act['id'])
+            escribir('H15', str(eq_act.get('id', '')))
             escribir('H16', eq_act.get('procedencia', ''))
             escribir('H17', eq_act.get('fabricante', ''))
             escribir('H18', eq_act.get('garantia', ''))
             escribir('H19', eq_act.get('proveedor', ''))
             escribir('H20', eq_act.get('numero_serie', ''))
-            escribir('H21', eq_act.get('anio_fab', ''))
-            escribir('H22', eq_act.get('fecha_adquisicion', ''))
+            escribir('H21', str(eq_act.get('anio_fab') or ''))
+            escribir('H22', str(eq_act.get('fecha_adquisicion') or ''))
 
             # 2. Datos Técnicos del Equipo
-            escribir('E25', eq_act.get('voltaje', '') or '')
-            escribir('K26', eq_act.get('potencia', '') or '')
-            escribir('K27', eq_act.get('temperatura', '') or '')
-            escribir('J28', eq_act.get('humedad', '') or '')
-            escribir('G29', eq_act.get('corriente', '') or '')
-            escribir('E30', eq_act.get('peso', '') or '')
-            escribir('F31', eq_act.get('dimensiones', '') or '')
-            escribir('K32', eq_act.get('resolucion', '') or '')
+            escribir('E24', eq_act.get('voltaje', '') or '')
+            escribir('G25', eq_act.get('corriente', '') or '')
+            escribir('I26', eq_act.get('potencia', '') or '')
+            escribir('H27', eq_act.get('temperatura', '') or '')
+            escribir('D28', eq_act.get('peso', '') or '')
+            escribir('F29', eq_act.get('dimensiones', '') or '')
+            escribir('H30', eq_act.get('resolucion', '') or '')
+            escribir('H31', eq_act.get('humedad', '') or '')
 
             # 3. Existencia de Repuestos con Cantidad/Stock Actual
             cat_str = f"{eq_act['nombre']} - {eq_act.get('marca', '')} - {eq_act.get('modelo', '')}"
@@ -1961,7 +1963,8 @@ class SistemaMantenimiento(ctk.CTk):
             # 6. Categorización
             cat_data = eq_act.get("categorizacion_detalle") or []
             if isinstance(cat_data, str):
-                cat_data = json.loads(cat_data)
+                try: cat_data = json.loads(cat_data)
+                except: cat_data = []
                 
             for i in range(13):
                 valor = str(cat_data[i]) if i < len(cat_data) else ""
@@ -1984,7 +1987,6 @@ class SistemaMantenimiento(ctk.CTk):
             escribir_rcm('AE49', eq_act.get('efecto_entorno'))
 
             escribir_rcm('B58', eq_act.get('observaciones'))
-
                     
             try:
                 puntajes_int = []
@@ -2005,23 +2007,27 @@ class SistemaMantenimiento(ctk.CTk):
                 
             if puntaje_total >= 30:
                 escribir('AO37', 'X')
-                escribir('AB38', "3 veces al año")
             elif puntaje_total >= 20:
                 escribir('AM37', 'X')
-                escribir('AN37', 'X') # en caso de celda combinada AM/AN
-                escribir('AB38', "2 veces al año")
             else:
                 escribir('AK37', 'X')
-                escribir('AL37', 'X') # en caso de celda combinada AK/AL
-                escribir('AB38', "1 vez al año")
                 
             foto_path = eq_act.get('foto')
-            if foto_path and os.path.exists(foto_path):
+            if foto_path:
                 try:
-                    img = ExcelImage(foto_path)
-                    img.width = 220
-                    img.height = 220
-                    hoja.add_image(img, 'AA11') 
+                    if str(foto_path).startswith("data:image"):
+                        foto_b64 = str(foto_path).split(",", 1)[1]
+                        img_bytes = base64.b64decode(foto_b64)
+                        img_stream = io.BytesIO(img_bytes)
+                        img = ExcelImage(img_stream)
+                    elif os.path.exists(foto_path):
+                        img = ExcelImage(foto_path)
+                    else:
+                        img = None
+                    if img:
+                        img.width = 220
+                        img.height = 210
+                        hoja.add_image(img, 'Y10')
                 except Exception as e:
                     print(f"Aviso: No se pudo inyectar la imagen en el Excel: {e}")
 
