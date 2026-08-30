@@ -785,23 +785,19 @@ class SistemaMantenimiento(ctk.CTk):
         except Exception as e:
             print("Error parsing equipos/alertas:", e)
 
-        prot_hoy = [p for p in self.datos["protocolos"] if p['fecha'] == self.hoy]
-        tipos = ['Gases Medicinales', 'Resonador Magnético']
-        turnos_req = []
-        if self.hora_actual >= 8: 
-            turnos_req.append('Mañana')
-        if self.hora_actual >= 14: 
-            turnos_req.append('Tarde')
-        if self.hora_actual >= 23: 
-            turnos_req.append('Noche')
-            
-        for t_req in turnos_req:
-            for tipo in tipos:
-                # Normalizar tipo de protocolo
-                if not any(p['tipo_protocolo'] == tipo and p['turno'] == t_req for p in prot_hoy):
-                    msg = f"🚨 FALTA PROTOCOLO: {tipo} (Turno: {t_req})"
-                    if msg not in self.alertas_ignoradas:
-                        self.alertas_activas.append(msg)
+        # Alertas de protocolos de Gases y Resonador desactivadas a solicitud
+        # prot_hoy = [p for p in self.datos["protocolos"] if p['fecha'] == self.hoy]
+        # tipos = ['Gases Medicinales', 'Resonador Magnético']
+        # turnos_req = []
+        # if self.hora_actual >= 8: turnos_req.append('Mañana')
+        # if self.hora_actual >= 14: turnos_req.append('Tarde')
+        # if self.hora_actual >= 23: turnos_req.append('Noche')
+        # for t_req in turnos_req:
+        #     for tipo in tipos:
+        #         if not any(p['tipo_protocolo'] == tipo and p['turno'] == t_req for p in prot_hoy):
+        #             msg = f"🚨 FALTA PROTOCOLO: {tipo} (Turno: {t_req})"
+        #             if msg not in self.alertas_ignoradas:
+        #                 self.alertas_activas.append(msg)
 
         for area in self.datos["areas"]:
             area_name = area.get("nombre", "General")
