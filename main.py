@@ -1495,7 +1495,7 @@ class SistemaMantenimiento(ctk.CTk):
         self.window_ficha_tecnica = v_hv
         v_hv.title(f"Ficha Técnica - {eq_act.get('nombre', '')} ({eq_act.get('id', '')})")
         v_hv.configure(fg_color=C_BG)
-        self.centrar_ventana_segura(v_hv, 1100, 880)
+        self.centrar_ventana_segura(v_hv, 1100, 735)
         v_hv.transient(self)
         v_hv.lift()
         v_hv.focus_force()
@@ -1503,7 +1503,7 @@ class SistemaMantenimiento(ctk.CTk):
         # Habilitar redimensionado del diálogo
         v_hv.resizable(True, True)
         
-        frame_izq = ctk.CTkScrollableFrame(v_hv, fg_color="transparent")
+        frame_izq = ctk.CTkFrame(v_hv, fg_color="transparent")
         frame_izq.pack(fill="both", expand=True, padx=10, pady=10)
         
         # Sanitizar el ID para evitar caracteres inválidos en rutas de archivos de Windows (ej. '|')
@@ -2070,32 +2070,7 @@ class SistemaMantenimiento(ctk.CTk):
         if not rep_requeridos:
             tab_c4.insert("", "end", values=("Sin requerimientos pendientes", "-", "0", "-"))
 
-        # Activar scroll táctil por arrastre de dedo en pantalla táctil
-        def habilitar_scroll_tactil(scrollable_frame):
-            canvas = scrollable_frame._parent_canvas
-            start_y = [0]
-            
-            def on_press(event):
-                start_y[0] = event.y_root
-                
-            def on_drag(event):
-                dy = event.y_root - start_y[0]
-                if dy != 0:
-                    canvas.yview_scroll(int(-dy / 8), "units")
-                    start_y[0] = event.y_root
-                    
-            def bind_widget(w):
-                if not isinstance(w, (ctk.CTkButton, ttk.Button, ttk.Treeview, ttk.Scrollbar, ctk.CTkScrollbar)):
-                    w.bind("<Button-1>", on_press, add="+")
-                    w.bind("<B1-Motion>", on_drag, add="+")
-                for child in w.winfo_children():
-                    bind_widget(child)
-                    
-            bind_widget(scrollable_frame)
-            canvas.bind("<Button-1>", on_press, add="+")
-            canvas.bind("<B1-Motion>", on_drag, add="+")
 
-        v_hv.after(150, lambda: habilitar_scroll_tactil(frame_izq))
 
     def verificar_autorizacion_jefe(self, password_plano):
         from auth import verificar_password, MASTER_PASS

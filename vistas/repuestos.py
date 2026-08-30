@@ -18,23 +18,37 @@ class VistaRepuestos(ctk.CTkFrame):
         f_title.pack(pady=(20, 5), padx=30, fill="x")
         ctk.CTkLabel(f_title, text="Control de Repuestos y Accesorios", font=ctk.CTkFont(size=28, weight="bold"), text_color=C_TEXT).pack(side="left")
         
-        self.tabview = ctk.CTkTabview(self, fg_color=C_CARD, corner_radius=16, text_color=C_TEXT,
-                                      border_width=1, border_color=C_BORDER,
-                                      segmented_button_fg_color=C_BG,
-                                      segmented_button_selected_color=C_BLUE,
-                                      segmented_button_selected_hover_color=C_BLUE_HOVER,
-                                      segmented_button_unselected_color=C_BG,
-                                      segmented_button_unselected_hover_color=C_CARD_HOVER)
-        self.tabview.pack(padx=30, pady=10, fill="both", expand=True)
-        
-        tab_stock = self.tabview.add("📦 Repuestos en Stock")
-        tab_req = self.tabview.add("📋 Repuestos Requeridos (Necesarios)")
-        tab_hist = self.tabview.add("📜 Historial de Repuestos Usados")
-        
+        # Barra de Pestañas con Contorno Elegante y Alto Contraste
+        f_tab_bar_outer = ctk.CTkFrame(self, fg_color="transparent")
+        f_tab_bar_outer.pack(padx=30, pady=(10, 0), fill="x")
+
+        self.f_tab_bar = ctk.CTkFrame(f_tab_bar_outer, fg_color=C_CARD, corner_radius=12, border_width=1, border_color=C_BORDER)
+        self.f_tab_bar.pack(side="left")
+
+        self.btn_tab_stock = ctk.CTkButton(self.f_tab_bar, text="📦 Repuestos en Stock", font=ctk.CTkFont(weight="bold", size=13),
+                                          corner_radius=8, height=36, command=lambda: self.cambiar_tab("stock"))
+        self.btn_tab_stock.pack(side="left", padx=4, pady=4)
+
+        self.btn_tab_req = ctk.CTkButton(self.f_tab_bar, text="📋 Repuestos Requeridos (Necesarios)", font=ctk.CTkFont(weight="bold", size=13),
+                                        corner_radius=8, height=36, command=lambda: self.cambiar_tab("req"))
+        self.btn_tab_req.pack(side="left", padx=4, pady=4)
+
+        self.btn_tab_hist = ctk.CTkButton(self.f_tab_bar, text="📜 Historial de Repuestos Usados", font=ctk.CTkFont(weight="bold", size=13),
+                                         corner_radius=8, height=36, command=lambda: self.cambiar_tab("hist"))
+        self.btn_tab_hist.pack(side="left", padx=4, pady=4)
+
+        # Contenedor Principal de Contenido
+        self.f_contenedor_tabs = ctk.CTkFrame(self, fg_color=C_CARD, corner_radius=16, border_width=1, border_color=C_BORDER)
+        self.f_contenedor_tabs.pack(padx=30, pady=10, fill="both", expand=True)
+
+        self.tab_stock = ctk.CTkFrame(self.f_contenedor_tabs, fg_color="transparent")
+        self.tab_req = ctk.CTkFrame(self.f_contenedor_tabs, fg_color="transparent")
+        self.tab_hist = ctk.CTkFrame(self.f_contenedor_tabs, fg_color="transparent")
+
         # =========================================================================
         # --- TAB 1: REPUESTOS EN STOCK (DISPONIBLES) ---
         # =========================================================================
-        marco_stock = ctk.CTkFrame(tab_stock, fg_color="transparent")
+        marco_stock = ctk.CTkFrame(self.tab_stock, fg_color="transparent")
         marco_stock.pack(fill="both", expand=True, padx=10, pady=10)
         
         # Filtros de Stock
@@ -64,7 +78,7 @@ class VistaRepuestos(ctk.CTkFrame):
         self.tabla_stock.pack(side="left", fill="both", expand=True)
         scrollbar_stock.pack(side="right", fill="y", padx=(5, 0))
         
-        f_bot_stock = ctk.CTkFrame(tab_stock, fg_color="transparent")
+        f_bot_stock = ctk.CTkFrame(self.tab_stock, fg_color="transparent")
         f_bot_stock.pack(pady=(5, 15), padx=10, fill="x")
         ctk.CTkButton(f_bot_stock, text="✚ Añadir a Stock", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_BLUE, hover_color=C_BLUE_HOVER, corner_radius=10, height=40, command=lambda: self.abrir_formulario_repuesto(estado_inicial="En Stock")).pack(side="left", expand=True, padx=8)
         ctk.CTkButton(f_bot_stock, text="✎ Modificar", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_PURPLE, hover_color=C_PURPLE_HOVER, corner_radius=10, height=40, command=lambda: self.modificar_repuesto(tabla_origen="stock")).pack(side="left", expand=True, padx=8)
@@ -75,7 +89,7 @@ class VistaRepuestos(ctk.CTkFrame):
         # =========================================================================
         # --- TAB 2: REPUESTOS REQUERIDOS (NECESARIOS / PENDIENTES) ---
         # =========================================================================
-        marco_req = ctk.CTkFrame(tab_req, fg_color="transparent")
+        marco_req = ctk.CTkFrame(self.tab_req, fg_color="transparent")
         marco_req.pack(fill="both", expand=True, padx=10, pady=10)
         
         # Filtros de Requerimientos + KPI resumen
@@ -108,7 +122,7 @@ class VistaRepuestos(ctk.CTkFrame):
         self.tabla_req.pack(side="left", fill="both", expand=True)
         scrollbar_req.pack(side="right", fill="y", padx=(5, 0))
         
-        f_bot_req = ctk.CTkFrame(tab_req, fg_color="transparent")
+        f_bot_req = ctk.CTkFrame(self.tab_req, fg_color="transparent")
         f_bot_req.pack(pady=(5, 15), padx=10, fill="x")
         ctk.CTkButton(f_bot_req, text="✚ Solicitar Repuesto", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_ORANGE, hover_color="#D97706", corner_radius=10, height=40, command=lambda: self.abrir_formulario_repuesto(estado_inicial="Requerido")).pack(side="left", expand=True, padx=8)
         ctk.CTkButton(f_bot_req, text="✅ Pasar a Stock (Adquirido)", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_GREEN, hover_color=C_GREEN_HOVER, corner_radius=10, height=40, command=self.pasar_a_stock).pack(side="left", expand=True, padx=8)
@@ -120,8 +134,32 @@ class VistaRepuestos(ctk.CTkFrame):
         # =========================================================================
         # --- TAB 3: HISTORIAL DE REPUESTOS USADOS ---
         # =========================================================================
-        marco_hist = ctk.CTkFrame(tab_hist, fg_color="transparent")
+        marco_hist = ctk.CTkFrame(self.tab_hist, fg_color="transparent")
         marco_hist.pack(fill="both", expand=True, padx=10, pady=10)
+        
+        # Mostrar por defecto Tab 1
+        self.cambiar_tab("stock")
+
+    def cambiar_tab(self, tab_name):
+        self.tab_activa = tab_name
+        self.tab_stock.pack_forget()
+        self.tab_req.pack_forget()
+        self.tab_hist.pack_forget()
+
+        # Inactivos: fondo transparente, texto negro/oscuro legible, borde suave
+        for btn in (self.btn_tab_stock, self.btn_tab_req, self.btn_tab_hist):
+            btn.configure(fg_color="transparent", text_color=C_TEXT, hover_color="#E2E8F0")
+
+        # Activo: fondo azul vibrante, texto blanco
+        if tab_name == "stock":
+            self.btn_tab_stock.configure(fg_color=C_BLUE, text_color="#FFFFFF", hover_color=C_BLUE_HOVER)
+            self.tab_stock.pack(fill="both", expand=True)
+        elif tab_name == "req":
+            self.btn_tab_req.configure(fg_color=C_BLUE, text_color="#FFFFFF", hover_color=C_BLUE_HOVER)
+            self.tab_req.pack(fill="both", expand=True)
+        elif tab_name == "hist":
+            self.btn_tab_hist.configure(fg_color=C_BLUE, text_color="#FFFFFF", hover_color=C_BLUE_HOVER)
+            self.tab_hist.pack(fill="both", expand=True)
         
         f_filtros_hist = ctk.CTkFrame(marco_hist, fg_color="transparent")
         f_filtros_hist.pack(fill="x", pady=(0, 10))
@@ -327,15 +365,38 @@ class VistaRepuestos(ctk.CTkFrame):
         
         ctk.CTkLabel(sf, text="Ficha Técnica de Repuesto / Accesorio", font=ctk.CTkFont(size=18, weight="bold"), text_color=C_TEXT).pack(pady=(0, 15))
         
-        # 1. Selector de Disponibilidad / Estado
-        ctk.CTkLabel(sf, text="Estado de Disponibilidad:", font=ctk.CTkFont(weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(5, 2))
-        var_estado = ctk.StringVar(value=rep_editar.get("estado_disponibilidad", estado_inicial) if rep_editar else estado_inicial)
+        # 1. Selector de Disponibilidad / Estado con Contorno Nítido y Alto Contraste
+        ctk.CTkLabel(sf, text="Estado de Disponibilidad:", font=ctk.CTkFont(weight="bold", size=13), text_color=C_TEXT).pack(anchor="w", pady=(5, 4))
         
-        seg_estado = ctk.CTkSegmentedButton(sf, values=["En Stock", "Requerido"], variable=var_estado,
-                                            selected_color=C_BLUE, selected_hover_color=C_BLUE_HOVER,
-                                            unselected_color=C_BG, unselected_hover_color=C_CARD_HOVER,
-                                            font=ctk.CTkFont(weight="bold", size=13), height=36)
-        seg_estado.pack(fill="x", pady=(0, 12))
+        var_estado = ctk.StringVar(value=rep_editar.get("estado_disponibilidad", estado_inicial) if rep_editar else estado_inicial)
+
+        f_seg_box = ctk.CTkFrame(sf, fg_color="#F1F5F9", corner_radius=10, border_width=1, border_color="#CBD5E1", height=44)
+        f_seg_box.pack(fill="x", pady=(0, 12))
+        f_seg_box.grid_columnconfigure(0, weight=1)
+        f_seg_box.grid_columnconfigure(1, weight=1)
+
+        def actualizar_botones_estado():
+            est = var_estado.get()
+            if est == "En Stock":
+                btn_stock_seg.configure(fg_color=C_BLUE, text_color="#FFFFFF", hover_color=C_BLUE_HOVER)
+                btn_req_seg.configure(fg_color="transparent", text_color="#0F172A", hover_color="#E2E8F0")
+            else:
+                btn_stock_seg.configure(fg_color="transparent", text_color="#0F172A", hover_color="#E2E8F0")
+                btn_req_seg.configure(fg_color=C_BLUE, text_color="#FFFFFF", hover_color=C_BLUE_HOVER)
+
+        def seleccionar_estado(nuevo_estado):
+            var_estado.set(nuevo_estado)
+            actualizar_botones_estado()
+
+        btn_stock_seg = ctk.CTkButton(f_seg_box, text="📦 En Stock", font=ctk.CTkFont(weight="bold", size=13),
+                                      corner_radius=8, height=34, command=lambda: seleccionar_estado("En Stock"))
+        btn_stock_seg.grid(row=0, column=0, padx=4, pady=4, sticky="ew")
+
+        btn_req_seg = ctk.CTkButton(f_seg_box, text="📋 Requerido (Necesario)", font=ctk.CTkFont(weight="bold", size=13),
+                                    corner_radius=8, height=34, command=lambda: seleccionar_estado("Requerido"))
+        btn_req_seg.grid(row=0, column=1, padx=4, pady=4, sticky="ew")
+
+        actualizar_botones_estado()
 
         # 2. Equipo Médico Compatible (Catálogo)
         ctk.CTkLabel(sf, text="Equipo Médico Compatible / Tipo:", font=ctk.CTkFont(weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(5, 2))
