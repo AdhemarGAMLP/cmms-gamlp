@@ -1,5 +1,8 @@
 import threading
 import os
+import io
+import json
+import base64
 import psycopg2.extras
 import openpyxl
 from openpyxl.styles import Font, Alignment
@@ -9,7 +12,7 @@ try:
 except ImportError:
     pythoncom = None
     win32com = None
-from flask import Flask, render_template_string, request, redirect, url_for, send_from_directory
+from flask import Flask, render_template_string, request, redirect, url_for, send_from_directory, send_file
 from database import obtener_conexion
 from datetime import date, datetime
 from auth import login
