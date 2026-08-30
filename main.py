@@ -71,7 +71,7 @@ class VentanaLogin(ctk.CTk):
     def __init__(self):
         super().__init__()
         self.title(f"CMMS GAMLP {VERSION_APP} - Iniciar Sesión")
-        self.geometry("400x350")
+        self.geometry("400x420")
         self.configure(fg_color=C_BG)
         self.resizable(False, False)
         
@@ -84,23 +84,24 @@ class VentanaLogin(ctk.CTk):
         
         self.usuario_autenticado = None
 
-        ctk.CTkLabel(self, text="🏛️ CMMS GAMLP", font=ctk.CTkFont(size=24, weight="bold"), text_color=C_BLUE).pack(pady=(30, 4))
-        ctk.CTkLabel(self, text=f"Tecnologías Médicas - GAMLP ({VERSION_APP})", font=ctk.CTkFont(size=12), text_color=C_SUBTEXT).pack(pady=(0, 15))
+        ctk.CTkLabel(self, text="🏛️ CMMS GAMLP", font=ctk.CTkFont(size=24, weight="bold"), text_color=C_BLUE).pack(pady=(25, 2))
+        ctk.CTkLabel(self, text=f"Tecnologías Médicas - GAMLP ({VERSION_APP})", font=ctk.CTkFont(size=12), text_color=C_SUBTEXT).pack(pady=(0, 12))
         
         marco = ctk.CTkFrame(self, fg_color=C_CARD, corner_radius=16, border_width=1, border_color=C_BORDER)
-        marco.pack(padx=25, pady=5, fill="both", expand=True)
+        marco.pack(padx=30, pady=5, fill="both", expand=True)
 
-        self.e_user = ctk.CTkEntry(marco, placeholder_text="Usuario (admin)", width=280, height=38, corner_radius=10, border_color=C_BORDER, fg_color=C_BG)
-        self.e_user.pack(pady=(22, 10))
+        ctk.CTkLabel(marco, text="Usuario:", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", padx=25, pady=(15, 2))
+        self.e_user = ctk.CTkEntry(marco, placeholder_text="Ingrese su usuario", width=300, height=38, corner_radius=10, border_color=C_BORDER, fg_color=C_BG)
+        self.e_user.pack(padx=25, pady=(0, 8))
         
-        self.e_pass = ctk.CTkEntry(marco, placeholder_text="Contraseña", show="*", width=280, height=38, corner_radius=10, border_color=C_BORDER, fg_color=C_BG)
-        self.e_pass.pack(pady=10)
+        ctk.CTkLabel(marco, text="Contraseña:", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", padx=25, pady=(0, 2))
+        self.e_pass = ctk.CTkEntry(marco, placeholder_text="••••••••", show="*", width=300, height=38, corner_radius=10, border_color=C_BORDER, fg_color=C_BG)
+        self.e_pass.pack(padx=25, pady=(0, 12))
         self.e_pass.bind("<Return>", lambda e: self.intentar_login())
         
-        ctk.CTkButton(marco, text="Ingresar al Sistema", command=self.intentar_login, height=40, corner_radius=10, font=ctk.CTkFont(weight="bold", size=13), fg_color=C_BLUE, hover_color=C_BLUE_HOVER).pack(pady=(14, 8))
+        ctk.CTkButton(marco, text="Ingresar al Sistema", command=self.intentar_login, height=40, corner_radius=10, font=ctk.CTkFont(weight="bold", size=13), fg_color=C_BLUE, hover_color=C_BLUE_HOVER).pack(padx=25, pady=(5, 8), fill="x")
         
-        # Enlace para configurar la IP del Servidor en red local
-        ctk.CTkButton(marco, text="⚙️ Configurar Servidor (IP)", command=self.abrir_config_servidor, height=28, fg_color="transparent", text_color=C_SUBTEXT, hover_color=C_CARD_HOVER, font=ctk.CTkFont(size=11)).pack(pady=(0, 10))
+        ctk.CTkButton(marco, text="⚙️ Configurar Servidor (IP / Nube)", command=self.abrir_config_servidor, height=28, fg_color="transparent", text_color=C_SUBTEXT, hover_color=C_CARD_HOVER, font=ctk.CTkFont(size=11)).pack(pady=(0, 10))
 
 
     def intentar_login(self):
@@ -1768,18 +1769,24 @@ class SistemaMantenimiento(ctk.CTk):
             os.startfile(dir_vid)
             
         # --- CREACIÓN DE WIDGETS ---
-        # 1. Código QR al lado izquierdo
-        c_img = ctk.CTkFrame(m_info, fg_color="transparent")
-        c_img.pack(side="left", padx=15, pady=10)
+        m_info.pack_configure(padx=8, pady=(5, 8))
         
-        lbl_qr = ctk.CTkLabel(c_img, image=ctk.CTkImage(light_image=img_qr, size=(160, 160)), text="", cursor="hand2")
-        lbl_qr.pack(pady=3)
+        # Grid maestro superior de 3 columnas
+        m_info.grid_columnconfigure(0, weight=0, minsize=165)
+        m_info.grid_columnconfigure(1, weight=1)
+        m_info.grid_columnconfigure(2, weight=0, minsize=230)
+        
+        # 1. Columna Izquierda: Código QR
+        c_img = ctk.CTkFrame(m_info, fg_color="transparent")
+        c_img.grid(row=0, column=0, padx=(12, 8), pady=12, sticky="nsew")
+        
+        lbl_qr = ctk.CTkLabel(c_img, image=ctk.CTkImage(light_image=img_qr, size=(135, 135)), text="", cursor="hand2")
+        lbl_qr.pack(pady=(0, 4))
         lbl_qr.bind("<Button-1>", lambda event: abrir_web())
         
         def descargar_qr_etiqueta():
             """Genera y descarga una etiqueta PNG con QR + nombre + HEAS/AF + ubicacion."""
             from PIL import ImageDraw, ImageFont
-            import io
             try:
                 qr_size = 280
                 margin = 14
@@ -1825,153 +1832,237 @@ class SistemaMantenimiento(ctk.CTk):
             except Exception as ex:
                 messagebox.showerror("Error", f"No se pudo generar el QR: {ex}")
 
-        btn_web_qr = ctk.CTkButton(c_img, text="🌐 Abrir Página Web", font=ctk.CTkFont(weight="bold", size=12), fg_color="transparent", text_color=C_BLUE, border_width=1, border_color=C_BLUE, corner_radius=10, height=30, command=abrir_web)
-        btn_web_qr.pack(pady=(5, 0), fill="x")
-        btn_dl_qr = ctk.CTkButton(c_img, text="📥 Descargar QR", font=ctk.CTkFont(weight="bold", size=12), fg_color=C_BLUE, hover_color=C_BLUE_HOVER, corner_radius=10, height=30, command=descargar_qr_etiqueta)
-        btn_dl_qr.pack(pady=(4, 0), fill="x")
+        btn_web_qr = ctk.CTkButton(c_img, text="🌐 Abrir Web", font=ctk.CTkFont(weight="bold", size=11), fg_color="transparent", text_color=C_BLUE, border_width=1, border_color=C_BLUE, corner_radius=8, height=28, command=abrir_web)
+        btn_web_qr.pack(pady=(2, 2), fill="x")
+        btn_dl_qr = ctk.CTkButton(c_img, text="📥 Descargar QR", font=ctk.CTkFont(weight="bold", size=11), fg_color=C_BLUE, hover_color=C_BLUE_HOVER, corner_radius=8, height=28, command=descargar_qr_etiqueta)
+        btn_dl_qr.pack(pady=(2, 0), fill="x")
 
-        # 2. Detalles del equipo y acciones en el centro
+        # 2. Columna Central: Información Completa y Equilibrada del Equipo
         i_txt = ctk.CTkFrame(m_info, fg_color="transparent")
-        i_txt.pack(side="left", fill="both", expand=True, padx=15, pady=10)
+        i_txt.grid(row=0, column=1, padx=8, pady=10, sticky="nsew")
         
-        ctk.CTkLabel(i_txt, text=eq_act['nombre'], font=ctk.CTkFont(size=22, weight="bold"), text_color=C_BLUE, anchor="w").pack(fill="x", pady=(0, 5))
+        ctk.CTkLabel(i_txt, text=eq_act['nombre'], font=ctk.CTkFont(size=20, weight="bold"), text_color=C_BLUE, anchor="w").pack(fill="x", pady=(0, 4))
         
-        # Grid contenedor para Detalles (izq) y bloque de KPIs/Acciones (der)
-        f_detalles_y_acciones = ctk.CTkFrame(i_txt, fg_color="transparent")
-        f_detalles_y_acciones.pack(fill="x", pady=3)
+        # Badges / Etiquetas horizontales
+        f_badges = ctk.CTkFrame(i_txt, fg_color="transparent")
+        f_badges.pack(fill="x", pady=(0, 6))
         
-        f_detalles = ctk.CTkFrame(f_detalles_y_acciones, fg_color="transparent")
-        f_detalles.pack(side="left", fill="both", expand=True)
+        def _crear_badge(padre, texto, color_bg, color_txt="#FFFFFF"):
+            b = ctk.CTkFrame(padre, fg_color=color_bg, corner_radius=6, height=22)
+            b.pack(side="left", padx=(0, 6))
+            ctk.CTkLabel(b, text=f" {texto} ", font=ctk.CTkFont(size=10, weight="bold"), text_color=color_txt).pack(padx=6, pady=1)
+            
+        _crear_badge(f_badges, f"📍 {eq_act.get('servicio', 'Servicio')}", C_BG, C_TEXT)
+        _crear_badge(f_badges, f"🏥 {eq_act.get('area', 'General')}", C_BG, C_TEXT)
+        crit_txt = str(eq_act.get('criticidad') or 'Riesgo Medio')
+        crit_color = C_RED if "Alto" in crit_txt else (C_ORANGE if "Medio" in crit_txt else C_GREEN)
+        _crear_badge(f_badges, f"⚡ {crit_txt}", crit_color, "#FFFFFF")
+
+        # Grid compacto de 2 columnas con todos los datos clave
+        f_grid_datos = ctk.CTkFrame(i_txt, fg_color=C_BG, corner_radius=10, border_width=1, border_color=C_BORDER)
+        f_grid_datos.pack(fill="both", expand=True, pady=(2, 0), padx=0)
         
-        detalles = [
-            ("Marca:", eq_act.get('marca', '-')),
-            ("Modelo:", eq_act.get('modelo', '-')),
-            ("Servicio:", f"{eq_act.get('servicio', '-')} ({eq_act.get('area', 'General')})"),
-            ("Código/AF:", eq_act['id']),
-            ("Número de Serie:", eq_act.get('numero_serie', '-'))
+        f_grid_datos.grid_columnconfigure(0, weight=0)
+        f_grid_datos.grid_columnconfigure(1, weight=1)
+        f_grid_datos.grid_columnconfigure(2, weight=0)
+        f_grid_datos.grid_columnconfigure(3, weight=1)
+
+        datos_matriz = [
+            ("Marca:", eq_act.get('marca', '-'), "Modelo:", eq_act.get('modelo', '-')),
+            ("Código / AF:", str(eq_act['id']), "N° Serie:", str(eq_act.get('numero_serie', '-'))),
+            ("Garantía:", str(eq_act.get('garantia', 'Sin Garantía')), "Año Fab.:", str(eq_act.get('anio_fab', '-'))),
+            ("MTTR (Rep.):", mttr_str, "MTBF (Fallas):", mtbf_str)
         ]
         
-        for idx, (label, valor) in enumerate(detalles):
-            ctk.CTkLabel(f_detalles, text=label, font=ctk.CTkFont(size=12, weight="bold"), text_color=C_SUBTEXT, width=100, anchor="w").grid(row=idx, column=0, pady=2, sticky="w")
-            ctk.CTkLabel(f_detalles, text=valor, font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT, anchor="w").grid(row=idx, column=1, pady=2, sticky="w")
-            
-        # Contenedor derecho para KPIs y Acciones
-        f_der = ctk.CTkFrame(f_detalles_y_acciones, fg_color="transparent")
-        f_der.pack(side="right", padx=(15, 0), pady=0)
-        
-        # KPIs (MTTR/MTBF) en la parte superior del contenedor derecho
-        f_kpis = ctk.CTkFrame(f_der, fg_color=C_BG, corner_radius=10, border_width=1, border_color=C_BORDER)
-        f_kpis.pack(fill="x", pady=(0, 5))
-        
-        f_kpis.grid_columnconfigure(0, weight=1)
-        f_kpis.grid_columnconfigure(1, weight=1)
-        
-        ctk.CTkLabel(f_kpis, text="MTTR (Reparación):", font=ctk.CTkFont(size=10, weight="bold"), text_color=C_SUBTEXT, anchor="w").grid(row=0, column=0, padx=8, pady=3, sticky="w")
-        ctk.CTkLabel(f_kpis, text=mttr_str, font=ctk.CTkFont(size=10, weight="bold"), text_color=C_BLUE, anchor="e").grid(row=0, column=1, padx=8, pady=3, sticky="e")
-        
-        ctk.CTkLabel(f_kpis, text="MTBF (Fallas):", font=ctk.CTkFont(size=10, weight="bold"), text_color=C_SUBTEXT, anchor="w").grid(row=1, column=0, padx=8, pady=3, sticky="w")
-        ctk.CTkLabel(f_kpis, text=mtbf_str, font=ctk.CTkFont(size=10, weight="bold"), text_color=C_PURPLE, anchor="e").grid(row=1, column=1, padx=8, pady=3, sticky="e")
-        
-        # Botones de acción en la parte inferior del contenedor derecho
-        f_acciones_hv = ctk.CTkFrame(f_der, fg_color="transparent", width=260)
-        f_acciones_hv.pack(fill="x", pady=0)
-        f_acciones_hv.grid_columnconfigure(0, weight=1)
-        f_acciones_hv.grid_columnconfigure(1, weight=1)
-        
-        btn_excel = ctk.CTkButton(f_acciones_hv, text="📄 Ficha Excel", font=ctk.CTkFont(weight="bold", size=12), fg_color=C_BLUE, hover_color=C_BLUE_HOVER, corner_radius=10, height=30, width=120, command=btn_ver_excel)
-        btn_excel.grid(row=0, column=0, padx=3, pady=3, sticky="ew")
-        
-        btn_pdf = ctk.CTkButton(f_acciones_hv, text="⬇ Ficha PDF", font=ctk.CTkFont(weight="bold", size=12), fg_color=C_PURPLE, hover_color="#963ECA", corner_radius=10, height=30, width=120, command=btn_descargar_pdf)
-        btn_pdf.grid(row=0, column=1, padx=3, pady=3, sticky="ew")
-        
-        btn_man = ctk.CTkButton(f_acciones_hv, text="📁 Manuales", font=ctk.CTkFont(weight="bold", size=12), fg_color=C_BLUE, hover_color=C_BLUE_HOVER, corner_radius=10, height=30, width=120, command=abrir_manuales)
-        btn_man.grid(row=1, column=0, padx=3, pady=3, sticky="ew")
-        
-        btn_vid = ctk.CTkButton(f_acciones_hv, text="🎥 Videos", font=ctk.CTkFont(weight="bold", size=12), fg_color=C_PURPLE, hover_color="#963ECA", corner_radius=10, height=30, width=120, command=abrir_videos)
-        btn_vid.grid(row=1, column=1, padx=3, pady=3, sticky="ew")
+        for r_idx, (l1, v1, l2, v2) in enumerate(datos_matriz):
+            ctk.CTkLabel(f_grid_datos, text=l1, font=ctk.CTkFont(size=11, weight="bold"), text_color=C_SUBTEXT, anchor="w").grid(row=r_idx, column=0, padx=(10, 4), pady=2, sticky="w")
+            ctk.CTkLabel(f_grid_datos, text=str(v1), font=ctk.CTkFont(size=11, weight="bold"), text_color=C_TEXT, anchor="w").grid(row=r_idx, column=1, padx=(0, 10), pady=2, sticky="w")
+            ctk.CTkLabel(f_grid_datos, text=l2, font=ctk.CTkFont(size=11, weight="bold"), text_color=C_SUBTEXT, anchor="w").grid(row=r_idx, column=2, padx=(10, 4), pady=2, sticky="w")
+            ctk.CTkLabel(f_grid_datos, text=str(v2), font=ctk.CTkFont(size=11, weight="bold"), text_color=C_TEXT, anchor="w").grid(row=r_idx, column=3, padx=(0, 10), pady=2, sticky="w")
 
-        # 3. Foto del equipo al lado derecho (Agrandada a 180x180)
-        c_foto = ctk.CTkFrame(m_info, fg_color="transparent")
-        c_foto.pack(side="right", padx=15, pady=10)
+        # 3. Columna Derecha: Foto del equipo + Botones de Acción
+        c_der_col = ctk.CTkFrame(m_info, fg_color="transparent")
+        c_der_col.grid(row=0, column=2, padx=(8, 12), pady=10, sticky="nsew")
         
         foto_path = eq_act.get("foto")
         if foto_path and os.path.exists(foto_path):
             try:
                 img_pil = Image.open(foto_path)
-                ctk_img = ctk.CTkImage(light_image=img_pil, size=(180, 180))
-                lbl_foto = ctk.CTkLabel(c_foto, image=ctk_img, text="")
-                lbl_foto.pack(pady=3)
+                ctk_img = ctk.CTkImage(light_image=img_pil, size=(190, 115))
+                lbl_foto = ctk.CTkLabel(c_der_col, image=ctk_img, text="")
+                lbl_foto.pack(pady=(0, 6))
             except:
-                f_placeholder = ctk.CTkFrame(c_foto, width=180, height=180, fg_color=C_BG, corner_radius=10)
+                f_placeholder = ctk.CTkFrame(c_der_col, width=190, height=115, fg_color=C_BG, corner_radius=8)
                 f_placeholder.pack_propagate(False)
-                f_placeholder.pack(pady=3)
-                ctk.CTkLabel(f_placeholder, text="📷\nSin Imagen", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_SUBTEXT).pack(expand=True)
+                f_placeholder.pack(pady=(0, 6))
+                ctk.CTkLabel(f_placeholder, text="📷 Sin Imagen", font=ctk.CTkFont(size=11, weight="bold"), text_color=C_SUBTEXT).pack(expand=True)
         else:
-            f_placeholder = ctk.CTkFrame(c_foto, width=180, height=180, fg_color=C_BG, corner_radius=10)
+            f_placeholder = ctk.CTkFrame(c_der_col, width=190, height=115, fg_color=C_BG, corner_radius=8)
             f_placeholder.pack_propagate(False)
-            f_placeholder.pack(pady=3)
-            ctk.CTkLabel(f_placeholder, text="📷\nSin Imagen", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_SUBTEXT).pack(expand=True)
+            f_placeholder.pack(pady=(0, 6))
+            ctk.CTkLabel(f_placeholder, text="📷 Sin Imagen", font=ctk.CTkFont(size=11, weight="bold"), text_color=C_SUBTEXT).pack(expand=True)
 
-        # Contenedor para los cuadrantes inferiores
-        f_cuadrantes = ctk.CTkFrame(frame_izq, fg_color="transparent")
-        f_cuadrantes.pack(fill="both", expand=True, pady=10)
+        # 4 Botones en Grid 2x2
+        f_acciones_hv = ctk.CTkFrame(c_der_col, fg_color="transparent")
+        f_acciones_hv.pack(fill="x", pady=0)
+        f_acciones_hv.grid_columnconfigure(0, weight=1)
+        f_acciones_hv.grid_columnconfigure(1, weight=1)
         
-        f_cuadrantes.grid_rowconfigure(0, weight=1, minsize=260)
+        btn_excel = ctk.CTkButton(f_acciones_hv, text="📄 Ficha Excel", font=ctk.CTkFont(weight="bold", size=11), fg_color=C_BLUE, hover_color=C_BLUE_HOVER, corner_radius=8, height=28, command=btn_ver_excel)
+        btn_excel.grid(row=0, column=0, padx=2, pady=2, sticky="ew")
+        
+        btn_pdf = ctk.CTkButton(f_acciones_hv, text="⬇ Ficha PDF", font=ctk.CTkFont(weight="bold", size=11), fg_color=C_PURPLE, hover_color="#963ECA", corner_radius=8, height=28, command=btn_descargar_pdf)
+        btn_pdf.grid(row=0, column=1, padx=2, pady=2, sticky="ew")
+        
+        btn_man = ctk.CTkButton(f_acciones_hv, text="📁 Manuales", font=ctk.CTkFont(weight="bold", size=11), fg_color=C_BLUE, hover_color=C_BLUE_HOVER, corner_radius=8, height=28, command=abrir_manuales)
+        btn_man.grid(row=1, column=0, padx=2, pady=2, sticky="ew")
+        
+        btn_vid = ctk.CTkButton(f_acciones_hv, text="🎥 Videos", font=ctk.CTkFont(weight="bold", size=11), fg_color=C_PURPLE, hover_color="#963ECA", corner_radius=8, height=28, command=abrir_videos)
+        btn_vid.grid(row=1, column=1, padx=2, pady=2, sticky="ew")
+
+        # =========================================================================
+        # SECCIÓN INFERIOR: 4 CUADRANTES DE INFORMACIÓN Y REPUESTOS
+        # =========================================================================
+        f_cuadrantes = ctk.CTkFrame(frame_izq, fg_color="transparent")
+        f_cuadrantes.pack(fill="both", expand=True, pady=(4, 10))
+        
+        f_cuadrantes.grid_rowconfigure(0, weight=1, minsize=190)
+        f_cuadrantes.grid_rowconfigure(1, weight=1, minsize=190)
         f_cuadrantes.grid_columnconfigure(0, weight=1)
         f_cuadrantes.grid_columnconfigure(1, weight=1)
         
-        # --- CUADRANTE 1: Mantenimientos ---
+        # --- CUADRANTE 1: Historial de Mantenimientos ---
         c1 = ctk.CTkFrame(f_cuadrantes, fg_color=C_CARD, corner_radius=12, border_width=1, border_color=C_BORDER)
-        c1.grid(row=0, column=0, padx=8, pady=8, sticky="nsew")
+        c1.grid(row=0, column=0, padx=6, pady=6, sticky="nsew")
+        
         f_c1_header = ctk.CTkFrame(c1, fg_color="transparent")
-        f_c1_header.pack(fill="x", padx=12, pady=8)
-        ctk.CTkLabel(f_c1_header, text="📋 Historial de Mantenimientos", font=ctk.CTkFont(size=14, weight="bold"), text_color=C_BLUE).pack(side="left")
+        f_c1_header.pack(fill="x", padx=10, pady=6)
+        ctk.CTkLabel(f_c1_header, text="📋 Historial de Intervenciones", font=ctk.CTkFont(size=13, weight="bold"), text_color=C_BLUE).pack(side="left")
         def ir_a_mantenimientos():
             v_hv.destroy()
             self.mostrar_vista("Historial")
-        ctk.CTkButton(f_c1_header, text="Ver más →", font=ctk.CTkFont(size=11), fg_color="transparent", text_color=C_BLUE, hover_color=C_BG, height=22, width=70, command=ir_a_mantenimientos).pack(side="right")
+        ctk.CTkButton(f_c1_header, text="Ver más →", font=ctk.CTkFont(size=11), fg_color="transparent", text_color=C_BLUE, hover_color=C_BG, height=20, width=65, command=ir_a_mantenimientos).pack(side="right")
         
-        tab_c1 = ttk.Treeview(c1, columns=("Fecha", "Tipo", "Detalle"), show="headings", height=6)
+        tab_c1 = ttk.Treeview(c1, columns=("Fecha", "Tipo", "Detalle"), show="headings", height=4)
         for c in ("Fecha", "Tipo", "Detalle"):
             tab_c1.heading(c, text=c)
-            tab_c1.column(c, anchor="w" if c=="Detalle" else "center", width=90 if c!="Detalle" else 180)
-        tab_c1.pack(padx=10, pady=(0, 10), fill="both", expand=True)
+            tab_c1.column(c, anchor="w" if c=="Detalle" else "center", width=85 if c!="Detalle" else 180)
+        tab_c1.pack(padx=8, pady=(0, 8), fill="both", expand=True)
         
         intervenciones_lista = eq_act.get("historial_intervenciones", [])
         for inter in intervenciones_lista:
             tab_c1.insert("", "end", values=(inter["fecha"], inter["tipo"], inter.get("trabajo", inter.get("detalle", ""))))
-            
         if not intervenciones_lista:
             tab_c1.insert("", "end", values=("-", "Sin registros", "No se han realizado intervenciones"))
             
-        # --- CUADRANTE 2: Siguientes Mantenimientos ---
+        # --- CUADRANTE 2: Siguientes Mantenimientos Programados ---
         c2 = ctk.CTkFrame(f_cuadrantes, fg_color=C_CARD, corner_radius=12, border_width=1, border_color=C_BORDER)
-        c2.grid(row=0, column=1, padx=8, pady=8, sticky="nsew")
+        c2.grid(row=0, column=1, padx=6, pady=6, sticky="nsew")
+        
         f_c2_header = ctk.CTkFrame(c2, fg_color="transparent")
-        f_c2_header.pack(fill="x", padx=12, pady=8)
-        ctk.CTkLabel(f_c2_header, text="📅 Siguientes Mantenimientos", font=ctk.CTkFont(size=14, weight="bold"), text_color=C_BLUE).pack(side="left")
+        f_c2_header.pack(fill="x", padx=10, pady=6)
+        ctk.CTkLabel(f_c2_header, text="📅 Siguientes Mantenimientos", font=ctk.CTkFont(size=13, weight="bold"), text_color=C_BLUE).pack(side="left")
         def ir_a_cronograma():
             v_hv.destroy()
             self.mostrar_vista("Cronograma")
-        ctk.CTkButton(f_c2_header, text="Ver más →", font=ctk.CTkFont(size=11), fg_color="transparent", text_color=C_BLUE, hover_color=C_BG, height=22, width=70, command=ir_a_cronograma).pack(side="right")
+        ctk.CTkButton(f_c2_header, text="Ver más →", font=ctk.CTkFont(size=11), fg_color="transparent", text_color=C_BLUE, hover_color=C_BG, height=20, width=65, command=ir_a_cronograma).pack(side="right")
         
-        tab_c2 = ttk.Treeview(c2, columns=("Numero", "Fecha Programada", "Estado"), show="headings", height=6)
+        tab_c2 = ttk.Treeview(c2, columns=("Numero", "Fecha Programada", "Estado"), show="headings", height=4)
         tab_c2.heading("Numero", text="Nº")
         tab_c2.heading("Fecha Programada", text="Fecha Programada")
         tab_c2.heading("Estado", text="Estado")
-        tab_c2.column("Numero", anchor="center", width=40)
-        tab_c2.column("Fecha Programada", anchor="center", width=140)
-        tab_c2.column("Estado", anchor="center", width=100)
-        tab_c2.pack(padx=10, pady=(0, 10), fill="both", expand=True)
+        tab_c2.column("Numero", anchor="center", width=35)
+        tab_c2.column("Fecha Programada", anchor="center", width=130)
+        tab_c2.column("Estado", anchor="center", width=90)
+        tab_c2.pack(padx=8, pady=(0, 8), fill="both", expand=True)
         
-        # Calcular siguientes 3 mantenimientos con la función centralizada
         siguientes_mantenimientos = calcular_proximos_mantenimientos(eq_act, cantidad=3, hoy=self.hoy)
         for idx, f_prog in enumerate(siguientes_mantenimientos):
             estado_lbl = "Vencido" if f_prog < date.today() else "Planificado"
             tab_c2.insert("", "end", values=(f"{idx+1}º", f_prog.strftime("%d / %m / %Y"), estado_lbl))
-            
         if not siguientes_mantenimientos:
             tab_c2.insert("", "end", values=("-", "No programado", "Sin proyección"))
+
+        # --- OBTENER REPUESTOS COMPATIBLES CON ESTE EQUIPO ---
+        eq_nom_low = str(eq_act.get('nombre', '')).strip().lower()
+        cat_full_low = f"{eq_act.get('nombre', '')} - {eq_act.get('marca', '')} - {eq_act.get('modelo', '')}".strip().lower()
+        
+        repuestos_compatibles = []
+        for r in self.datos.get("repuestos", []):
+            r_tipo_low = str(r.get("tipo_equipo", "")).strip().lower()
+            if (r_tipo_low == cat_full_low or 
+                r_tipo_low == eq_nom_low or 
+                (eq_nom_low and eq_nom_low in r_tipo_low) or 
+                (r_tipo_low and r_tipo_low in cat_full_low) or
+                r_tipo_low == "general / multiuso" or
+                r_tipo_low == "vacio"):
+                repuestos_compatibles.append(r)
+                
+        rep_en_stock = [r for r in repuestos_compatibles if str(r.get("estado_disponibilidad", "En Stock")).strip().lower() != "requerido" and int(r.get("cantidad", 0) or 0) > 0]
+        rep_requeridos = [r for r in repuestos_compatibles if str(r.get("estado_disponibilidad", "En Stock")).strip().lower() == "requerido"]
+
+        # --- CUADRANTE 3: Repuestos en Stock Disponibles ---
+        c3 = ctk.CTkFrame(f_cuadrantes, fg_color=C_CARD, corner_radius=12, border_width=1, border_color=C_BORDER)
+        c3.grid(row=1, column=0, padx=6, pady=6, sticky="nsew")
+        
+        f_c3_header = ctk.CTkFrame(c3, fg_color="transparent")
+        f_c3_header.pack(fill="x", padx=10, pady=6)
+        ctk.CTkLabel(f_c3_header, text=f"📦 Repuestos en Stock ({len(rep_en_stock)})", font=ctk.CTkFont(size=13, weight="bold"), text_color=C_GREEN).pack(side="left")
+        
+        def ir_a_repuestos_tab():
+            v_hv.destroy()
+            self.mostrar_vista("Repuestos")
+        ctk.CTkButton(f_c3_header, text="Administrar →", font=ctk.CTkFont(size=11), fg_color="transparent", text_color=C_BLUE, hover_color=C_BG, height=20, width=75, command=ir_a_repuestos_tab).pack(side="right")
+        
+        tab_c3 = ttk.Treeview(c3, columns=("Repuesto", "Modelo / P/N", "Stock", "Costo"), show="headings", height=4)
+        tab_c3.heading("Repuesto", text="Repuesto")
+        tab_c3.heading("Modelo / P/N", text="Modelo / P/N")
+        tab_c3.heading("Stock", text="Stock Disp.")
+        tab_c3.heading("Costo", text="Costo (Bs.)")
+        tab_c3.column("Repuesto", anchor="w", width=140)
+        tab_c3.column("Modelo / P/N", anchor="center", width=90)
+        tab_c3.column("Stock", anchor="center", width=65)
+        tab_c3.column("Costo", anchor="center", width=70)
+        tab_c3.pack(padx=8, pady=(0, 8), fill="both", expand=True)
+        
+        for r in rep_en_stock:
+            c_val = float(r.get("costo", 0) or 0)
+            c_str = f"{c_val:.2f}" if c_val > 0 else "-"
+            tab_c3.insert("", "end", values=(r.get("nombre_repuesto", ""), r.get("modelo_parte", "-") or "-", r.get("cantidad", 0), c_str))
+        if not rep_en_stock:
+            tab_c3.insert("", "end", values=("Sin repuestos en stock", "-", "0", "-"))
+
+        # --- CUADRANTE 4: Repuestos Requeridos (Necesarios) ---
+        c4 = ctk.CTkFrame(f_cuadrantes, fg_color=C_CARD, corner_radius=12, border_width=1, border_color=C_BORDER)
+        c4.grid(row=1, column=1, padx=6, pady=6, sticky="nsew")
+        
+        f_c4_header = ctk.CTkFrame(c4, fg_color="transparent")
+        f_c4_header.pack(fill="x", padx=10, pady=6)
+        ctk.CTkLabel(f_c4_header, text=f"⚠️ Repuestos Requeridos ({len(rep_requeridos)})", font=ctk.CTkFont(size=13, weight="bold"), text_color=C_ORANGE).pack(side="left")
+        
+        def solicitar_repuesto_equipo():
+            v_hv.destroy()
+            self.mostrar_vista("Repuestos")
+            if "Repuestos" in self.vistas:
+                self.vistas["Repuestos"].abrir_formulario_repuesto(estado_inicial="Requerido")
+                
+        ctk.CTkButton(f_c4_header, text="✚ Solicitar", font=ctk.CTkFont(size=11, weight="bold"), fg_color=C_ORANGE, hover_color="#D97706", height=20, width=70, command=solicitar_repuesto_equipo).pack(side="right")
+        
+        tab_c4 = ttk.Treeview(c4, columns=("Repuesto", "Modelo / P/N", "Cant", "Motivo"), show="headings", height=4)
+        tab_c4.heading("Repuesto", text="Repuesto Requerido")
+        tab_c4.heading("Modelo / P/N", text="Modelo / P/N")
+        tab_c4.heading("Cant", text="Cant. Req.")
+        tab_c4.heading("Motivo", text="Motivo / Obs.")
+        tab_c4.column("Repuesto", anchor="w", width=130)
+        tab_c4.column("Modelo / P/N", anchor="center", width=85)
+        tab_c4.column("Cant", anchor="center", width=65)
+        tab_c4.column("Motivo", anchor="w", width=120)
+        tab_c4.pack(padx=8, pady=(0, 8), fill="both", expand=True)
+        
+        for r in rep_requeridos:
+            tab_c4.insert("", "end", values=(r.get("nombre_repuesto", ""), r.get("modelo_parte", "-") or "-", r.get("cantidad", 0), r.get("observaciones", "-") or "-"))
+        if not rep_requeridos:
+            tab_c4.insert("", "end", values=("Sin requerimientos pendientes", "-", "0", "-"))
 
         # Activar scroll táctil por arrastre de dedo en pantalla táctil
         def habilitar_scroll_tactil(scrollable_frame):

@@ -476,8 +476,21 @@ def ver_equipo(id_equipo):
             
         cur.execute("SELECT * FROM historial_intervenciones WHERE equipo_id = %s ORDER BY fecha DESC", (id_equipo,))
         historial = cur.fetchall()
+
+        cat_str = f"{eq['nombre']} - {eq.get('marca') or ''} - {eq.get('modelo') or ''}"
+        eq_nom = eq.get('nombre') or ''
+        cur.execute("""
+            SELECT nombre_repuesto, modelo_parte, cantidad, costo, estado_disponibilidad, observaciones
+            FROM repuestos 
+            WHERE (tipo_equipo = %s OR tipo_equipo = %s OR tipo_equipo ILIKE %s OR tipo_equipo ILIKE '%%general%%' OR tipo_equipo ILIKE '%%vacio%%')
+            ORDER BY nombre_repuesto ASC
+        """, (cat_str, eq_nom, f"%{eq_nom}%"))
+        todos_rep = [dict(r) for r in cur.fetchall()]
         cur.close()
         conn.close()
+
+        rep_stock = [r for r in todos_rep if str(r.get("estado_disponibilidad") or "En Stock").strip().lower() != "requerido" and int(r.get("cantidad") or 0) > 0]
+        rep_req = [r for r in todos_rep if str(r.get("estado_disponibilidad") or "En Stock").strip().lower() == "requerido"]
 
         # Mapear archivos locales de hojas de trabajo existentes
         historial_list = []
@@ -574,7 +587,7 @@ def ver_equipo(id_equipo):
                 <a href="/equipo/{{ eq['id'] }}/mantenimiento" class="btn-action">🛠️ Registrar Mantenimiento</a>
                 <a href="/equipo/{{ eq['id'] }}/descargar_qr" class="btn-action" style="background: #34C759; margin-top: 10px;">📥 Descargar Código QR (Etiqueta)</a>
                 
-                <h3 style="margin-top:25px; border-bottom: 2px solid #F2F2F7; padding-bottom: 5px;">Historial</h3>
+                <h3 style="margin-top:25px; border-bottom: 2px solid #F2F2F7; padding-bottom: 5px;">Historial de Mantenimientos</h3>
                 <table><tr><th>Fecha</th><th>Tipo</th><th>Realizado Por</th><th>Trabajo Realizado</th><th>Fichas</th></tr>
                 {% for m in hist %}<tr>
                     <td>{{ m['fecha'] }}</td>
@@ -590,6 +603,28 @@ def ver_equipo(id_equipo):
                     </td>
                 </tr>
                 {% else %}<tr><td colspan="5" style="text-align:center; color:#8E8E93;">Sin intervenciones registradas</td></tr>{% endfor %}
+                </table>
+
+                <h3 style="margin-top:25px; border-bottom: 2px solid #F2F2F7; padding-bottom: 5px; color: #34C759;">📦 Repuestos en Stock (Disponibles)</h3>
+                <table><tr><th>Repuesto</th><th>Modelo / P/N</th><th>Stock</th><th>Costo (Bs.)</th></tr>
+                {% for r in rep_stock %}<tr>
+                    <td><strong>{{ r['nombre_repuesto'] }}</strong></td>
+                    <td>{{ r['modelo_parte'] or '-' }}</td>
+                    <td style="color:#34C759; font-weight:bold;">{{ r['cantidad'] }}</td>
+                    <td>{{ "%.2f"|format(r['costo']|float) if r['costo'] else '-' }}</td>
+                </tr>
+                {% else %}<tr><td colspan="4" style="text-align:center; color:#8E8E93;">Sin repuestos en stock para este equipo</td></tr>{% endfor %}
+                </table>
+
+                <h3 style="margin-top:25px; border-bottom: 2px solid #F2F2F7; padding-bottom: 5px; color: #FF9500;">⚠️ Repuestos Requeridos (Necesarios)</h3>
+                <table><tr><th>Repuesto Requerido</th><th>Modelo / P/N</th><th>Cant.</th><th>Motivo / Obs.</th></tr>
+                {% for r in rep_req %}<tr>
+                    <td><strong style="color:#FF9500;">{{ r['nombre_repuesto'] }}</strong></td>
+                    <td>{{ r['modelo_parte'] or '-' }}</td>
+                    <td>{{ r['cantidad'] }}</td>
+                    <td>{{ r['observaciones'] or '-' }}</td>
+                </tr>
+                {% else %}<tr><td colspan="4" style="text-align:center; color:#8E8E93;">Sin requerimientos pendientes</td></tr>{% endfor %}
                 </table></div>
             <script>
                 function intentarSincronizarAhora() {
@@ -661,7 +696,7 @@ def ver_equipo(id_equipo):
             </script>
         </body></html>
         """
-        return render_template_string(html_web, eq=eq, hist=historial_list, garantia_str=garantia_str)
+        return render_template_string(html_web, eq=eq, hist=historial_list, garantia_str=garantia_str, rep_stock=rep_stock, rep_req=rep_req)
     except Exception as e:
         return f"Error en el servidor web: {e}"
 
