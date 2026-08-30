@@ -166,60 +166,81 @@ HTML_INVENTARIO = """
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inventario Biomédico | GAMLP</title>
+    <title>Inventario Biomédico | SGEM GAMLP</title>
     <style>
         :root {
             --primary: #007AFF;
             --primary-dark: #0056b3;
             --bg: #F8FAFC;
             --card: #FFFFFF;
-            --text: #1E293B;
+            --text: #0F172A;
             --muted: #64748B;
             --border: #E2E8F0;
             --success: #10B981;
             --warning: #F59E0B;
             --danger: #EF4444;
+            --purple: #8B5CF6;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
-        body { background: var(--bg); color: var(--text); padding-bottom: 40px; }
+        body { background: var(--bg); color: var(--text); padding-bottom: 50px; }
         
         .header {
             background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
             color: white;
-            padding: 24px 20px;
+            padding: 26px 20px;
             text-align: center;
             box-shadow: 0 4px 20px rgba(0,0,0,0.1);
         }
         .header h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; letter-spacing: -0.5px; }
         .header p { font-size: 13px; color: #94A3B8; }
-        .badge-gamlp { display: inline-block; background: rgba(255,255,255,0.15); padding: 3px 10px; border-radius: 20px; font-size: 11px; margin-bottom: 8px; font-weight: 600; text-transform: uppercase; }
+        .badge-gamlp { display: inline-block; background: rgba(255,255,255,0.15); padding: 3px 12px; border-radius: 20px; font-size: 11px; margin-bottom: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
 
-        .container { max-width: 900px; margin: -15px auto 0; padding: 0 16px; }
+        .container { max-width: 960px; margin: -15px auto 0; padding: 0 16px; }
         
-        .search-card {
+        .filter-card {
             background: var(--card);
             border-radius: 16px;
-            padding: 16px;
+            padding: 18px;
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
             border: 1px solid var(--border);
             margin-bottom: 20px;
         }
-        .search-input {
-            width: 100%;
-            padding: 14px 16px;
-            border-radius: 12px;
-            border: 1.5px solid var(--border);
-            font-size: 15px;
-            outline: none;
-            transition: all 0.2s;
-            background: #F1F5F9;
+        .filter-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+            margin-bottom: 12px;
         }
-        .search-input:focus { border-color: var(--primary); background: #FFFFFF; box-shadow: 0 0 0 3px rgba(0,122,255,0.15); }
+        @media (min-width: 640px) {
+            .filter-grid { grid-template-columns: 1fr 1fr; }
+        }
+        @media (min-width: 860px) {
+            .filter-grid { grid-template-columns: 1.2fr 1.2fr 1fr; }
+        }
+
+        .filter-group { display: flex; flex-direction: column; gap: 4px; }
+        .filter-label { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
         
+        .select-input, .search-input {
+            width: 100%;
+            padding: 11px 14px;
+            border-radius: 10px;
+            border: 1.5px solid var(--border);
+            font-size: 14px;
+            outline: none;
+            background: #F8FAFC;
+            color: var(--text);
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .select-input:focus, .search-input:focus { border-color: var(--primary); background: #FFFFFF; box-shadow: 0 0 0 3px rgba(0,122,255,0.12); }
+        
+        .search-input { background: #FFFFFF; }
+
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
+            gap: 10px;
             margin-bottom: 20px;
         }
         @media (min-width: 600px) {
@@ -227,116 +248,319 @@ HTML_INVENTARIO = """
         }
         .stat-card {
             background: var(--card);
-            padding: 14px 16px;
-            border-radius: 14px;
+            padding: 12px 14px;
+            border-radius: 12px;
             border: 1px solid var(--border);
             text-align: center;
         }
-        .stat-num { font-size: 24px; font-weight: 700; color: var(--primary); }
-        .stat-lbl { font-size: 12px; color: var(--muted); font-weight: 500; margin-top: 2px; }
+        .stat-num { font-size: 22px; font-weight: 700; color: var(--primary); }
+        .stat-lbl { font-size: 11px; color: var(--muted); font-weight: 600; margin-top: 2px; }
 
-        .equipment-list { display: flex; flex-direction: column; gap: 12px; }
-        .equipment-card {
+        .area-section {
             background: var(--card);
             border-radius: 16px;
-            padding: 16px;
+            padding: 18px;
             border: 1px solid var(--border);
+            margin-bottom: 16px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.02);
-            transition: transform 0.15s, box-shadow 0.15s;
+        }
+        .area-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 12px;
+            border-bottom: 1.5px solid #F1F5F9;
+            margin-bottom: 14px;
+        }
+        .area-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1E293B;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .area-badge-count {
+            background: #EFF6FF;
+            color: #1D4ED8;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 20px;
+        }
+
+        .equipment-list { display: flex; flex-direction: column; gap: 10px; }
+        .equipment-card {
+            background: #FFFFFF;
+            border-radius: 12px;
+            padding: 14px 16px;
+            border: 1px solid var(--border);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.02);
+            transition: all 0.15s ease-in-out;
             text-decoration: none;
             color: inherit;
             display: block;
         }
+        .equipment-card:hover { border-color: #CBD5E1; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
         .equipment-card:active { transform: scale(0.99); }
         
-        .eq-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 8px; }
-        .eq-title { font-size: 16px; font-weight: 700; color: var(--text); }
-        .eq-code { background: #EEF2FF; color: #4338CA; font-size: 12px; font-weight: 700; padding: 4px 8px; border-radius: 8px; white-space: nowrap; }
+        .eq-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 6px; }
+        .eq-title { font-size: 15px; font-weight: 700; color: var(--text); }
+        .eq-code { background: #EEF2FF; color: #4338CA; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 6px; white-space: nowrap; }
         
         .eq-detail { font-size: 13px; color: var(--muted); margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
-        .eq-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-        .badge { font-size: 11px; font-weight: 600; padding: 4px 8px; border-radius: 6px; }
-        .badge-area { background: #F1F5F9; color: #475569; }
+        .eq-badges { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+        .badge { font-size: 11px; font-weight: 600; padding: 3px 7px; border-radius: 6px; }
+        .badge-red { background: #F1F5F9; color: #0284C7; }
+        .badge-centro { background: #F1F5F9; color: #334155; }
+        .badge-area { background: #F8FAFC; color: #475569; border: 1px solid #E2E8F0; }
         .badge-garantia { background: #ECFDF5; color: #065F46; }
         .badge-mtto { background: #FEF3C7; color: #92400E; }
         .badge-danger { background: #FEE2E2; color: #991B1B; }
 
         .btn-view {
             display: inline-block;
-            margin-top: 10px;
-            font-size: 13px;
-            font-weight: 600;
+            margin-top: 8px;
+            font-size: 12px;
+            font-weight: 700;
             color: var(--primary);
+        }
+        .no-results {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--muted);
+            font-size: 15px;
+            font-weight: 600;
+            display: none;
         }
     </style>
 </head>
 <body>
     <div class="header">
-        <span class="badge-gamlp">GAMLP • SGEM</span>
-        <h1>Inventario de Equipos Médicos</h1>
-        <p>Sistema de Gestión de Equipamiento Médico</p>
+        <span class="badge-gamlp">GAMLP • SGEM v1.0</span>
+        <h1>Sistema de Gestión de Equipamiento Médico</h1>
+        <p>Inventario Descentralizado por Redes y Centros de Salud</p>
     </div>
 
     <div class="container">
-        <div class="search-card">
-            <input type="text" id="busqueda" class="search-input" placeholder="🔍 Buscar por nombre, serie, código o área..." onkeyup="filtrar()">
+        <!-- Tarjeta de Filtros en Cascada -->
+        <div class="filter-card">
+            <div class="filter-grid">
+                <div class="filter-group">
+                    <label class="filter-label">🌐 Red de Salud</label>
+                    <select id="filtro-red" class="select-input" onchange="alCambiarRed()">
+                        <option value="">Todas las Redes (GAMLP)</option>
+                        {% for r in redes %}
+                        <option value="{{ r['nombre'] }}" data-id="{{ r['id'] }}">{{ r['nombre'] }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">🏥 Centro de Salud</label>
+                    <select id="filtro-centro" class="select-input" onchange="filtrar()">
+                        <option value="">Todos los Centros</option>
+                        {% for c in centros %}
+                        <option value="{{ c['nombre'] }}" data-red-id="{{ c['red_salud_id'] }}">{{ c['nombre'] }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">📂 Área / Servicio</label>
+                    <select id="filtro-area" class="select-input" onchange="filtrar()">
+                        <option value="">Todas las Áreas</option>
+                        {% for a in areas %}
+                        <option value="{{ a }}">{{ a }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            
+            <div class="filter-group">
+                <input type="text" id="busqueda" class="search-input" placeholder="🔍 Buscar por nombre, marca, serie, código AF o servicio..." onkeyup="filtrar()">
+            </div>
         </div>
 
+        <!-- Tarjetas de Estadísticas -->
         <div class="stats-grid">
             <div class="stat-card">
-                <div class="stat-num">{{ total }}</div>
+                <div class="stat-num" id="stat-total">{{ total }}</div>
                 <div class="stat-lbl">Total Equipos</div>
             </div>
             <div class="stat-card">
-                <div class="stat-num" style="color: var(--success);">{{ operativos }}</div>
+                <div class="stat-num" style="color: var(--success);" id="stat-op">{{ operativos }}</div>
                 <div class="stat-lbl">Operativos</div>
             </div>
             <div class="stat-card">
-                <div class="stat-num" style="color: var(--warning);">{{ garantia }}</div>
+                <div class="stat-num" style="color: var(--warning);" id="stat-gar">{{ garantia }}</div>
                 <div class="stat-lbl">En Garantía</div>
             </div>
             <div class="stat-card">
-                <div class="stat-num" style="color: var(--danger);">{{ bajas }}</div>
+                <div class="stat-num" style="color: var(--danger);" id="stat-baj">{{ bajas }}</div>
                 <div class="stat-lbl">Bajas</div>
             </div>
         </div>
 
-        <div class="equipment-list" id="lista-equipos">
-            {% for eq in equipos %}
-            <a href="/equipo/{{ eq['id'] }}" class="equipment-card" data-texto="{{ eq['nombre'] }} {{ eq['marca'] }} {{ eq['modelo'] }} {{ eq['id'] }} {{ eq['numero_serie'] }} {{ eq['servicio'] }} {{ eq['area'] }}">
-                <div class="eq-header">
-                    <div class="eq-title">{{ eq['nombre'] }}</div>
-                    <span class="eq-code">{{ eq['id'] }}</span>
+        <!-- Contenedor de Áreas y Equipos -->
+        <div id="contenedor-areas">
+            {% for area_nom in areas %}
+            <div class="area-section" data-area-name="{{ area_nom }}">
+                <div class="area-header">
+                    <div class="area-title">
+                        <span>🏥 Área: {{ area_nom }}</span>
+                    </div>
+                    <span class="area-badge-count count-label">0 equipos</span>
                 </div>
-                <div class="eq-detail">🏷️ <strong>{{ eq['marca'] }}</strong> - {{ eq['modelo'] }}</div>
-                <div class="eq-detail">📍 {{ eq['servicio'] or eq['area'] }}</div>
-                <div class="eq-badges">
-                    <span class="badge badge-area">Área: {{ eq['area'] }}</span>
-                    {% if eq['garantia'] == 'Con Garantía' %}
-                        <span class="badge badge-garantia">🛡️ Con Garantía</span>
+                <div class="equipment-list">
+                    {% for eq in equipos %}
+                    {% if (eq['area'] or 'General') == area_nom %}
+                    <a href="/equipo/{{ eq['id'] }}" 
+                       class="equipment-card" 
+                       data-red="{{ eq['red_salud_nombre'] or '' }}"
+                       data-centro="{{ eq['centro_salud_nombre'] or '' }}"
+                       data-area="{{ eq['area'] or '' }}"
+                       data-estado="{{ eq['estado'] or '' }}"
+                       data-garantia="{{ eq['garantia'] or '' }}"
+                       data-texto="{{ eq['nombre'] }} {{ eq['marca'] }} {{ eq['modelo'] }} {{ eq['id'] }} {{ eq['numero_serie'] }} {{ eq['servicio'] }} {{ eq['area'] }} {{ eq['red_salud_nombre'] }} {{ eq['centro_salud_nombre'] }}">
+                        <div class="eq-header">
+                            <div class="eq-title">{{ eq['nombre'] }}</div>
+                            <span class="eq-code">{{ eq['id'] }}</span>
+                        </div>
+                        <div class="eq-detail">🏷️ <strong>{{ eq['marca'] }}</strong> - {{ eq['modelo'] }} {% if eq['numero_serie'] %}| S/N: {{ eq['numero_serie'] }}{% endif %}</div>
+                        <div class="eq-detail">📍 Servicio: <strong>{{ eq['servicio'] or eq['area'] }}</strong></div>
+                        <div class="eq-badges">
+                            {% if eq['red_salud_nombre'] %}
+                                <span class="badge badge-red">🌐 {{ eq['red_salud_nombre'] }}</span>
+                            {% endif %}
+                            {% if eq['centro_salud_nombre'] %}
+                                <span class="badge badge-centro">🏥 {{ eq['centro_salud_nombre'] }}</span>
+                            {% endif %}
+                            {% if eq['garantia'] == 'Con Garantía' %}
+                                <span class="badge badge-garantia">🛡️ Con Garantía</span>
+                            {% endif %}
+                            {% if eq['f_prox'] %}
+                                <span class="badge badge-mtto">📅 Próx. Mtto: {{ eq['f_prox'] }}</span>
+                            {% endif %}
+                            {% if eq['estado'] == 'Baja' %}
+                                <span class="badge badge-danger">Dado de Baja</span>
+                            {% endif %}
+                        </div>
+                        <div class="btn-view">Ver Ficha Técnica Completa →</div>
+                    </a>
                     {% endif %}
-                    {% if eq['f_prox'] %}
-                        <span class="badge badge-mtto">📅 Próx. Mtto: {{ eq['f_prox'] }}</span>
-                    {% endif %}
-                    {% if eq['estado'] == 'Baja' %}
-                        <span class="badge badge-danger">Dado de Baja</span>
-                    {% endif %}
+                    {% endfor %}
                 </div>
-                <div class="btn-view">Ver Ficha Técnica Completa →</div>
-            </a>
+            </div>
             {% endfor %}
+        </div>
+
+        <div id="no-results" class="no-results">
+            🔍 No se encontraron equipos con los filtros seleccionados.
         </div>
     </div>
 
     <script>
-        function filtrar() {
-            const input = document.getElementById('busqueda').value.toLowerCase();
-            const tarjetas = document.querySelectorAll('.equipment-card');
-            tarjetas.forEach(t => {
-                const texto = t.getAttribute('data-texto').toLowerCase();
-                t.style.display = texto.includes(input) ? 'block' : 'none';
+        // Lista original de centros para filtrado en cascada
+        const todosLosCentros = Array.from(document.querySelectorAll('#filtro-centro option')).map(opt => ({
+            value: opt.value,
+            text: opt.text,
+            redId: opt.getAttribute('data-red-id')
+        }));
+
+        function alCambiarRed() {
+            const selectRed = document.getElementById('filtro-red');
+            const selectCentro = document.getElementById('filtro-centro');
+            const redOpt = selectRed.options[selectRed.selectedIndex];
+            const redId = redOpt ? redOpt.getAttribute('data-id') : '';
+
+            // Filtrar centros de salud según la red
+            selectCentro.innerHTML = '<option value="">Todos los Centros</option>';
+            todosLosCentros.forEach(c => {
+                if (c.value === '') return;
+                if (!redId || c.redId === redId) {
+                    const opt = document.createElement('option');
+                    opt.value = c.value;
+                    opt.textContent = c.text;
+                    opt.setAttribute('data-red-id', c.redId);
+                    selectCentro.appendChild(opt);
+                }
             });
+
+            filtrar();
         }
+
+        function filtrar() {
+            const redSel = document.getElementById('filtro-red').value.toLowerCase().trim();
+            const centroSel = document.getElementById('filtro-centro').value.toLowerCase().trim();
+            const areaSel = document.getElementById('filtro-area').value.toLowerCase().trim();
+            const busqueda = document.getElementById('busqueda').value.toLowerCase().trim();
+
+            const areaSections = document.querySelectorAll('.area-section');
+            let totalVisibles = 0;
+            let operativosVisibles = 0;
+            let garantiaVisibles = 0;
+            let bajasVisibles = 0;
+
+            areaSections.forEach(section => {
+                const areaNombre = section.getAttribute('data-area-name').toLowerCase().trim();
+                const tarjetas = section.querySelectorAll('.equipment-card');
+                let tarjetasVisiblesEnArea = 0;
+
+                tarjetas.forEach(t => {
+                    const tRed = (t.getAttribute('data-red') || '').toLowerCase();
+                    const tCentro = (t.getAttribute('data-centro') || '').toLowerCase();
+                    const tArea = (t.getAttribute('data-area') || '').toLowerCase();
+                    const tEstado = t.getAttribute('data-estado') || '';
+                    const tGarantia = t.getAttribute('data-garantia') || '';
+                    const tTexto = (t.getAttribute('data-texto') || '').toLowerCase();
+
+                    const matchRed = !redSel || tRed.includes(redSel);
+                    const matchCentro = !centroSel || tCentro.includes(centroSel);
+                    const matchArea = !areaSel || tArea.includes(areaSel);
+                    const matchBusqueda = !busqueda || tTexto.includes(busqueda);
+
+                    if (matchRed && matchCentro && matchArea && matchBusqueda) {
+                        t.style.display = 'block';
+                        tarjetasVisiblesEnArea++;
+                        totalVisibles++;
+                        if (tEstado !== 'Baja') operativosVisibles++;
+                        if (tGarantia === 'Con Garantía') garantiaVisibles++;
+                        if (tEstado === 'Baja') bajasVisibles++;
+                    } else {
+                        t.style.display = 'none';
+                    }
+                });
+
+                const countLabel = section.querySelector('.count-label');
+                if (countLabel) {
+                    countLabel.textContent = `${tarjetasVisiblesEnArea} equipo${tarjetasVisiblesEnArea === 1 ? '' : 's'}`;
+                }
+
+                if (tarjetasVisiblesEnArea > 0) {
+                    section.style.display = 'block';
+                } else {
+                    section.style.display = 'none';
+                }
+            });
+
+            // Actualizar contadores
+            document.getElementById('stat-total').textContent = totalVisibles;
+            document.getElementById('stat-op').textContent = operativosVisibles;
+            document.getElementById('stat-gar').textContent = garantiaVisibles;
+            document.getElementById('stat-baj').textContent = bajasVisibles;
+
+            const noRes = document.getElementById('no-results');
+            if (totalVisibles === 0) {
+                noRes.style.display = 'block';
+            } else {
+                noRes.style.display = 'none';
+            }
+        }
+
+        // Ejecutar conteo inicial
+        document.addEventListener('DOMContentLoaded', () => {
+            filtrar();
+        });
+        filtrar();
     </script>
 </body>
 </html>
@@ -353,6 +577,13 @@ def vista_inventario_web():
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
         cur.execute("SELECT * FROM equipos ORDER BY nombre ASC")
         equipos_db = [dict(r) for r in cur.fetchall()]
+        
+        # Redes y Centros de Salud oficiales
+        cur.execute("SELECT id, nombre, codigo FROM redes_salud ORDER BY id ASC")
+        redes_db = [dict(r) for r in cur.fetchall()]
+        
+        cur.execute("SELECT id, nombre, red_salud_id FROM centros_salud ORDER BY nombre ASC")
+        centros_db = [dict(r) for r in cur.fetchall()]
         cur.close()
         conn.close()
 
@@ -361,14 +592,36 @@ def vista_inventario_web():
         garantia = sum(1 for e in equipos_db if e.get('garantia') == 'Con Garantía')
         bajas = sum(1 for e in equipos_db if e.get('estado') == 'Baja')
 
+        # Obtener lista de áreas presentes en equipos
+        areas_set = set()
+        for e in equipos_db:
+            a = e.get('area')
+            if a and a.strip():
+                areas_set.add(a.strip())
+            else:
+                areas_set.add('General')
+        areas_lista = sorted(list(areas_set))
+
         hoy = date.today()
         for eq in equipos_db:
+            if not eq.get('area'):
+                eq['area'] = 'General'
             if eq.get('estado') != 'Baja':
                 proximos = calcular_proximos_mantenimientos(eq, cantidad=1, hoy=hoy)
                 if proximos:
                     eq['f_prox'] = proximos[0].strftime("%d/%m/%Y")
 
-        return render_template_string(HTML_INVENTARIO, equipos=equipos_db, total=total, operativos=operativos, garantia=garantia, bajas=bajas)
+        return render_template_string(
+            HTML_INVENTARIO, 
+            equipos=equipos_db, 
+            redes=redes_db,
+            centros=centros_db,
+            areas=areas_lista,
+            total=total, 
+            operativos=operativos, 
+            garantia=garantia, 
+            bajas=bajas
+        )
     except Exception as e:
         return f"Error cargando inventario: {e}", 500
 
