@@ -2051,11 +2051,11 @@ class SistemaMantenimiento(ctk.CTk):
         # Grid maestro superior de 3 columnas
         m_info.grid_columnconfigure(0, weight=0, minsize=165)
         m_info.grid_columnconfigure(1, weight=1)
-        m_info.grid_columnconfigure(2, weight=0, minsize=230)
+        m_info.grid_columnconfigure(2, weight=0, minsize=155)
         
         # 1. Columna Izquierda: Código QR
         c_img = ctk.CTkFrame(m_info, fg_color="transparent")
-        c_img.grid(row=0, column=0, padx=(12, 8), pady=12, sticky="nsew")
+        c_img.grid(row=0, column=0, padx=(12, 8), pady=10, sticky="nsew")
         
         lbl_qr = ctk.CTkLabel(c_img, image=ctk.CTkImage(light_image=img_qr, size=(135, 135)), text="", cursor="hand2")
         lbl_qr.pack(pady=(0, 4))
@@ -2116,19 +2116,22 @@ class SistemaMantenimiento(ctk.CTk):
 
         # 2. Columna Central: Información Completa y Equilibrada del Equipo
         i_txt = ctk.CTkFrame(m_info, fg_color="transparent")
-        i_txt.grid(row=0, column=1, padx=8, pady=10, sticky="nsew")
+        i_txt.grid(row=0, column=1, padx=(4, 8), pady=8, sticky="nsew")
         
-        ctk.CTkLabel(i_txt, text=eq_act['nombre'], font=ctk.CTkFont(size=20, weight="bold"), text_color=C_BLUE, anchor="w").pack(fill="x", pady=(0, 4))
-        
-        # Badges / Etiquetas horizontales
-        f_badges = ctk.CTkFrame(i_txt, fg_color="transparent")
-        f_badges.pack(fill="x", pady=(0, 6))
+        ctk.CTkLabel(i_txt, text=eq_act['nombre'], font=ctk.CTkFont(size=20, weight="bold"), text_color=C_BLUE, anchor="w").pack(fill="x", pady=(0, 3))
         
         def _crear_badge(padre, texto, color_bg, color_txt="#FFFFFF"):
             b = ctk.CTkFrame(padre, fg_color=color_bg, corner_radius=6, height=22)
             b.pack(side="left", padx=(0, 5))
             ctk.CTkLabel(b, text=f" {texto} ", font=ctk.CTkFont(size=10, weight="bold"), text_color=color_txt).pack(padx=6, pady=1)
-            
+
+        # --- FILA 1: Red y Centro de Salud (izq) + Botones Ficha Excel / Ficha PDF (der) ---
+        f_row1 = ctk.CTkFrame(i_txt, fg_color="transparent")
+        f_row1.pack(fill="x", pady=(0, 3))
+
+        f_badges_r1 = ctk.CTkFrame(f_row1, fg_color="transparent")
+        f_badges_r1.pack(side="left", fill="x", expand=True)
+
         red_nombre_full = eq_act.get('red_salud_nombre') or eq_act.get('red_salud') or 'Red GAMLP'
         centro_nombre_full = eq_act.get('centro_salud_nombre') or eq_act.get('centro_salud') or 'Centro de Salud'
 
@@ -2139,13 +2142,55 @@ class SistemaMantenimiento(ctk.CTk):
         elif "RED 5" in red_nombre_full.upper(): red_badge = "🌐 RED 5 - SUR"
         else: red_badge = f"🌐 {red_nombre_full}"
 
-        _crear_badge(f_badges, f"🔑 {eq_act['id']}", C_BG, C_TEXT)
-        _crear_badge(f_badges, red_badge, "#E2E8F0", C_BLUE)
-        _crear_badge(f_badges, f"🏥 {centro_nombre_full}", "#E2E8F0", C_TEXT)
-        _crear_badge(f_badges, f"📍 {eq_act.get('servicio', 'Servicio')}", C_BG, C_TEXT)
+        _crear_badge(f_badges_r1, red_badge, "#E2E8F0", C_BLUE)
+        _crear_badge(f_badges_r1, f"🏥 {centro_nombre_full}", "#E2E8F0", C_TEXT)
+
+        f_btns_r1 = ctk.CTkFrame(f_row1, fg_color="transparent")
+        f_btns_r1.pack(side="right")
+
+        btn_excel = ctk.CTkButton(f_btns_r1, text="📄 Ficha Excel", font=ctk.CTkFont(weight="bold", size=11), fg_color=C_BLUE, hover_color=C_BLUE_HOVER, corner_radius=7, height=24, width=105, command=btn_ver_excel)
+        btn_excel.pack(side="left", padx=2)
+        btn_pdf = ctk.CTkButton(f_btns_r1, text="⬇ Ficha PDF", font=ctk.CTkFont(weight="bold", size=11), fg_color=C_PURPLE, hover_color="#963ECA", corner_radius=7, height=24, width=105, command=btn_descargar_pdf)
+        btn_pdf.pack(side="left", padx=2)
+
+        # --- FILA 2: AF, Servicio, Riesgo y Mttos/Año (izq) + Botones Manuales / Videos (der) ---
+        f_row2 = ctk.CTkFrame(i_txt, fg_color="transparent")
+        f_row2.pack(fill="x", pady=(0, 4))
+
+        f_badges_r2 = ctk.CTkFrame(f_row2, fg_color="transparent")
+        f_badges_r2.pack(side="left", fill="x", expand=True)
+
+        _crear_badge(f_badges_r2, f"🔑 {eq_act['id']}", C_BG, C_TEXT)
+        _crear_badge(f_badges_r2, f"📍 {eq_act.get('servicio', 'Servicio')}", C_BG, C_TEXT)
+        
         crit_txt = str(eq_act.get('criticidad') or 'Riesgo Medio')
         crit_color = C_RED if "Alto" in crit_txt else (C_ORANGE if "Medio" in crit_txt else C_GREEN)
-        _crear_badge(f_badges, f"⚡ {crit_txt}", crit_color, "#FFFFFF")
+        _crear_badge(f_badges_r2, f"⚡ {crit_txt}", crit_color, "#FFFFFF")
+
+        # Frecuencia de mantenimiento anual
+        cat_data_score = eq_act.get("categorizacion_detalle") or []
+        if isinstance(cat_data_score, str):
+            try: cat_data_score = json.loads(cat_data_score)
+            except: cat_data_score = []
+        p_ints = []
+        for x in cat_data_score:
+            if str(x).isdigit(): p_ints.append(int(x))
+            elif str(x) == "I": p_ints.append(1)
+            elif str(x) == "II": p_ints.append(2)
+            elif str(x) == "III": p_ints.append(3)
+        p_total = sum(p_ints)
+        if p_total >= 30: mttos_str = "3 Mttos/Año"
+        elif p_total >= 20: mttos_str = "2 Mttos/Año"
+        else: mttos_str = "1 Mtto/Año"
+        _crear_badge(f_badges_r2, f"🗓️ {mttos_str}", "#E0F2FE", C_BLUE)
+
+        f_btns_r2 = ctk.CTkFrame(f_row2, fg_color="transparent")
+        f_btns_r2.pack(side="right")
+
+        btn_man = ctk.CTkButton(f_btns_r2, text="📁 Manuales", font=ctk.CTkFont(weight="bold", size=11), fg_color=C_BLUE, hover_color=C_BLUE_HOVER, corner_radius=7, height=24, width=105, command=abrir_manuales)
+        btn_man.pack(side="left", padx=2)
+        btn_vid = ctk.CTkButton(f_btns_r2, text="🎥 Videos", font=ctk.CTkFont(weight="bold", size=11), fg_color=C_PURPLE, hover_color="#963ECA", corner_radius=7, height=24, width=105, command=abrir_videos)
+        btn_vid.pack(side="left", padx=2)
 
         # Grid compacto de 2 columnas con todos los datos clave
         f_grid_datos = ctk.CTkFrame(i_txt, fg_color=C_BG, corner_radius=10, border_width=1, border_color=C_BORDER)
@@ -2169,45 +2214,27 @@ class SistemaMantenimiento(ctk.CTk):
             ctk.CTkLabel(f_grid_datos, text=l2, font=ctk.CTkFont(size=11, weight="bold"), text_color=C_SUBTEXT, anchor="w").grid(row=r_idx, column=2, padx=(10, 4), pady=2, sticky="w")
             ctk.CTkLabel(f_grid_datos, text=str(v2), font=ctk.CTkFont(size=11, weight="bold"), text_color=C_TEXT, anchor="w").grid(row=r_idx, column=3, padx=(0, 10), pady=2, sticky="w")
 
-        # 3. Columna Derecha: Foto del equipo + Botones de Acción
+        # 3. Columna Derecha: Foto CUADRADA del equipo
         c_der_col = ctk.CTkFrame(m_info, fg_color="transparent")
-        c_der_col.grid(row=0, column=2, padx=(8, 12), pady=10, sticky="nsew")
+        c_der_col.grid(row=0, column=2, padx=(4, 12), pady=10, sticky="nsew")
         
         foto_path = eq_act.get("foto")
         if foto_path and os.path.exists(foto_path):
             try:
                 img_pil = Image.open(foto_path)
-                ctk_img = ctk.CTkImage(light_image=img_pil, size=(190, 115))
+                ctk_img = ctk.CTkImage(light_image=img_pil, size=(140, 140))
                 lbl_foto = ctk.CTkLabel(c_der_col, image=ctk_img, text="")
-                lbl_foto.pack(pady=(0, 6))
+                lbl_foto.pack(expand=True)
             except:
-                f_placeholder = ctk.CTkFrame(c_der_col, width=190, height=115, fg_color=C_BG, corner_radius=8)
+                f_placeholder = ctk.CTkFrame(c_der_col, width=140, height=140, fg_color=C_BG, corner_radius=8)
                 f_placeholder.pack_propagate(False)
-                f_placeholder.pack(pady=(0, 6))
+                f_placeholder.pack(expand=True)
                 ctk.CTkLabel(f_placeholder, text="📷 Sin Imagen", font=ctk.CTkFont(size=11, weight="bold"), text_color=C_SUBTEXT).pack(expand=True)
         else:
-            f_placeholder = ctk.CTkFrame(c_der_col, width=190, height=115, fg_color=C_BG, corner_radius=8)
+            f_placeholder = ctk.CTkFrame(c_der_col, width=140, height=140, fg_color=C_BG, corner_radius=8)
             f_placeholder.pack_propagate(False)
-            f_placeholder.pack(pady=(0, 6))
+            f_placeholder.pack(expand=True)
             ctk.CTkLabel(f_placeholder, text="📷 Sin Imagen", font=ctk.CTkFont(size=11, weight="bold"), text_color=C_SUBTEXT).pack(expand=True)
-
-        # 4 Botones en Grid 2x2
-        f_acciones_hv = ctk.CTkFrame(c_der_col, fg_color="transparent")
-        f_acciones_hv.pack(fill="x", pady=0)
-        f_acciones_hv.grid_columnconfigure(0, weight=1)
-        f_acciones_hv.grid_columnconfigure(1, weight=1)
-        
-        btn_excel = ctk.CTkButton(f_acciones_hv, text="📄 Ficha Excel", font=ctk.CTkFont(weight="bold", size=11), fg_color=C_BLUE, hover_color=C_BLUE_HOVER, corner_radius=8, height=28, command=btn_ver_excel)
-        btn_excel.grid(row=0, column=0, padx=2, pady=2, sticky="ew")
-        
-        btn_pdf = ctk.CTkButton(f_acciones_hv, text="⬇ Ficha PDF", font=ctk.CTkFont(weight="bold", size=11), fg_color=C_PURPLE, hover_color="#963ECA", corner_radius=8, height=28, command=btn_descargar_pdf)
-        btn_pdf.grid(row=0, column=1, padx=2, pady=2, sticky="ew")
-        
-        btn_man = ctk.CTkButton(f_acciones_hv, text="📁 Manuales", font=ctk.CTkFont(weight="bold", size=11), fg_color=C_BLUE, hover_color=C_BLUE_HOVER, corner_radius=8, height=28, command=abrir_manuales)
-        btn_man.grid(row=1, column=0, padx=2, pady=2, sticky="ew")
-        
-        btn_vid = ctk.CTkButton(f_acciones_hv, text="🎥 Videos", font=ctk.CTkFont(weight="bold", size=11), fg_color=C_PURPLE, hover_color="#963ECA", corner_radius=8, height=28, command=abrir_videos)
-        btn_vid.grid(row=1, column=1, padx=2, pady=2, sticky="ew")
 
         # =========================================================================
         # SECCIÓN INFERIOR: 4 CUADRANTES DE INFORMACIÓN Y REPUESTOS
