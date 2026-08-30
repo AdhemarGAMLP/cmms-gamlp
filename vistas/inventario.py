@@ -77,10 +77,14 @@ class VistaInventario(ctk.CTkFrame):
 
 
     def obtener_id_seleccionado(self):
-        sel = self.tabla_inv.focus()
+        sel = self.tabla_inv.selection()
+        if not sel:
+            sel_focus = self.tabla_inv.focus()
+            if sel_focus:
+                sel = [sel_focus]
         if not sel:
             return None
-        valores = self.tabla_inv.item(sel, "values")
+        valores = self.tabla_inv.item(sel[0], "values")
         return valores[4] if len(valores) > 4 else None
 
     def refrescar_datos(self):

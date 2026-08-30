@@ -1849,12 +1849,30 @@ class SistemaMantenimiento(ctk.CTk):
                 pass
             return
 
-        seleccion = self.vistas["Inventario"].tabla.selection()
-        if not seleccion and not equipo_id:
+        item_id = equipo_id
+        if not item_id:
+            vista_inv = self.vistas.get("Inventario")
+            if vista_inv and hasattr(vista_inv, "obtener_id_seleccionado"):
+                item_id = vista_inv.obtener_id_seleccionado()
+            elif vista_inv and hasattr(vista_inv, "tabla_inv"):
+                sel = vista_inv.tabla_inv.selection() or ([vista_inv.tabla_inv.focus()] if vista_inv.tabla_inv.focus() else [])
+                if sel:
+                    vals = vista_inv.tabla_inv.item(sel[0], "values")
+                    item_id = vals[4] if len(vals) > 4 else vals[0]
+            elif vista_inv and hasattr(vista_inv, "tabla"):
+                sel = vista_inv.tabla.selection()
+                if sel:
+                    vals = vista_inv.tabla.item(sel[0], "values")
+                    item_id = vals[4] if len(vals) > 4 else vals[0]
+                    
+        if not item_id:
             return
-        item_id = equipo_id if equipo_id else self.vistas["Inventario"].tabla.item(seleccion[0])['values'][2]
-        eq_act = next((e for e in self.datos["equipos"] if str(e["id"]) == str(item_id)), None)
-        if not eq_act: return
+
+        eq_act = next((e for e in self.datos["equipos"] if str(e.get("id")) == str(item_id)), None)
+        if not eq_act:
+            eq_act = next((e for e in self.datos["equipos"] if str(e.get("id", "")).strip().lower() == str(item_id).strip().lower()), None)
+        if not eq_act: 
+            return
         
         v_hv = ctk.CTkToplevel(self)
         self.window_ficha_tecnica = v_hv
