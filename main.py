@@ -1688,44 +1688,58 @@ class SistemaMantenimiento(ctk.CTk):
             vent.destroy()
 
             # 2. Guardar en PostgreSQL en segundo plano sin congelar la pantalla
-            sql_params = (
-                eq_dict["id"], eq_dict["nombre"], eq_dict["marca"], eq_dict["modelo"], eq_dict["servicio"], eq_dict["area"],
-                eq_dict["procedencia"], eq_dict["fabricante"], eq_dict["proveedor"], eq_dict["anio_fab"],
-                eq_dict["t_elec"], eq_dict["t_elco"], eq_dict["t_mec"], eq_dict["t_hid"], eq_dict["t_neu"], eq_dict["t_vap"],
-                eq_dict["a_comp"], eq_dict["a_como"], eq_dict["a_don"], eq_dict["te_fijo"], eq_dict["te_mov"], eq_dict["te_por"],
-                eq_dict["garantia"], eq_dict["criticidad"], eq_dict["categorizacion_detalle"], eq_dict["estado"],
-                cal_adq.get_date(), datetime.now().strftime("%Y-%m-%d"), eq_dict["foto"], f_gar_val, eq_dict["numero_serie"], f_gar_ini_val, costo_val,
-                eq_dict["voltaje"], eq_dict["potencia"], eq_dict["temperatura"], eq_dict["humedad"], eq_dict["corriente"], eq_dict["peso"], eq_dict["dimensiones"], eq_dict["resolucion"],
-                eq_dict["contexto_operacional"], eq_dict["funciones_equipo"], eq_dict["acciones_preventivas"], eq_dict["acciones_falla"],
-                eq_dict["fallas_funcionales"], eq_dict["causas_fallo"], eq_dict["efectos_fallo"], eq_dict["efecto_entorno"], eq_dict["observaciones"],
-                eq_dict["red_salud_id"], eq_dict["red_salud_nombre"], eq_dict["centro_salud_id"], eq_dict["centro_salud_nombre"], eq_dict["municipio_nombre"], eq_dict["departamento_nombre"]
-            )
-
-            def _guardar_equipo_db(params):
+            def _guardar_equipo_db(eq_data):
                 conn = obtener_conexion()
                 if conn:
                     try:
                         cur = conn.cursor()
-                        cur.execute("""
-                            INSERT INTO equipos (id, nombre, marca, modelo, servicio, area, procedencia, fabricante, proveedor, anio_fab,
-                            t_elec, t_elco, t_mec, t_hid, t_neu, t_vap, a_comp, a_como, a_don, te_fijo, te_mov, te_por, garantia, criticidad, categorizacion_detalle, estado, fecha_adquisicion, fecha_registro, foto, fecha_vencimiento_garantia, numero_serie, fecha_inicio_garantia, costo,
-                            voltaje, potencia, temperatura, humedad, corriente, peso, dimensiones, resolucion, contexto_operacional, funciones_equipo, acciones_preventivas, acciones_falla, fallas_funcionales, causas_fallo, efectos_fallo, efecto_entorno, observaciones,
-                            red_salud_id, red_salud_nombre, centro_salud_id, centro_salud_nombre, municipio_nombre, departamento_nombre)
-                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        # Resolver IDs reales en base de datos para evitar cualquier desface de llaves foráneas
+                        red_id = None
+                        cen_id = None
+                        if eq_data.get("red_salud_nombre"):
+                            cur.execute("SELECT id FROM redes_salud WHERE nombre = %s OR codigo = %s OR nombre ILIKE %s LIMIT 1;", 
+                                        (eq_data["red_salud_nombre"], eq_data.get("red_salud_nombre", ""), f"%{eq_data['red_salud_nombre']}%"))
+                            r_row = cur.fetchone()
+                            if r_row: red_id = r_row[0]
+                            
+                        if eq_data.get("centro_salud_nombre"):
+                            cur.execute("SELECT id FROM centros_salud WHERE nombre = %s OR nombre ILIKE %s LIMIT 1;", 
+                                        (eq_data["centro_salud_nombre"], f"%{eq_data['centro_salud_nombre']}%"))
+                            c_row = cur.fetchone()
+                            if c_row: cen_id = c_row[0]
+
+                        sql_q = """
+                            INSERT INTO equipos (
+                                id, nombre, marca, modelo, servicio, area, procedencia, fabricante, proveedor, anio_fab,
+                                t_elec, t_elco, t_mec, t_hid, t_neu, t_vap, a_comp, a_como, a_don, te_fijo, te_mov, te_por, garantia, criticidad, categorizacion_detalle, estado, fecha_adquisicion, fecha_registro, foto, fecha_vencimiento_garantia, numero_serie, fecha_inicio_garantia, costo,
+                                voltaje, potencia, temperatura, humedad, corriente, peso, dimensiones, resolucion, contexto_operacional, funciones_equipo, acciones_preventivas, acciones_falla, fallas_funcionales, causas_fallo, efectos_fallo, efecto_entorno, observaciones,
+                                red_salud_id, red_salud_nombre, centro_salud_id, centro_salud_nombre, municipio_nombre, departamento_nombre
+                            )
+                            VALUES (
+                                %(id)s, %(nombre)s, %(marca)s, %(modelo)s, %(servicio)s, %(area)s, %(procedencia)s, %(fabricante)s, %(proveedor)s, %(anio_fab)s,
+                                %(t_elec)s, %(t_elco)s, %(t_mec)s, %(t_hid)s, %(t_neu)s, %(t_vap)s, %(a_comp)s, %(a_como)s, %(a_don)s, %(te_fijo)s, %(te_mov)s, %(te_por)s, %(garantia)s, %(criticidad)s, %(categorizacion_detalle)s, %(estado)s, %(fecha_adquisicion)s, %(fecha_registro)s, %(foto)s, %(fecha_vencimiento_garantia)s, %(numero_serie)s, %(fecha_inicio_garantia)s, %(costo)s,
+                                %(voltaje)s, %(potencia)s, %(temperatura)s, %(humedad)s, %(corriente)s, %(peso)s, %(dimensiones)s, %(resolucion)s, %(contexto_operacional)s, %(funciones_equipo)s, %(acciones_preventivas)s, %(acciones_falla)s, %(fallas_funcionales)s, %(causas_fallo)s, %(efectos_fallo)s, %(efecto_entorno)s, %(observaciones)s,
+                                %(red_salud_id)s, %(red_salud_nombre)s, %(centro_salud_id)s, %(centro_salud_nombre)s, %(municipio_nombre)s, %(departamento_nombre)s
+                            )
                             ON CONFLICT (id) DO UPDATE SET
-                            nombre=EXCLUDED.nombre, marca=EXCLUDED.marca, modelo=EXCLUDED.modelo, servicio=EXCLUDED.servicio, area=EXCLUDED.area, procedencia=EXCLUDED.procedencia, fabricante=EXCLUDED.fabricante, proveedor=EXCLUDED.proveedor, anio_fab=EXCLUDED.anio_fab,
-                            t_elec=EXCLUDED.t_elec, t_elco=EXCLUDED.t_elco, t_mec=EXCLUDED.t_mec, t_hid=EXCLUDED.t_hid, t_neu=EXCLUDED.t_neu, t_vap=EXCLUDED.t_vap, a_comp=EXCLUDED.a_comp, a_como=EXCLUDED.a_como, a_don=EXCLUDED.a_don,
-                            te_fijo=EXCLUDED.te_fijo, te_mov=EXCLUDED.te_mov, te_por=EXCLUDED.te_por, garantia=EXCLUDED.garantia, criticidad=EXCLUDED.criticidad, categorizacion_detalle=EXCLUDED.categorizacion_detalle, estado=EXCLUDED.estado, fecha_adquisicion=EXCLUDED.fecha_adquisicion, foto=EXCLUDED.foto, fecha_vencimiento_garantia=EXCLUDED.fecha_vencimiento_garantia, numero_serie=EXCLUDED.numero_serie, fecha_inicio_garantia=EXCLUDED.fecha_inicio_garantia, costo=EXCLUDED.costo,
-                            voltaje=EXCLUDED.voltaje, potencia=EXCLUDED.potencia, temperatura=EXCLUDED.temperatura, humedad=EXCLUDED.humedad, corriente=EXCLUDED.corriente, peso=EXCLUDED.peso, dimensiones=EXCLUDED.dimensiones, resolucion=EXCLUDED.resolucion, contexto_operacional=EXCLUDED.contexto_operacional, funciones_equipo=EXCLUDED.funciones_equipo, acciones_preventivas=EXCLUDED.acciones_preventivas, acciones_falla=EXCLUDED.acciones_falla, fallas_funcionales=EXCLUDED.fallas_funcionales, causas_fallo=EXCLUDED.causas_fallo, efectos_fallo=EXCLUDED.efectos_fallo, efecto_entorno=EXCLUDED.efecto_entorno, observaciones=EXCLUDED.observaciones,
-                            red_salud_id=EXCLUDED.red_salud_id, red_salud_nombre=EXCLUDED.red_salud_nombre, centro_salud_id=EXCLUDED.centro_salud_id, centro_salud_nombre=EXCLUDED.centro_salud_nombre, municipio_nombre=EXCLUDED.municipio_nombre, departamento_nombre=EXCLUDED.departamento_nombre;
-                        """, params)
+                                nombre=EXCLUDED.nombre, marca=EXCLUDED.marca, modelo=EXCLUDED.modelo, servicio=EXCLUDED.servicio, area=EXCLUDED.area, procedencia=EXCLUDED.procedencia, fabricante=EXCLUDED.fabricante, proveedor=EXCLUDED.proveedor, anio_fab=EXCLUDED.anio_fab,
+                                t_elec=EXCLUDED.t_elec, t_elco=EXCLUDED.t_elco, t_mec=EXCLUDED.t_mec, t_hid=EXCLUDED.t_hid, t_neu=EXCLUDED.t_neu, t_vap=EXCLUDED.t_vap, a_comp=EXCLUDED.a_comp, a_como=EXCLUDED.a_como, a_don=EXCLUDED.a_don,
+                                te_fijo=EXCLUDED.te_fijo, te_mov=EXCLUDED.te_mov, te_por=EXCLUDED.te_por, garantia=EXCLUDED.garantia, criticidad=EXCLUDED.criticidad, categorizacion_detalle=EXCLUDED.categorizacion_detalle, estado=EXCLUDED.estado, fecha_adquisicion=EXCLUDED.fecha_adquisicion, foto=EXCLUDED.foto, fecha_vencimiento_garantia=EXCLUDED.fecha_vencimiento_garantia, numero_serie=EXCLUDED.numero_serie, fecha_inicio_garantia=EXCLUDED.fecha_inicio_garantia, costo=EXCLUDED.costo,
+                                voltaje=EXCLUDED.voltaje, potencia=EXCLUDED.potencia, temperatura=EXCLUDED.temperatura, humedad=EXCLUDED.humedad, corriente=EXCLUDED.corriente, peso=EXCLUDED.peso, dimensiones=EXCLUDED.dimensiones, resolucion=EXCLUDED.resolucion, contexto_operacional=EXCLUDED.contexto_operacional, funciones_equipo=EXCLUDED.funciones_equipo, acciones_preventivas=EXCLUDED.acciones_preventivas, acciones_falla=EXCLUDED.acciones_falla, fallas_funcionales=EXCLUDED.fallas_funcionales, causas_fallo=EXCLUDED.causas_fallo, efectos_fallo=EXCLUDED.efectos_fallo, efecto_entorno=EXCLUDED.efecto_entorno, observaciones=EXCLUDED.observaciones,
+                                red_salud_id=EXCLUDED.red_salud_id, red_salud_nombre=EXCLUDED.red_salud_nombre, centro_salud_id=EXCLUDED.centro_salud_id, centro_salud_nombre=EXCLUDED.centro_salud_nombre, municipio_nombre=EXCLUDED.municipio_nombre, departamento_nombre=EXCLUDED.departamento_nombre;
+                        """
+                        cur.execute(sql_q, {**eq_data, "red_salud_id": red_id, "centro_salud_id": cen_id})
                         conn.commit()
                         cur.close()
                         conn.close()
+                        print(f"[OK] Equipo {eq_data.get('id')} guardado y sincronizado con éxito en la base de datos central.")
                     except Exception as err:
                         print(f"[ERROR] Error al guardar equipo en PostgreSQL: {err}")
+                        if conn:
+                            conn.rollback()
+                            conn.close()
 
-            ejecutar_en_segundo_plano(_guardar_equipo_db, sql_params)
+            ejecutar_en_segundo_plano(_guardar_equipo_db, dict(eq_dict))
                 
         # Botón de guardar fijo al final de la ventana, fuera de la zona de scroll
         btn_txt = "Actualizar Ficha de Equipo" if eq_edit else "Guardar Equipo"
@@ -2051,7 +2065,7 @@ class SistemaMantenimiento(ctk.CTk):
         # Grid maestro superior de 3 columnas
         m_info.grid_columnconfigure(0, weight=0, minsize=165)
         m_info.grid_columnconfigure(1, weight=1)
-        m_info.grid_columnconfigure(2, weight=0, minsize=155)
+        m_info.grid_columnconfigure(2, weight=0, minsize=175)
         
         # 1. Columna Izquierda: Código QR
         c_img = ctk.CTkFrame(m_info, fg_color="transparent")
@@ -2214,24 +2228,24 @@ class SistemaMantenimiento(ctk.CTk):
             ctk.CTkLabel(f_grid_datos, text=l2, font=ctk.CTkFont(size=11, weight="bold"), text_color=C_SUBTEXT, anchor="w").grid(row=r_idx, column=2, padx=(10, 4), pady=2, sticky="w")
             ctk.CTkLabel(f_grid_datos, text=str(v2), font=ctk.CTkFont(size=11, weight="bold"), text_color=C_TEXT, anchor="w").grid(row=r_idx, column=3, padx=(0, 10), pady=2, sticky="w")
 
-        # 3. Columna Derecha: Foto CUADRADA del equipo
+        # 3. Columna Derecha: Foto CUADRADA del equipo (más grande y sin espacio vacío)
         c_der_col = ctk.CTkFrame(m_info, fg_color="transparent")
-        c_der_col.grid(row=0, column=2, padx=(4, 12), pady=10, sticky="nsew")
+        c_der_col.grid(row=0, column=2, padx=(4, 12), pady=6, sticky="nsew")
         
         foto_path = eq_act.get("foto")
         if foto_path and os.path.exists(foto_path):
             try:
                 img_pil = Image.open(foto_path)
-                ctk_img = ctk.CTkImage(light_image=img_pil, size=(140, 140))
+                ctk_img = ctk.CTkImage(light_image=img_pil, size=(165, 165))
                 lbl_foto = ctk.CTkLabel(c_der_col, image=ctk_img, text="")
-                lbl_foto.pack(expand=True)
+                lbl_foto.pack(expand=True, fill="both")
             except:
-                f_placeholder = ctk.CTkFrame(c_der_col, width=140, height=140, fg_color=C_BG, corner_radius=8)
+                f_placeholder = ctk.CTkFrame(c_der_col, width=165, height=165, fg_color=C_BG, corner_radius=8)
                 f_placeholder.pack_propagate(False)
                 f_placeholder.pack(expand=True)
                 ctk.CTkLabel(f_placeholder, text="📷 Sin Imagen", font=ctk.CTkFont(size=11, weight="bold"), text_color=C_SUBTEXT).pack(expand=True)
         else:
-            f_placeholder = ctk.CTkFrame(c_der_col, width=140, height=140, fg_color=C_BG, corner_radius=8)
+            f_placeholder = ctk.CTkFrame(c_der_col, width=165, height=165, fg_color=C_BG, corner_radius=8)
             f_placeholder.pack_propagate(False)
             f_placeholder.pack(expand=True)
             ctk.CTkLabel(f_placeholder, text="📷 Sin Imagen", font=ctk.CTkFont(size=11, weight="bold"), text_color=C_SUBTEXT).pack(expand=True)
