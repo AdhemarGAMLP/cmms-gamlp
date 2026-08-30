@@ -61,7 +61,7 @@ from vistas.usuarios import VistaUsuarios
 # ========================================================
 # VERSIÓN DEL SISTEMA
 # ========================================================
-VERSION_APP = "v1.8.1"
+VERSION_APP = "v1.0"
 
 
 # ========================================================
@@ -70,7 +70,7 @@ VERSION_APP = "v1.8.1"
 class VentanaLogin(ctk.CTk):
     def __init__(self):
         super().__init__()
-        self.title(f"CMMS GAMLP {VERSION_APP} - Iniciar Sesión")
+        self.title(f"SGEM GAMLP {VERSION_APP} - Iniciar Sesión")
         self.geometry("400x420")
         self.configure(fg_color=C_BG)
         self.resizable(False, False)
@@ -84,8 +84,8 @@ class VentanaLogin(ctk.CTk):
         
         self.usuario_autenticado = None
 
-        ctk.CTkLabel(self, text="🏛️ CMMS GAMLP", font=ctk.CTkFont(size=24, weight="bold"), text_color=C_BLUE).pack(pady=(25, 2))
-        ctk.CTkLabel(self, text=f"Tecnologías Médicas - GAMLP ({VERSION_APP})", font=ctk.CTkFont(size=12), text_color=C_SUBTEXT).pack(pady=(0, 12))
+        ctk.CTkLabel(self, text="🏛️ SGEM GAMLP", font=ctk.CTkFont(size=24, weight="bold"), text_color=C_BLUE).pack(pady=(25, 2))
+        ctk.CTkLabel(self, text=f"Sistema de Gestión de Equipamiento Médico ({VERSION_APP})", font=ctk.CTkFont(size=12), text_color=C_SUBTEXT).pack(pady=(0, 12))
         
         marco = ctk.CTkFrame(self, fg_color=C_CARD, corner_radius=16, border_width=1, border_color=C_BORDER)
         marco.pack(padx=30, pady=5, fill="both", expand=True)
@@ -123,7 +123,7 @@ class VentanaLogin(ctk.CTk):
         v_cfg.grab_set()
         v_cfg.configure(fg_color=C_BG)
         
-        ctk.CTkLabel(v_cfg, text="Conexión con el Servidor HEAS", font=ctk.CTkFont(size=16, weight="bold"), text_color=C_TEXT).pack(pady=(20, 5))
+        ctk.CTkLabel(v_cfg, text="Conexión con el Servidor Central", font=ctk.CTkFont(size=16, weight="bold"), text_color=C_TEXT).pack(pady=(20, 5))
         ctk.CTkLabel(v_cfg, text="Si esta es una PC cliente, ingresa la IP del Servidor Central:", font=ctk.CTkFont(size=11), text_color=C_SUBTEXT).pack(pady=(0, 15), padx=20)
         
         f_campos = ctk.CTkFrame(v_cfg, fg_color=C_CARD, corner_radius=10)
@@ -141,7 +141,7 @@ class VentanaLogin(ctk.CTk):
         
         ctk.CTkLabel(f_campos, text="Nombre de Base de Datos:", font=ctk.CTkFont(weight="bold", size=12)).pack(anchor="w", padx=20, pady=(0, 2))
         e_name = ctk.CTkEntry(f_campos, width=320)
-        e_name.insert(0, str(CONFIG.get("db_name", "heas_db")))
+        e_name.insert(0, str(CONFIG.get("db_name", "postgres")))
         e_name.pack(padx=20, pady=(0, 15))
         
         lbl_status = ctk.CTkLabel(v_cfg, text="", font=ctk.CTkFont(size=12, weight="bold"))
@@ -192,7 +192,7 @@ class SistemaMantenimiento(ctk.CTk):
         self.es_jefe = usuario.get("rol") == "jefe"
         self.modo_offline = False
         
-        self.title(f"CMMS GAMLP {VERSION_APP} - Tecnologías Médicas | GAMLP (Rol: {usuario['rol'].upper()})")
+        self.title(f"SGEM GAMLP {VERSION_APP} - Sistema de Gestión de Equipamiento Médico | GAMLP (Rol: {usuario['rol'].upper()})")
         self.geometry("1300x800")
 
         self.after(100, lambda: self.state('zoomed'))
@@ -607,8 +607,8 @@ class SistemaMantenimiento(ctk.CTk):
         self.top_sidebar = ctk.CTkFrame(self.sidebar, fg_color="transparent")
         self.top_sidebar.pack(side="top", fill="x", pady=(10, 2))
         
-        self.lbl_logo = ctk.CTkLabel(self.top_sidebar, text=f"CMMS GAMLP {VERSION_APP}\nTecnologías Médicas", font=ctk.CTkFont(size=17, weight="bold"), text_color=C_TEXT)
-        self.lbl_logo.pack(pady=(5, 2), padx=15)
+        self.lbl_logo = ctk.CTkLabel(self.top_sidebar, text="SGEM GAMLP", font=ctk.CTkFont(size=20, weight="bold"), text_color=C_TEXT)
+        self.lbl_logo.pack(pady=(12, 4), padx=15)
 
         # Indicador de Modo Offline / Lectura
         self.lbl_modo_offline = ctk.CTkLabel(
@@ -1791,7 +1791,7 @@ class SistemaMantenimiento(ctk.CTk):
         lbl_qr.bind("<Button-1>", lambda event: abrir_web())
         
         def descargar_qr_etiqueta():
-            """Genera y descarga una etiqueta PNG con QR + nombre + HEAS/AF + ubicacion."""
+            """Genera y descarga una etiqueta PNG con QR + nombre + Código AF + ubicación."""
             from PIL import ImageDraw, ImageFont
             try:
                 qr_size = 280

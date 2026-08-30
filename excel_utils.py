@@ -13,13 +13,6 @@ except ImportError:
 def obtener_ruta_plantilla(nombre_archivo):
     """
     Busca la plantilla Excel por nombre en todas las ubicaciones posibles.
-    Orden de prioridad:
-      1. Junto al .exe instalado                 (Inno Setup / Carpeta de instalación)
-      2. Subcarpeta _internal junto al .exe      (PyInstaller onedir)
-      3. Carpeta temporal _MEIPASS              (PyInstaller onefile con --add-data)
-      4. Carpeta del proyecto en desarrollo      (C:\\Users\\...\\Desktop\\HEAS_CMMS\\plantillas)
-      5. Carpeta de Datos de Gestión             (C:\\Users\\...\\Desktop\\Datos_De_Gestion_HEAS\\plantillas)
-      6. Variable de entorno HEAS_PLANTILLAS_DIR (ruta personalizada)
     """
     import sys
     from config import BASE_DIR
@@ -28,28 +21,25 @@ def obtener_ruta_plantilla(nombre_archivo):
 
     if hasattr(sys, 'frozen'):
         dir_exe = os.path.dirname(sys.executable)
-        # 1. Junto al .exe instalado: C:\Program Files\HEAS GESTION\plantillas\
         candidatos.append(os.path.join(dir_exe, "plantillas", nombre_archivo))
-        # 2. Subcarpeta _internal: C:\Program Files\HEAS GESTION\_internal\plantillas\
         candidatos.append(os.path.join(dir_exe, "_internal", "plantillas", nombre_archivo))
-        # 3. Un nivel arriba por si el exe está en una subcarpeta
         candidatos.append(os.path.join(os.path.dirname(dir_exe), "plantillas", nombre_archivo))
 
-    # 4. Carpeta temporal PyInstaller onefile (_MEIPASS)
+    # Carpeta temporal PyInstaller onefile (_MEIPASS)
     if hasattr(sys, '_MEIPASS'):
         candidatos.append(os.path.join(sys._MEIPASS, "plantillas", nombre_archivo))
         candidatos.append(os.path.join(sys._MEIPASS, nombre_archivo))
 
-    # 5. Entorno de desarrollo / Código fuente
+    # Entorno de desarrollo / Código fuente
     ruta_script = os.path.dirname(os.path.abspath(__file__))
     candidatos.append(os.path.join(ruta_script, "plantillas", nombre_archivo))
-    candidatos.append(os.path.join(os.path.expanduser("~"), "Desktop", "HEAS_CMMS", "plantillas", nombre_archivo))
+    candidatos.append(os.path.join(os.path.expanduser("~"), "Desktop", "CMMS_GAMLP", "plantillas", nombre_archivo))
 
-    # 6. Carpeta en Datos_De_Gestion_HEAS
+    # Carpeta en Datos_De_Gestion_GAMLP
     candidatos.append(os.path.join(BASE_DIR, "plantillas", nombre_archivo))
 
-    # 7. Variable de entorno personalizada
-    env_dir = os.environ.get("HEAS_PLANTILLAS_DIR", "")
+    # Variable de entorno personalizada
+    env_dir = os.environ.get("GAMLP_PLANTILLAS_DIR", "")
     if env_dir:
         candidatos.append(os.path.join(env_dir, nombre_archivo))
 

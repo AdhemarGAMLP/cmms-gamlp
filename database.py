@@ -676,7 +676,7 @@ def crear_paquete_migracion(destino_zip):
             # Añadir el archivo JSON principal
             zf.write(temp_json, "backup_base_datos.json")
 
-            # Añadir las carpetas de Datos_De_Gestion_HEAS
+            # Añadir las carpetas de Datos_De_Gestion_GAMLP
             if os.path.exists(BASE_DIR):
                 for root, dirs, files in os.walk(BASE_DIR):
                     # No incluir la carpeta de respaldos dentro del paquete
@@ -698,7 +698,7 @@ def crear_paquete_migracion(destino_zip):
 def restaurar_paquete_migracion(origen_zip):
     """
     Descomprime un paquete ZIP en la nueva computadora:
-      1. Extrae todas las fotos, manuales y documentos a Datos_De_Gestion_HEAS.
+      1. Extrae todas las fotos, manuales y documentos a Datos_De_Gestion_GAMLP.
       2. Restaura toda la base de datos PostgreSQL usando el backup_base_datos.json incluido.
     """
     import os
@@ -846,22 +846,10 @@ def ejecutar_en_segundo_plano(func, *args, **kwargs):
     return t
 
 def _obtener_ruta_cache_datos():
-    ruta_gamlp = os.path.join(os.path.expanduser("~"), ".gamlp_data_cache.json")
-    if os.path.exists(ruta_gamlp):
-        return ruta_gamlp
-    ruta_heas = os.path.join(os.path.expanduser("~"), ".heas_data_cache.json")
-    if os.path.exists(ruta_heas):
-        return ruta_heas
-    return ruta_gamlp
+    return os.path.join(os.path.expanduser("~"), ".gamlp_data_cache.json")
 
 def _obtener_ruta_cola_offline():
-    ruta_gamlp = os.path.join(os.path.expanduser("~"), ".gamlp_offline_queue.json")
-    if os.path.exists(ruta_gamlp):
-        return ruta_gamlp
-    ruta_heas = os.path.join(os.path.expanduser("~"), ".heas_offline_queue.json")
-    if os.path.exists(ruta_heas):
-        return ruta_heas
-    return ruta_gamlp
+    return os.path.join(os.path.expanduser("~"), ".gamlp_offline_queue.json")
 
 def guardar_cache_local_datos(datos_dict):
     """Guarda una copia de respaldo de lectura de todos los datos en el disco local."""

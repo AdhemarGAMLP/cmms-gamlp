@@ -2,13 +2,7 @@ import os
 import json
 
 def _obtener_ruta_config():
-    ruta_gamlp = os.path.join(os.path.expanduser("~"), "GAMLP_config.json")
-    if os.path.exists(ruta_gamlp):
-        return ruta_gamlp
-    ruta_heas = os.path.join(os.path.expanduser("~"), "HEAS_config.json")
-    if os.path.exists(ruta_heas):
-        return ruta_heas
-    return ruta_gamlp
+    return os.path.join(os.path.expanduser("~"), "GAMLP_config.json")
 
 def cargar_config():
     """Lee el archivo JSON de configuración en la carpeta del usuario."""

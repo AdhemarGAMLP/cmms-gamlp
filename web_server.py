@@ -272,9 +272,9 @@ HTML_INVENTARIO = """
 </head>
 <body>
     <div class="header">
-        <span class="badge-gamlp">GAMLP • Tecnologías Médicas</span>
+        <span class="badge-gamlp">GAMLP • SGEM</span>
         <h1>Inventario de Equipos Médicos</h1>
-        <p>Gobierno Autónomo Municipal de La Paz</p>
+        <p>Sistema de Gestión de Equipamiento Médico</p>
     </div>
 
     <div class="container">
@@ -570,7 +570,7 @@ def ver_equipo(id_equipo):
                 ⚠️ Tienes <span id="sync-count">0</span> reporte(s) guardado(s) offline. 
                 <a href="#" onclick="intentarSincronizarAhora(); return false;" style="color: white; text-decoration: underline; margin-left: 10px;">Sincronizar ahora</a>
             </div>
-            <div class="tarjeta"><div class="cabecera"><h3 style="margin:0;">CMMS GAMLP - Tecnologías Médicas</h3></div>
+            <div class="tarjeta"><div class="cabecera"><h3 style="margin:0;">SGEM GAMLP - Sistema de Gestión de Equipamiento Médico</h3></div>
                 <h2 style="margin:0;">{{ eq['nombre'] }}</h2>
                 <div style="margin-top: 5px;">
                     <div class="estado {% if eq['estado'] == 'Baja' %}baja{% elif eq['estado'] == 'En Espera de Repuesto' %}espera{% elif eq['estado'] == 'Fuera de Servicio' %}inoperante{% endif %}">{{ eq['estado'] }}</div>
@@ -1172,7 +1172,7 @@ if __name__ == '__main__':
 
     ip = obtener_ip_local()
     print("="*60)
-    print("     CMMS GAMLP - SERVIDOR WEB INDEPENDIENTE (v1.5)")
+    print("     SGEM GAMLP - SERVIDOR WEB INDEPENDIENTE (v1.0)")
     print(f" Servidor activo en: http://{ip}:5000")
     print(" Mantén esta ventana abierta para que los códigos QR funcionen")
     print(" incluso cuando el programa principal esté cerrado.")
