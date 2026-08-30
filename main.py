@@ -473,19 +473,35 @@ class SistemaMantenimiento(ctk.CTk):
 
 
     def iniciar_sincronizacion_background(self):
-        """Monitorea cambios en Supabase Cloud en un hilo secundario sin pausar ni congelar la interfaz gráfica."""
+        """Monitorea estado de conectividad a internet y sincronización en la nube en segundo plano."""
         def _hilo_sync():
-            import time
+            import time, socket
             while getattr(self, "_ejecutando", True):
-                time.sleep(15)  # Chequeo cada 15 segundos en segundo plano
+                time.sleep(5)
+                # 1. Comprobar conectividad real a internet
+                online = False
                 try:
-                    if getattr(self, "modo_offline", False):
-                        conn_test = obtener_conexion()
-                        if conn_test:
-                            conn_test.close()
-                            print("[INFO] ¡Reconexión con el Servidor Central detectada! Sincronizando...")
-                            self.after(0, self._aplicar_reconeccion_online)
+                    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    s.settimeout(2.5)
+                    s.connect(("8.8.8.8", 53))
+                    s.close()
+                    online = True
+                except Exception:
+                    online = False
+                
+                estado_anterior = getattr(self, "modo_offline", False)
+                nuevo_estado_offline = not online
+
+                if estado_anterior != nuevo_estado_offline:
+                    self.modo_offline = nuevo_estado_offline
+                    if not nuevo_estado_offline:
+                        print("[INFO] ¡Reconexión con Internet y Servidor detectada! Sincronizando...")
+                        self.after(0, self._aplicar_reconeccion_online)
                     else:
+                        print("[WARN] Conexión perdida a Internet. Cambiando a Modo Offline...")
+                        self.after(0, self.actualizar_estado_offline_ui)
+                elif not nuevo_estado_offline:
+                    try:
                         firma_actual = obtener_firma_datos_db()
                         if firma_actual and firma_actual != getattr(self, "ultima_firma_db", None):
                             primera_vez = getattr(self, "ultima_firma_db", None) is None
@@ -493,8 +509,8 @@ class SistemaMantenimiento(ctk.CTk):
                             if not primera_vez:
                                 print("[INFO] ¡Cambio detectado en la Base de Datos Central! Sincronizando...")
                                 self.after(0, self._aplicar_datos_sincronizados)
-                except Exception:
-                    pass
+                    except Exception:
+                        pass
 
         t = threading.Thread(target=_hilo_sync, daemon=True)
         t.start()
@@ -520,17 +536,21 @@ class SistemaMantenimiento(ctk.CTk):
         self.actualizar_boton_alertas()
 
     def chequear_datos_sucios(self):
-        """Chequeo instantáneo en memoria de datos modificados localmente."""
-        if getattr(self, "datos_sucios", False):
+        if getattr(self, 'datos_sucios', False):
             self.datos_sucios = False
             self._aplicar_datos_sincronizados()
         self.after(1500, self.chequear_datos_sucios)
 
 
     def actualizar_estado_offline_ui(self):
-        if hasattr(self, 'lbl_modo_offline'):
-            if self.modo_offline:
-                self.lbl_modo_offline.pack(pady=(0, 5), padx=15, fill="x")
+        if hasattr(self, 'lbl_estado_conexion') and self.lbl_estado_conexion.winfo_exists():
+            if getattr(self, 'modo_offline', False):
+                self.lbl_estado_conexion.configure(text="🔴 Desconectado (Offline)", text_color="#DC2626")
+            else:
+                self.lbl_estado_conexion.configure(text="🟢 Conectado", text_color="#16A34A")
+        if hasattr(self, 'lbl_modo_offline') and self.lbl_modo_offline.winfo_exists():
+            if getattr(self, 'modo_offline', False):
+                self.lbl_modo_offline.pack(before=self.lbl_estado_conexion, pady=(0, 5), padx=15, fill="x")
             else:
                 self.lbl_modo_offline.pack_forget()
 
@@ -797,8 +817,14 @@ class SistemaMantenimiento(ctk.CTk):
         if getattr(self, "modo_offline", False):
             self.lbl_modo_offline.pack(pady=(0, 6), padx=12, fill="x")
 
-        self.lbl_qr = ctk.CTkLabel(self.top_sidebar, text=f"Red QR: {self.ip_local}", font=ctk.CTkFont(size=10), text_color=C_SUBTEXT)
-        self.lbl_qr.pack(pady=(0, 1))
+        # Indicador de Estado de Conexión en Tiempo Real
+        self.lbl_estado_conexion = ctk.CTkLabel(
+            self.top_sidebar, 
+            text="🔴 Desconectado (Offline)" if getattr(self, "modo_offline", False) else "🟢 Conectado", 
+            font=ctk.CTkFont(size=10, weight="bold"), 
+            text_color="#DC2626" if getattr(self, "modo_offline", False) else "#16A34A"
+        )
+        self.lbl_estado_conexion.pack(pady=(0, 1))
         
         self.lbl_name = ctk.CTkLabel(self.top_sidebar, text="Rudel Adhemar Santos Medina", font=ctk.CTkFont(size=10, slant="italic"), text_color=C_SUBTEXT)
         self.lbl_name.pack(pady=(0, 4))
@@ -2545,7 +2571,8 @@ class SistemaMantenimiento(ctk.CTk):
         if modo == "compact":
             self.lbl_logo.configure(font=ctk.CTkFont(size=16, weight="bold"))
             self.top_sidebar.pack_configure(pady=(10, 2))
-            self.lbl_qr.pack_configure(pady=(0, 2))
+            if hasattr(self, 'lbl_estado_conexion'):
+                self.lbl_estado_conexion.pack_configure(pady=(0, 2))
             self.lbl_name.pack_configure(pady=(0, 6))
             self.btn_alertas.configure(height=34)
             self.btn_alertas.pack_configure(pady=(0, 8))
@@ -2558,7 +2585,8 @@ class SistemaMantenimiento(ctk.CTk):
         else:
             self.lbl_logo.configure(font=ctk.CTkFont(size=20, weight="bold"))
             self.top_sidebar.pack_configure(pady=(20, 5))
-            self.lbl_qr.pack_configure(pady=(0, 2))
+            if hasattr(self, 'lbl_estado_conexion'):
+                self.lbl_estado_conexion.pack_configure(pady=(0, 2))
             self.lbl_name.pack_configure(pady=(0, 10))
             self.btn_alertas.configure(height=38)
             self.btn_alertas.pack_configure(pady=(0, 10))
