@@ -1025,6 +1025,51 @@ class SistemaMantenimiento(ctk.CTk):
         
         ctk.CTkLabel(sf, text="1. Identificación y Ubicación", font=ctk.CTkFont(weight="bold", size=14), text_color=C_BLUE).pack(anchor="w", pady=(10, 5))
         
+        # Red de Salud y Centro de Salud Oficiales GAMLP
+        from database import obtener_jerarquia_sedes_db
+        sedes_form_data = obtener_jerarquia_sedes_db()
+        redes_opts = [r["nombre"] for r in sedes_form_data.get("redes", [])]
+        if not redes_opts:
+            redes_opts = [
+                "RED 1-SUR OESTE (MACRODISTRITO COTAHUMA)",
+                "RED 2-NOR OESTE (MACRODISTRITO MAX PAREDES)",
+                "RED 3-NORTE CENTRAL (MACRODISTRITO PERIFERICA CENTRAL)",
+                "RED 4-SAN ANTONIO (MACRODISTRITO SAN ANTONIO)",
+                "RED 5-SUR (MACRODISTRITO SUR)"
+            ]
+
+        ctk.CTkLabel(sf, text="Red de Salud:", font=ctk.CTkFont(size=11, weight="bold"), text_color=C_TEXT).pack(anchor="w", padx=150, pady=(5, 0))
+        combo_red_form = ctk.CTkComboBox(sf, width=500, values=redes_opts)
+        combo_red_form.pack(pady=(0, 5))
+
+        ctk.CTkLabel(sf, text="Centro de Salud / Establecimiento:", font=ctk.CTkFont(size=11, weight="bold"), text_color=C_TEXT).pack(anchor="w", padx=150, pady=(5, 0))
+        combo_centro_form = ctk.CTkComboBox(sf, width=500, values=["Seleccione Red"])
+        combo_centro_form.pack(pady=(0, 5))
+
+        def al_cambiar_red_form(red_sel):
+            red_obj = next((r for r in sedes_form_data.get("redes", []) if r["nombre"] == red_sel), None)
+            red_id = red_obj["id"] if red_obj else None
+            centros = [c["nombre"] for c in sedes_form_data.get("centros", []) if c.get("red_salud_id") == red_id]
+            if not centros:
+                centros = ["CENTRO DE SALUD"]
+            combo_centro_form.configure(values=centros)
+            combo_centro_form.set(centros[0])
+
+        combo_red_form.configure(command=al_cambiar_red_form)
+
+        # Pre-seleccionar según contexto de sede activa o por defecto
+        sede_activa = getattr(self, "contexto_sede", {}) or {}
+        red_default = sede_activa.get("red_salud")
+        if red_default and red_default in redes_opts:
+            combo_red_form.set(red_default)
+        else:
+            combo_red_form.set(redes_opts[0])
+        al_cambiar_red_form(combo_red_form.get())
+
+        centro_default = sede_activa.get("centro_salud")
+        if centro_default and not str(centro_default).startswith("[ Todos"):
+            combo_centro_form.set(centro_default)
+
         val_cat = [f"{c['nombre']} - {c.get('marca', '')} - {c.get('modelo', '')}" for c in self.datos["catalogo"]]
         ctk.CTkLabel(sf, text="Modelo de Catálogo:", font=ctk.CTkFont(size=11, weight="bold"), text_color=C_TEXT).pack(anchor="w", padx=150, pady=(5, 0))
         combo_tipo = ctk.CTkComboBox(sf, width=500, values=val_cat if val_cat else ["No hay modelos"])
@@ -1378,6 +1423,15 @@ class SistemaMantenimiento(ctk.CTk):
         btn_adicionales.pack(pady=10)
 
         if eq_edit:
+            red_nom_edit = eq_edit.get("red_salud_nombre") or eq_edit.get("red_salud")
+            if red_nom_edit and red_nom_edit in redes_opts:
+                combo_red_form.set(red_nom_edit)
+                al_cambiar_red_form(red_nom_edit)
+            
+            cen_nom_edit = eq_edit.get("centro_salud_nombre") or eq_edit.get("centro_salud")
+            if cen_nom_edit:
+                combo_centro_form.set(cen_nom_edit)
+
             e_id.insert(0, eq_edit["id"] or "")
             e_id.configure(state="disabled")
             e_serie.insert(0, eq_edit.get("numero_serie") or "")
@@ -1551,6 +1605,13 @@ class SistemaMantenimiento(ctk.CTk):
                 except Exception:
                     return ""
 
+            red_sel_val = combo_red_form.get().strip()
+            cen_sel_val = combo_centro_form.get().strip()
+            red_obj_val = next((r for r in sedes_form_data.get("redes", []) if r["nombre"] == red_sel_val), None)
+            cen_obj_val = next((c for c in sedes_form_data.get("centros", []) if c["nombre"] == cen_sel_val), None)
+            red_id_val = red_obj_val["id"] if red_obj_val else None
+            cen_id_val = cen_obj_val["id"] if cen_obj_val else None
+
             # Construir objeto equipo para actualización inmediata en memoria
             eq_dict = {
                 "id": e_id.get().strip(),
@@ -1559,6 +1620,12 @@ class SistemaMantenimiento(ctk.CTk):
                 "modelo": n_mod,
                 "servicio": e_servicio.get().strip(),
                 "area": combo_area.get(),
+                "red_salud_id": red_id_val,
+                "red_salud_nombre": red_sel_val,
+                "centro_salud_id": cen_id_val,
+                "centro_salud_nombre": cen_sel_val,
+                "municipio_nombre": "GAMLP",
+                "departamento_nombre": "La Paz",
                 "procedencia": e_procedencia.get().strip(),
                 "fabricante": e_fabricante.get().strip(),
                 "proveedor": e_proveedor.get().strip(),
@@ -1630,7 +1697,8 @@ class SistemaMantenimiento(ctk.CTk):
                 cal_adq.get_date(), datetime.now().strftime("%Y-%m-%d"), eq_dict["foto"], f_gar_val, eq_dict["numero_serie"], f_gar_ini_val, costo_val,
                 eq_dict["voltaje"], eq_dict["potencia"], eq_dict["temperatura"], eq_dict["humedad"], eq_dict["corriente"], eq_dict["peso"], eq_dict["dimensiones"], eq_dict["resolucion"],
                 eq_dict["contexto_operacional"], eq_dict["funciones_equipo"], eq_dict["acciones_preventivas"], eq_dict["acciones_falla"],
-                eq_dict["fallas_funcionales"], eq_dict["causas_fallo"], eq_dict["efectos_fallo"], eq_dict["efecto_entorno"], eq_dict["observaciones"]
+                eq_dict["fallas_funcionales"], eq_dict["causas_fallo"], eq_dict["efectos_fallo"], eq_dict["efecto_entorno"], eq_dict["observaciones"],
+                eq_dict["red_salud_id"], eq_dict["red_salud_nombre"], eq_dict["centro_salud_id"], eq_dict["centro_salud_nombre"], eq_dict["municipio_nombre"], eq_dict["departamento_nombre"]
             )
 
             def _guardar_equipo_db(params):
@@ -1641,13 +1709,15 @@ class SistemaMantenimiento(ctk.CTk):
                         cur.execute("""
                             INSERT INTO equipos (id, nombre, marca, modelo, servicio, area, procedencia, fabricante, proveedor, anio_fab,
                             t_elec, t_elco, t_mec, t_hid, t_neu, t_vap, a_comp, a_como, a_don, te_fijo, te_mov, te_por, garantia, criticidad, categorizacion_detalle, estado, fecha_adquisicion, fecha_registro, foto, fecha_vencimiento_garantia, numero_serie, fecha_inicio_garantia, costo,
-                            voltaje, potencia, temperatura, humedad, corriente, peso, dimensiones, resolucion, contexto_operacional, funciones_equipo, acciones_preventivas, acciones_falla, fallas_funcionales, causas_fallo, efectos_fallo, efecto_entorno, observaciones)
-                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                            voltaje, potencia, temperatura, humedad, corriente, peso, dimensiones, resolucion, contexto_operacional, funciones_equipo, acciones_preventivas, acciones_falla, fallas_funcionales, causas_fallo, efectos_fallo, efecto_entorno, observaciones,
+                            red_salud_id, red_salud_nombre, centro_salud_id, centro_salud_nombre, municipio_nombre, departamento_nombre)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                             ON CONFLICT (id) DO UPDATE SET
                             nombre=EXCLUDED.nombre, marca=EXCLUDED.marca, modelo=EXCLUDED.modelo, servicio=EXCLUDED.servicio, area=EXCLUDED.area, procedencia=EXCLUDED.procedencia, fabricante=EXCLUDED.fabricante, proveedor=EXCLUDED.proveedor, anio_fab=EXCLUDED.anio_fab,
                             t_elec=EXCLUDED.t_elec, t_elco=EXCLUDED.t_elco, t_mec=EXCLUDED.t_mec, t_hid=EXCLUDED.t_hid, t_neu=EXCLUDED.t_neu, t_vap=EXCLUDED.t_vap, a_comp=EXCLUDED.a_comp, a_como=EXCLUDED.a_como, a_don=EXCLUDED.a_don,
                             te_fijo=EXCLUDED.te_fijo, te_mov=EXCLUDED.te_mov, te_por=EXCLUDED.te_por, garantia=EXCLUDED.garantia, criticidad=EXCLUDED.criticidad, categorizacion_detalle=EXCLUDED.categorizacion_detalle, estado=EXCLUDED.estado, fecha_adquisicion=EXCLUDED.fecha_adquisicion, foto=EXCLUDED.foto, fecha_vencimiento_garantia=EXCLUDED.fecha_vencimiento_garantia, numero_serie=EXCLUDED.numero_serie, fecha_inicio_garantia=EXCLUDED.fecha_inicio_garantia, costo=EXCLUDED.costo,
-                            voltaje=EXCLUDED.voltaje, potencia=EXCLUDED.potencia, temperatura=EXCLUDED.temperatura, humedad=EXCLUDED.humedad, corriente=EXCLUDED.corriente, peso=EXCLUDED.peso, dimensiones=EXCLUDED.dimensiones, resolucion=EXCLUDED.resolucion, contexto_operacional=EXCLUDED.contexto_operacional, funciones_equipo=EXCLUDED.funciones_equipo, acciones_preventivas=EXCLUDED.acciones_preventivas, acciones_falla=EXCLUDED.acciones_falla, fallas_funcionales=EXCLUDED.fallas_funcionales, causas_fallo=EXCLUDED.causas_fallo, efectos_fallo=EXCLUDED.efectos_fallo, efecto_entorno=EXCLUDED.efecto_entorno, observaciones=EXCLUDED.observaciones;
+                            voltaje=EXCLUDED.voltaje, potencia=EXCLUDED.potencia, temperatura=EXCLUDED.temperatura, humedad=EXCLUDED.humedad, corriente=EXCLUDED.corriente, peso=EXCLUDED.peso, dimensiones=EXCLUDED.dimensiones, resolucion=EXCLUDED.resolucion, contexto_operacional=EXCLUDED.contexto_operacional, funciones_equipo=EXCLUDED.funciones_equipo, acciones_preventivas=EXCLUDED.acciones_preventivas, acciones_falla=EXCLUDED.acciones_falla, fallas_funcionales=EXCLUDED.fallas_funcionales, causas_fallo=EXCLUDED.causas_fallo, efectos_fallo=EXCLUDED.efectos_fallo, efecto_entorno=EXCLUDED.efecto_entorno, observaciones=EXCLUDED.observaciones,
+                            red_salud_id=EXCLUDED.red_salud_id, red_salud_nombre=EXCLUDED.red_salud_nombre, centro_salud_id=EXCLUDED.centro_salud_id, centro_salud_nombre=EXCLUDED.centro_salud_nombre, municipio_nombre=EXCLUDED.municipio_nombre, departamento_nombre=EXCLUDED.departamento_nombre;
                         """, params)
                         conn.commit()
                         cur.close()
@@ -2056,11 +2126,23 @@ class SistemaMantenimiento(ctk.CTk):
         
         def _crear_badge(padre, texto, color_bg, color_txt="#FFFFFF"):
             b = ctk.CTkFrame(padre, fg_color=color_bg, corner_radius=6, height=22)
-            b.pack(side="left", padx=(0, 6))
+            b.pack(side="left", padx=(0, 5))
             ctk.CTkLabel(b, text=f" {texto} ", font=ctk.CTkFont(size=10, weight="bold"), text_color=color_txt).pack(padx=6, pady=1)
             
+        red_nombre_full = eq_act.get('red_salud_nombre') or eq_act.get('red_salud') or 'Red GAMLP'
+        centro_nombre_full = eq_act.get('centro_salud_nombre') or eq_act.get('centro_salud') or 'Centro de Salud'
+
+        if "RED 1" in red_nombre_full.upper(): red_badge = "🌐 RED 1 - SUR OESTE"
+        elif "RED 2" in red_nombre_full.upper(): red_badge = "🌐 RED 2 - NOR OESTE"
+        elif "RED 3" in red_nombre_full.upper(): red_badge = "🌐 RED 3 - NORTE CENTRAL"
+        elif "RED 4" in red_nombre_full.upper(): red_badge = "🌐 RED 4 - SAN ANTONIO"
+        elif "RED 5" in red_nombre_full.upper(): red_badge = "🌐 RED 5 - SUR"
+        else: red_badge = f"🌐 {red_nombre_full}"
+
+        _crear_badge(f_badges, f"🔑 {eq_act['id']}", C_BG, C_TEXT)
+        _crear_badge(f_badges, red_badge, "#E2E8F0", C_BLUE)
+        _crear_badge(f_badges, f"🏥 {centro_nombre_full}", "#E2E8F0", C_TEXT)
         _crear_badge(f_badges, f"📍 {eq_act.get('servicio', 'Servicio')}", C_BG, C_TEXT)
-        _crear_badge(f_badges, f"🏥 {eq_act.get('area', 'General')}", C_BG, C_TEXT)
         crit_txt = str(eq_act.get('criticidad') or 'Riesgo Medio')
         crit_color = C_RED if "Alto" in crit_txt else (C_ORANGE if "Medio" in crit_txt else C_GREEN)
         _crear_badge(f_badges, f"⚡ {crit_txt}", crit_color, "#FFFFFF")

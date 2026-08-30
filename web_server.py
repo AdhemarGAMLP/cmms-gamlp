@@ -577,9 +577,11 @@ def ver_equipo(id_equipo):
                 </div>
                 <div style="margin-top: 20px; font-size: 15px; line-height: 1.6;">
                     <p><strong>ID:</strong> {{ eq['id'] }}</p>
+                    <p><strong>Red de Salud:</strong> {{ eq['red_salud_nombre'] or 'GAMLP' }}</p>
+                    <p><strong>Centro de Salud:</strong> {{ eq['centro_salud_nombre'] or 'Centro de Salud' }}</p>
                     <p><strong>S/N:</strong> {{ eq['numero_serie'] or 'Sin Serie' }}</p>
                     <p><strong>Modelo:</strong> {{ eq['marca'] }} / {{ eq['modelo'] }}</p>
-                    <p><strong>Área:</strong> {{ eq['servicio'] }} - {{ eq['area'] }}</p>
+                    <p><strong>Área / Servicio:</strong> {{ eq['servicio'] }} - {{ eq['area'] }}</p>
                     <p><strong>Garantía:</strong> {{ garantia_str }}</p>
                     <p style="color: #FF9500;"><strong>Criticidad:</strong> {{ eq['criticidad'] }}</p>
                 </div>
