@@ -177,7 +177,9 @@ class VentanaSelectorSede(ctk.CTkToplevel):
 
     def on_red_cambiada(self, red_sel):
         if red_sel.startswith("[ Todas"):
-            self.combo_centro.configure(values=["[ Todos los Centros de GAMLP ]"])
+            todos_los_centros = sorted(list(set(c["nombre"] for c in self.sedes_data.get("centros", []))))
+            centros_vals = ["[ Todos los Centros de GAMLP ]"] + todos_los_centros
+            self.combo_centro.configure(values=centros_vals)
             self.combo_centro.set("[ Todos los Centros de GAMLP ]")
         else:
             red_obj = next((r for r in self.sedes_data.get("redes", []) if r["nombre"] == red_sel), None)
@@ -185,7 +187,7 @@ class VentanaSelectorSede(ctk.CTkToplevel):
             centros = [c["nombre"] for c in self.sedes_data.get("centros", []) if c.get("red_salud_id") == red_id]
             if not centros:
                 centros = ["CENTRO DE SALUD CENTRAL"]
-            centros_con_todos = ["[ Todos los Centros de la Red ]"] + centros
+            centros_con_todos = ["[ Todos los Centros de la Red ]"] + sorted(centros)
             self.combo_centro.configure(values=centros_con_todos)
             self.combo_centro.set(centros_con_todos[0])
             
@@ -202,7 +204,14 @@ class VentanaSelectorSede(ctk.CTkToplevel):
         elif cen.startswith("[ Todos los Centros de la Red"):
             res = f"🌐 {red} (Todos los Centros)"
         else:
-            res = f"📍 {red} • {cen}"
+            # Si se seleccionó un centro específico en modo Todas las Redes, identificar su red
+            cen_obj = next((c for c in self.sedes_data.get("centros", []) if c["nombre"] == cen), None)
+            if cen_obj and red.startswith("[ Todas"):
+                red_padre = next((r for r in self.sedes_data.get("redes", []) if r["id"] == cen_obj.get("red_salud_id")), None)
+                red_txt = red_padre["nombre"] if red_padre else "GAMLP"
+                res = f"📍 {red_txt} • {cen}"
+            else:
+                res = f"📍 {red} • {cen}"
 
         self.lbl_resumen.configure(text=res)
 
@@ -212,17 +221,25 @@ class VentanaSelectorSede(ctk.CTkToplevel):
         red = self.combo_red.get()
         cen = self.combo_centro.get()
 
+        cen_obj = next((c for c in self.sedes_data.get("centros", []) if c["nombre"] == cen), None)
+        
+        # Si eligió un centro específico pero la red estaba en [ Todas las Redes ], resolver su red real
+        if cen_obj and red.startswith("[ Todas"):
+            red_obj = next((r for r in self.sedes_data.get("redes", []) if r["id"] == cen_obj.get("red_salud_id")), None)
+            red_nombre = red_obj["nombre"] if red_obj else red
+        else:
+            red_obj = next((r for r in self.sedes_data.get("redes", []) if r["nombre"] == red), None)
+            red_nombre = red_obj["nombre"] if red_obj else red
+
         depto_obj = next((d for d in self.sedes_data.get("departamentos", []) if d["nombre"] == dep), None)
         mun_obj = next((m for m in self.sedes_data.get("municipios", []) if m["nombre"] == mun), None)
-        red_obj = next((r for r in self.sedes_data.get("redes", []) if r["nombre"] == red), None)
-        cen_obj = next((c for c in self.sedes_data.get("centros", []) if c["nombre"] == cen), None)
 
         contexto = {
             "departamento": dep,
             "departamento_id": depto_obj["id"] if depto_obj else None,
             "municipio": mun,
             "municipio_id": mun_obj["id"] if mun_obj else None,
-            "red_salud": red,
+            "red_salud": red_nombre,
             "red_salud_id": red_obj["id"] if red_obj else None,
             "centro_salud": cen,
             "centro_salud_id": cen_obj["id"] if cen_obj else None,

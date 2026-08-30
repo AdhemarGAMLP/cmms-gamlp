@@ -421,15 +421,15 @@ class VistaCronograma(ctk.CTkFrame):
 
     def ejecutar_descarga_excel(self, anio_inicio):
         from excel_utils import obtener_ruta_plantilla
+        from dateutil.relativedelta import relativedelta
         import openpyxl
         from copy import copy
-        from dateutil.relativedelta import relativedelta
         
         ruta_guardar = filedialog.asksaveasfilename(
             defaultextension=".xlsx",
             filetypes=[("Archivos de Excel", "*.xlsx")],
             title="Guardar Cronograma Anual",
-            initialfile=f"Cronograma_Anual_{anio_inicio}_{anio_inicio+1}.xlsx"
+            initialfile=f"Cronograma_Anual_GAMLP_{anio_inicio}.xlsx"
         )
         if not ruta_guardar:
             return
@@ -441,71 +441,97 @@ class VistaCronograma(ctk.CTkFrame):
             
             Y = anio_inicio
             
-            ws["B2"] = f"PLAN DE MANTENIMIENTO GESTION {Y}"
-            ws["K3"] = f"1ro TRIM {Y}"
-            ws["N3"] = f"2do TRIM {Y}"
-            ws["Q3"] = f"3ro TRIM {Y}"
-            ws["T3"] = f"4to TRIM {Y}"
+            # Actualizar celda E4 (Título de la gestión)
+            ws["E4"] = f"Cronograma de Mantenimientos Preventivos Gestion {Y}"
             
-            # Incluir todos los equipos en el cronograma anual
-            eqs_crono = list(self.app.datos["equipos"])
+            # Actualizar trimestres en fila 6
+            ws["K6"] = f"1ro TRIM {Y}"
+            ws["N6"] = f"2do TRIM {Y}"
+            ws["Q6"] = f"3ro TRIM {Y}"
+            ws["T6"] = f"4to TRIM {Y}"
+            
+            # Obtener equipos filtrados según la sede activa (o todos si es acceso general)
+            eqs_crono = []
+            for eq in self.app.datos.get("equipos", []):
+                if self.app.equipo_cumple_sede_activa(eq):
+                    eqs_crono.append(eq)
+            
+            if not eqs_crono:
+                eqs_crono = list(self.app.datos.get("equipos", []))
                     
-            # Agrupar por (nombre, area, criticidad, es_baja) para separar equipos dados de baja
-            grupos = {}
+            # Eliminar duplicados por ID de equipo
+            unicos_eqs = {}
             for eq in eqs_crono:
-                es_baja = eq.get("estado") == "Baja"
-                key = (eq["nombre"], eq.get("area", ""), str(eq.get("criticidad") or "Riesgo Medio"), es_baja)
-                grupos.setdefault(key, []).append(eq)
+                eq_id = str(eq.get("id") or "").strip()
+                if eq_id and eq_id not in unicos_eqs:
+                    unicos_eqs[eq_id] = eq
+            eqs_lista = list(unicos_eqs.values())
+            
+            # Ordenar: 1° Red de Salud -> 2° Centro de Salud -> 3° Área -> 4° Equipo -> 5° ID
+            def sort_key_crono(e):
+                return (
+                    str(e.get("red_salud_nombre") or "ZZZ").lower(),
+                    str(e.get("centro_salud_nombre") or "ZZZ").lower(),
+                    str(e.get("area") or "ZZZ").lower(),
+                    str(e.get("nombre") or "ZZZ").lower(),
+                    str(e.get("id") or "ZZZ").lower()
+                )
+            eqs_lista.sort(key=sort_key_crono)
                 
-            start_row = 5
-            for idx, (key, list_eq) in enumerate(grupos.items()):
+            start_row = 8
+            thin_side = openpyxl.styles.borders.Side(style="thin", color="CBD5E1")
+            grid_border = openpyxl.styles.Border(left=thin_side, right=thin_side, top=thin_side, bottom=thin_side)
+            font_body = openpyxl.styles.Font(name="Segoe UI", size=10)
+            font_marca_x = openpyxl.styles.Font(name="Segoe UI", size=11, bold=True, color="1E3A8A")
+            fill_x = openpyxl.styles.PatternFill(start_color="EFF6FF", end_color="EFF6FF", fill_type="solid")
+
+            for idx, eq in enumerate(eqs_lista):
                 r = start_row + idx
                 
-                # Escribir información básica
+                # Columnas del nuevo formato:
+                # B (2): N°
+                # C (3): RED
+                # D (4): CENTRO DE SALUD
+                # E (5): AREA
+                # F (6): EQUIPO
+                # G (7): CODIGO DE ACTIVOS FIJOS
+                # H (8): MARCA
+                # I (9): MODELO
+                # J (10): ESTADO
+                
                 ws.cell(row=r, column=2, value=idx + 1)
-                ws.cell(row=r, column=3, value=key[0])
-                ws.cell(row=r, column=4, value=key[1])
-                ws.cell(row=r, column=5, value=len(list_eq))
+                ws.cell(row=r, column=3, value=eq.get("red_salud_nombre") or "-")
+                ws.cell(row=r, column=4, value=eq.get("centro_salud_nombre") or "-")
+                ws.cell(row=r, column=5, value=eq.get("area") or "-")
+                ws.cell(row=r, column=6, value=eq.get("nombre") or "-")
+                ws.cell(row=r, column=7, value=str(eq.get("id") or "-"))
+                ws.cell(row=r, column=8, value=eq.get("marca") or "-")
+                ws.cell(row=r, column=9, value=eq.get("modelo") or "-")
                 
-                provs = list(set([e.get("proveedor","") for e in list_eq if e.get("proveedor")]))
-                ws.cell(row=r, column=6, value=", ".join(provs) if provs else "")
+                estado_str = str(eq.get("estado") or "Operativo")
+                ws.cell(row=r, column=10, value=estado_str)
                 
-                # Auto-llenado de repuestos asociados con este equipo
-                repuestos_nombres = []
-                for eq in list_eq:
-                    cat_str = f"{eq['nombre']} - {eq.get('marca', '')} - {eq.get('modelo', '')}"
-                    for rep in self.app.datos["repuestos"]:
-                        if rep.get("tipo_equipo") == cat_str:
-                            repuestos_nombres.append(rep.get("nombre_repuesto", ""))
-                rep_str = ", ".join(sorted(list(set(r for r in repuestos_nombres if r))))
-                ws.cell(row=r, column=7, value=rep_str)
-                
-                # Criticidad
-                ws.cell(row=r, column=8, value=key[2])
-                
-                # Verificar si algún equipo de la agrupación cuenta con garantía
-                tiene_gar = "Sí" if any(e.get("garantia") == "Con Garantía" for e in list_eq) else "No"
-                ws.cell(row=r, column=9, value=tiene_gar)
-                
-                eq0 = list_eq[0]
-                crit = str(eq0.get("criticidad") or "Riesgo Medio")
-                
-                # Estilo
+                # Formato y estilo base de la fila
                 for c in range(2, 23): # Columnas B (2) a V (22)
-                    dst_cell = ws.cell(row=r, column=c)
-                    src_cell = ws.cell(row=start_row, column=c)
-                    if src_cell.has_style:
-                        dst_cell.font = copy(src_cell.font)
-                        dst_cell.border = copy(src_cell.border)
-                        dst_cell.fill = copy(src_cell.fill)
-                        dst_cell.number_format = copy(src_cell.number_format)
-                        dst_cell.protection = copy(src_cell.protection)
-                        dst_cell.alignment = copy(src_cell.alignment)
-                
-                # Proyección para las marcas 'X'
-                for eq in list_eq:
+                    c_cell = ws.cell(row=r, column=c)
+                    c_cell.font = font_body
+                    c_cell.border = grid_border
+                    
+                    if c == 2 or c == 7 or c == 10: # N°, Código AF, Estado
+                        c_cell.alignment = openpyxl.styles.Alignment(horizontal="center", vertical="center")
+                    elif c in range(11, 23): # Meses
+                        c_cell.alignment = openpyxl.styles.Alignment(horizontal="center", vertical="center")
+                    else:
+                        c_cell.alignment = openpyxl.styles.Alignment(horizontal="left", vertical="center")
+
+                # Proyección para las marcas 'X' según criticidad
+                if estado_str == "Baja":
+                    # No colocar marcas 'X' para equipos de baja
+                    pass
+                else:
                     crit_eq = str(eq.get("criticidad") or "Riesgo Medio")
-                    meses_eq = 3 if "Alto" in crit_eq else (4 if "Medio" in crit_eq else 6)
+                    meses_eq = 3 if ("Alto" in crit_eq or crit_eq == "I") else (4 if ("Medio" in crit_eq or crit_eq == "II") else 6)
+                    
                     f_reg = eq.get("fecha_adquisicion") or eq.get("fecha_registro", self.app.hoy)
                     if isinstance(f_reg, datetime):
                         f_reg = f_reg.date()
@@ -513,15 +539,9 @@ class VistaCronograma(ctk.CTkFrame):
                         try:
                             f_reg = datetime.strptime(f_reg, "%Y-%m-%d").date()
                         except:
-                            # Fallback a fecha_registro
-                            f_reg = eq.get("fecha_registro", self.app.hoy)
-                            if isinstance(f_reg, str):
-                                try:
-                                    f_reg = datetime.strptime(f_reg, "%Y-%m-%d").date()
-                                except:
-                                    f_reg = self.app.hoy
-                            elif isinstance(f_reg, datetime):
-                                f_reg = f_reg.date()
+                            f_reg = self.app.hoy
+                    elif not isinstance(f_reg, date):
+                        f_reg = self.app.hoy
                             
                     if eq.get("garantia") == "Con Garantía" and eq.get("fecha_vencimiento_garantia"):
                         f_venc_g = eq.get("fecha_vencimiento_garantia")
@@ -534,40 +554,29 @@ class VistaCronograma(ctk.CTkFrame):
                             f_venc_g = f_venc_g.date()
                         if f_venc_g:
                             f_reg = f_venc_g + relativedelta(days=+1)
-                                
-                    if eq.get("estado") == "Baja":
-                        # No colocar marcas 'X' por estar de baja
-                        pass
-                    else:
-                        f_iter = f_reg
-                        while True:
-                            f_next = f_iter + relativedelta(months=+meses_eq)
-                            if f_next.year > Y:
-                                break
-                            
-                            if f_next.year == Y:
-                                c_idx = 11 + (f_next.month - 1)
-                                c_cell = ws.cell(row=r, column=c_idx)
-                                c_cell.value = "X"
-                                c_cell.alignment = openpyxl.styles.Alignment(horizontal="center", vertical="center")
-                                c_cell.font = openpyxl.styles.Font(name="Calibri", size=11, bold=True)
-                                
-                            f_iter = f_next
+
+                    f_iter = f_reg
+                    # Proyectar intervenciones
+                    while f_iter.year < Y:
+                        f_iter = f_iter + relativedelta(months=+meses_eq)
                         
-                # Calcular la frecuencia basada en el número de casillas 'X' marcadas
-                if key[3]: # es_baja
-                    ws.cell(row=r, column=10, value="Baja")
-                else:
-                    x_count = sum(1 for c in range(11, 23) if ws.cell(row=r, column=c).value == "X")
-                    ws.cell(row=r, column=10, value=x_count)
+                    while f_iter.year == Y:
+                        c_idx = 11 + (f_iter.month - 1)
+                        if 11 <= c_idx <= 22:
+                            c_cell = ws.cell(row=r, column=c_idx)
+                            c_cell.value = "X"
+                            c_cell.alignment = openpyxl.styles.Alignment(horizontal="center", vertical="center")
+                            c_cell.font = font_marca_x
+                            c_cell.fill = fill_x
+                        f_iter = f_iter + relativedelta(months=+meses_eq)
                 
-            # Borrar filas sobrantes
+            # Borrar filas sobrantes si la plantilla tenía más filas previas
             total_rows = ws.max_row
-            needed_rows = start_row + len(grupos) - 1
-            if total_rows > needed_rows:
+            needed_rows = start_row + len(eqs_lista) - 1
+            if total_rows > needed_rows and needed_rows >= start_row:
                 ws.delete_rows(needed_rows + 1, total_rows - needed_rows)
                 
             wb.save(ruta_guardar)
-            messagebox.showinfo("Éxito", f"Cronograma Anual {Y} exportado correctamente.")
+            messagebox.showinfo("Éxito", f"Cronograma Anual {Y} exportado correctamente con {len(eqs_lista)} equipos.")
         except Exception as e:
             messagebox.showerror("Error al Exportar", f"Hubo un error al generar el archivo:\n{e}")
