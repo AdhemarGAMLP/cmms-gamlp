@@ -518,11 +518,14 @@ def sembrar_datos_sedes_gamlp(cur, conn):
     cur.execute("SELECT id, codigo FROM redes_salud;")
     red_map = {r[1]: r[0] for r in cur.fetchall()}
 
-    # 4. Centros de Salud Oficiales por Red
+    # 4. Limpiar centros_salud antiguos y sembrar ÚNICAMENTE los oficiales
+    cur.execute("DELETE FROM centros_salud;")
+    conn.commit()
+
     centros_por_red = {
         "RED-1": [
             "NIÑO KOLLO", "ALCOREZA", "C.M.I VILLA NUEVO POTOSI", "LA GRUTA", 
-            "BAJO SAN PEDRO", "EL ROSAL", "SAN LUIS", "BIBLIOTECA", 
+            "BAJO SAN PEDRO", "EL ROSAL", "SANN LUIS", "BIBLIOTECA", 
             "BAJO TACAGUA", "TEMBLADERANI", "8 DE DICIEMBRE", 
             "LLOJETA EL VERGEL", "PASANKERY", "ALTO TACAGUA"
         ],
