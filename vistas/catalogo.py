@@ -30,7 +30,7 @@ class VistaCatalogo(ctk.CTkFrame):
         f_filtros = ctk.CTkFrame(self, fg_color="transparent")
         f_filtros.pack(pady=(5, 10), padx=30, fill="x")
         ctk.CTkLabel(f_filtros, text="Ordenar por:", font=ctk.CTkFont(weight="bold", size=12), text_color=C_TEXT).pack(side="left", padx=(0, 5))
-        self.combo_ordenar = ctk.CTkComboBox(f_filtros, values=["Nombre (A-Z)", "Nombre (Z-A)", "Marca", "Modelo", "Área"], command=lambda e: self.refrescar_datos(), width=180, fg_color=C_CARD, border_color=C_BORDER)
+        self.combo_ordenar = ctk.CTkComboBox(f_filtros, values=["Nombre (A-Z)", "Nombre (Z-A)", "Marca", "Modelo", "Área", "Piso"], command=lambda e: self.refrescar_datos(), width=180, fg_color=C_CARD, border_color=C_BORDER)
         self.combo_ordenar.pack(side="left")
         self.combo_ordenar.set("Nombre (A-Z)")
 
@@ -39,10 +39,10 @@ class VistaCatalogo(ctk.CTkFrame):
         
         f_tree_cat = ctk.CTkFrame(marco, fg_color="transparent")
         f_tree_cat.pack(pady=12, padx=12, fill="both", expand=True)
-        self.tabla_cat = ttk.Treeview(f_tree_cat, columns=("Nombre", "Marca", "Modelo", "Área"), show="headings")
+        self.tabla_cat = ttk.Treeview(f_tree_cat, columns=("Nombre", "Marca", "Modelo", "Área", "Piso"), show="headings")
         scrollbar_cat = ttk.Scrollbar(f_tree_cat, orient="vertical", command=self.tabla_cat.yview, style="Vertical.TScrollbar")
         self.tabla_cat.configure(yscrollcommand=scrollbar_cat.set)
-        for c in ("Nombre", "Marca", "Modelo", "Área"):
+        for c in ("Nombre", "Marca", "Modelo", "Área", "Piso"):
             self.tabla_cat.heading(c, text=c)
             self.tabla_cat.column(c, anchor="center")
         self.tabla_cat.pack(side="left", fill="both", expand=True)
@@ -68,7 +68,8 @@ class VistaCatalogo(ctk.CTkFrame):
                 t in str(c.get("nombre", "")).lower() or
                 t in str(c.get("marca", "")).lower() or
                 t in str(c.get("modelo", "")).lower() or
-                t in str(c.get("area", "")).lower()
+                t in str(c.get("area", "")).lower() or
+                t in str(c.get("piso", "")).lower()
             )]
             
         # Ordenación
@@ -83,9 +84,11 @@ class VistaCatalogo(ctk.CTkFrame):
             catalogo.sort(key=lambda x: str(x.get("modelo", "")).lower())
         elif criterio == "Área":
             catalogo.sort(key=lambda x: str(x.get("area", "")).lower())
+        elif criterio == "Piso":
+            catalogo.sort(key=lambda x: str(x.get("piso", "")).lower())
             
         for c in catalogo: 
-            self.tabla_cat.insert("", "end", values=(c["nombre"], c.get("marca", ""), c.get("modelo", ""), c.get("area", "")))
+            self.tabla_cat.insert("", "end", values=(c["nombre"], c.get("marca", ""), c.get("modelo", ""), c.get("area", ""), c.get("piso", "")))
 
     def obtener_seleccion(self):
         sel = self.tabla_cat.focus()
@@ -94,7 +97,7 @@ class VistaCatalogo(ctk.CTkFrame):
     def abrir_formulario_catalogo(self, edit_data=None):
         v = ctk.CTkToplevel(self)
         v.title("Modelo Estandarizado")
-        v.geometry("500x440")
+        v.geometry("500x520")
         v.transient(self.app)
         v.grab_set()
         v.configure(fg_color=C_CARD)
@@ -117,6 +120,24 @@ class VistaCatalogo(ctk.CTkFrame):
         val_areas = [a["nombre"] for a in self.app.datos["areas"]]
         combo_area = ctk.CTkComboBox(v, values=val_areas if val_areas else ["No hay áreas"], width=300)
         combo_area.pack(pady=5)
+        
+        ctk.CTkLabel(v, text="Piso:", font=ctk.CTkFont(weight="bold")).pack(anchor="w", padx=100, pady=(5, 0))
+        e_piso = ctk.CTkEntry(v, placeholder_text="Piso (se llena solo)", width=300)
+        e_piso.configure(state="disabled")
+        e_piso.pack(pady=5)
+        
+        def update_piso(*args):
+            area_sel = combo_area.get()
+            area_obj = next((a for a in self.app.datos["areas"] if a["nombre"] == area_sel), None)
+            piso_val = area_obj.get("piso", "") if area_obj else ""
+            e_piso.configure(state="normal")
+            e_piso.delete(0, "end")
+            e_piso.insert(0, piso_val)
+            e_piso.configure(state="disabled")
+            
+        combo_area.configure(command=update_piso)
+        if hasattr(combo_area, "_entry"):
+            combo_area._entry.bind("<FocusOut>", lambda e: update_piso())
             
         habilitar_autocompletado(en, nombres_existentes)
         habilitar_autocompletado(combo_area, val_areas)
@@ -130,6 +151,7 @@ class VistaCatalogo(ctk.CTkFrame):
                 emo.insert(0, match.get("modelo") or "")
                 if match.get("area"):
                     combo_area.set(match["area"])
+                    update_piso()
                     
         en.configure(command=al_seleccionar_nombre)
         
@@ -139,12 +161,19 @@ class VistaCatalogo(ctk.CTkFrame):
             emo.insert(0, edit_data.get("modelo") or "")
             if edit_data.get("area"):
                 combo_area.set(edit_data["area"])
+                update_piso()
 
         def guardar():
+            update_piso()
+            
             nombre_val = en.get().strip()
             marca_val = em.get().strip()
             modelo_val = emo.get().strip()
             area_val = combo_area.get()
+            
+            e_piso.configure(state="normal")
+            piso_val = e_piso.get()
+            e_piso.configure(state="disabled")
             
             if not nombre_val:
                 messagebox.showwarning("Dato Obligatorio", "Debe introducir el nombre del equipo.")
@@ -165,7 +194,8 @@ class VistaCatalogo(ctk.CTkFrame):
                 "nombre": nombre_val,
                 "marca": marca_val,
                 "modelo": modelo_val,
-                "area": area_val
+                "area": area_val,
+                "piso": piso_val
             }
             if edit_data:
                 for idx_c, ex in enumerate(self.app.datos.get("catalogo", [])):
@@ -180,7 +210,7 @@ class VistaCatalogo(ctk.CTkFrame):
             v.destroy()
 
             # 2. Guardar en PostgreSQL en segundo plano
-            def _guardar_cat_db(nom, mar, mdl, ar, es_edicion, old_data):
+            def _guardar_cat_db(nom, mar, mdl, ar, ps, es_edicion, old_data):
                 conn = obtener_conexion()
                 if conn:
                     try:
@@ -188,21 +218,21 @@ class VistaCatalogo(ctk.CTkFrame):
                         if es_edicion:
                             cur.execute("""
                                 UPDATE catalogo 
-                                SET nombre=%s, marca=%s, modelo=%s, area=%s 
+                                SET nombre=%s, marca=%s, modelo=%s, area=%s, piso=%s 
                                 WHERE nombre=%s AND marca=%s AND modelo=%s
-                            """, (nom, mar, mdl, ar, old_data["nombre"], old_data.get("marca",""), old_data.get("modelo","")))
+                            """, (nom, mar, mdl, ar, ps, old_data["nombre"], old_data.get("marca",""), old_data.get("modelo","")))
                         else:
                             cur.execute("""
-                                INSERT INTO catalogo (nombre, marca, modelo, area) 
-                                VALUES (%s, %s, %s, %s)
-                            """, (nom, mar, mdl, ar))
+                                INSERT INTO catalogo (nombre, marca, modelo, area, piso) 
+                                VALUES (%s, %s, %s, %s, %s)
+                            """, (nom, mar, mdl, ar, ps))
                         conn.commit()
                         cur.close()
                         conn.close()
                     except Exception as e:
                         print(f"[ERROR] Error al guardar catálogo en PostgreSQL: {e}")
 
-            ejecutar_en_segundo_plano(_guardar_cat_db, nombre_val, marca_val, modelo_val, area_val, bool(edit_data), edit_data)
+            ejecutar_en_segundo_plano(_guardar_cat_db, nombre_val, marca_val, modelo_val, area_val, piso_val, bool(edit_data), edit_data)
                 
         ctk.CTkButton(v, text="Guardar", font=ctk.CTkFont(weight="bold"), fg_color=C_BLUE, command=guardar).pack(pady=20)
 

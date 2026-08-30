@@ -312,34 +312,35 @@ def inicializar_bd():
     cur.execute("SELECT COUNT(*) FROM areas;")
     if cur.fetchone()[0] == 0:
         areas_iniciales = [
-            ("Bloque Quirurgico", "", ""),
-            ("Braquioterapia", "", ""),
-            ("Consulta Externa", "", ""),
-            ("Emergencias", "", ""),
-            ("Endoscopia", "", ""),
-            ("Especialidades Clinicas", "", ""),
-            ("Especialidades Quirurgicas", "", ""),
-            ("Esterilizacion", "", ""),
-            ("Gineco-Obstetricia", "", ""),
-            ("Hemodialisis", "", ""),
-            ("Imagenologia", "", ""),
-            ("Laboratorio", "", ""),
-            ("Muelle de almacen", "", ""),
-            ("Neonatologia", "", ""),
-            ("Oncologia", "", ""),
-            ("Parqueo", "", ""),
-            ("Partos", "", ""),
-            ("Patologia", "", ""),
-            ("Pediatria", "", ""),
-            ("Tranfusional", "", ""),
-            ("UCI-A", "", "")
+            ("Especialidades Clinicas", "", "", ""),
+            ("Especialidades Quirurgicas", "", "", ""),
+            ("Pediatria", "", "", ""),
+            ("Gineco-Obstetricia", "", "", ""),
+            ("Consulta Externa", "", "", ""),
+            ("Neonatologia", "", "", ""),
+            ("Bloque Quirurgico", "", "", ""),
+            ("UCI-A", "", "", ""),
+            ("Partos", "", "", ""),
+            ("Emergencias", "", "", ""),
+            ("Imagenologia", "", "", ""),
+            ("Consuta Externa", "", "", ""),
+            ("Oncologia", "", "", ""),
+            ("Endoscopia", "", "", ""),
+            ("Hemodialisis", "", "", ""),
+            ("Tranfusional", "", "", ""),
+            ("Esterilizacion", "", "", ""),
+            ("Braquioterapia", "", "", ""),
+            ("Muelle de almacen", "", "", ""),
+            ("Parqueo", "", "", ""),
+            ("Laboratorio", "", "", ""),
+            ("Patologia", "", "", "")
         ]
-        for name, phone, manager in areas_iniciales:
+        for name, floor, phone, manager in areas_iniciales:
             cur.execute("""
-                INSERT INTO areas (nombre, contacto, encargado)
-                VALUES (%s, %s, %s)
-                ON CONFLICT (nombre) DO NOTHING;
-            """, (name, phone, manager))
+                INSERT INTO areas (nombre, piso, contacto, encargado)
+                VALUES (%s, %s, %s, %s)
+                ON CONFLICT (nombre, piso) DO NOTHING;
+            """, (name, floor, phone, manager))
         conn.commit()
 
     # Sembrar Departamentos, Municipios, Redes y Centros de Salud de GAMLP

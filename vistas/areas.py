@@ -17,7 +17,7 @@ class VistaAreas(ctk.CTkFrame):
         marco = ctk.CTkFrame(self, fg_color=C_CARD, corner_radius=16, border_width=1, border_color=C_BORDER)
         marco.pack(padx=30, pady=10, fill="both", expand=True)
         
-        cols = ("Nombre", "Contacto", "Encargado")
+        cols = ("Nombre", "Piso", "Contacto", "Encargado")
         f_tree_areas = ctk.CTkFrame(marco, fg_color="transparent")
         f_tree_areas.pack(pady=12, padx=12, fill="both", expand=True)
         self.tabla_areas = ttk.Treeview(f_tree_areas, columns=cols, show="headings")
@@ -47,7 +47,7 @@ class VistaAreas(ctk.CTkFrame):
         
         filas = self.app.datos.get("areas", [])
         for r in filas:
-            self.tabla_areas.insert("", "end", values=(r.get("nombre", ""), r.get("contacto", "") or "-", r.get("encargado", "") or "-"))
+            self.tabla_areas.insert("", "end", values=(r.get("nombre", ""), r.get("piso", "") or "-", r.get("contacto", "") or "-", r.get("encargado", "") or "-"))
 
     def obtener_seleccion(self):
         sel = self.tabla_areas.focus()
@@ -56,7 +56,7 @@ class VistaAreas(ctk.CTkFrame):
     def abrir_formulario_area(self, area_editar=None):
         vent = ctk.CTkToplevel(self)
         vent.title("Área / Unidad")
-        vent.geometry("500x380")
+        vent.geometry("500x450")
         vent.transient(self.app)
         vent.grab_set()
         vent.configure(fg_color=C_CARD)
@@ -66,6 +66,10 @@ class VistaAreas(ctk.CTkFrame):
         ctk.CTkLabel(vent, text="Nombre de la Unidad/Área:", font=ctk.CTkFont(weight="bold")).pack(anchor="w", padx=50, pady=(5,0))
         e_nombre = ctk.CTkEntry(vent, placeholder_text="Nombre de la Unidad (ej: Emergencias)", width=400)
         e_nombre.pack(pady=5)
+        
+        ctk.CTkLabel(vent, text="Piso / Nivel:", font=ctk.CTkFont(weight="bold")).pack(anchor="w", padx=50, pady=(5,0))
+        e_piso = ctk.CTkEntry(vent, placeholder_text="Piso / Nivel (opcional)", width=400)
+        e_piso.pack(pady=5)
         
         ctk.CTkLabel(vent, text="Número de Contacto:", font=ctk.CTkFont(weight="bold")).pack(anchor="w", padx=50, pady=(5,0))
         e_contacto = ctk.CTkEntry(vent, placeholder_text="Número telefónico o de red interna", width=400)
@@ -77,11 +81,14 @@ class VistaAreas(ctk.CTkFrame):
         
         if area_editar:
             e_nombre.insert(0, area_editar["nombre"])
+            if area_editar.get("piso"):
+                e_piso.insert(0, area_editar["piso"])
             e_contacto.insert(0, area_editar.get("contacto") or "")
             e_encargado.insert(0, area_editar.get("encargado") or "")
             
         def guardar_area():
             nom = e_nombre.get().strip()
+            pis = e_piso.get().strip()
             con = e_contacto.get().strip()
             enc = e_encargado.get().strip()
             
@@ -92,6 +99,7 @@ class VistaAreas(ctk.CTkFrame):
             # 1. Actualizar memoria y caché de inmediato (0 ms)
             area_obj = {
                 "nombre": nom,
+                "piso": pis,
                 "contacto": con,
                 "encargado": enc
             }
@@ -108,7 +116,7 @@ class VistaAreas(ctk.CTkFrame):
             vent.destroy()
 
             # 2. Guardar en PostgreSQL en segundo plano
-            def _guardar_area_db(n, c, e, es_edit, old_a):
+            def _guardar_area_db(n, p, c, e, es_edit, old_a):
                 conn = obtener_conexion()
                 if conn:
                     try:
@@ -116,22 +124,21 @@ class VistaAreas(ctk.CTkFrame):
                         if es_edit:
                             cur.execute("""
                                 UPDATE areas 
-                                SET nombre=%s, contacto=%s, encargado=%s 
+                                SET nombre=%s, piso=%s, contacto=%s, encargado=%s 
                                 WHERE nombre=%s
-                            """, (n, c, e, old_a["nombre"]))
+                            """, (n, p, c, e, old_a["nombre"]))
                         else:
                             cur.execute("""
-                                INSERT INTO areas (nombre, contacto, encargado) 
-                                VALUES (%s, %s, %s)
-                                ON CONFLICT (nombre) DO UPDATE SET contacto=EXCLUDED.contacto, encargado=EXCLUDED.encargado;
-                            """, (n, c, e))
+                                INSERT INTO areas (nombre, piso, contacto, encargado) 
+                                VALUES (%s, %s, %s, %s)
+                            """, (n, p, c, e))
                         conn.commit()
                         cur.close()
                         conn.close()
                     except Exception as err:
                         print(f"[ERROR] Error al guardar área en PostgreSQL: {err}")
 
-            ejecutar_en_segundo_plano(_guardar_area_db, nom, con, enc, bool(area_editar), area_editar)
+            ejecutar_en_segundo_plano(_guardar_area_db, nom, pis, con, enc, bool(area_editar), area_editar)
                 
         ctk.CTkButton(vent, text="Guardar Cambios", fg_color=C_BLUE, font=ctk.CTkFont(weight="bold"), height=35, command=guardar_area).pack(pady=25)
 
