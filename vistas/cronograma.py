@@ -582,8 +582,12 @@ class VistaCronograma(ctk.CTkFrame):
                             # Preservar el relleno/fondo de la plantilla original y solo marcar X
                             src_font = ws.cell(row=8, column=c_idx).font
                             if src_font:
-                                c_cell.font = copy(src_font)
-                                c_cell.font.bold = True
+                                c_cell.font = openpyxl.styles.Font(
+                                    name=src_font.name or "Segoe UI",
+                                    size=src_font.size or 10,
+                                    bold=True,
+                                    color=src_font.color
+                                )
                             c_align = ws.cell(row=8, column=c_idx).alignment
                             if c_align:
                                 c_cell.alignment = copy(c_align)
