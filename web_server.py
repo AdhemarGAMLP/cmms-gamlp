@@ -422,7 +422,12 @@ HTML_INVENTARIO = """
                        data-garantia="{{ eq['garantia'] or '' }}"
                        data-texto="{{ eq['nombre'] }} {{ eq['marca'] }} {{ eq['modelo'] }} {{ eq['id'] }} {{ eq['numero_serie'] }} {{ eq['servicio'] }} {{ eq['area'] }} {{ eq['red_salud_nombre'] }} {{ eq['centro_salud_nombre'] }}">
                         <div class="eq-header">
-                            <div class="eq-title">{{ eq['nombre'] }}</div>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                {% if eq['foto'] %}
+                                <img src="{{ eq['foto'] }}" alt="" style="width: 44px; height: 44px; border-radius: 8px; object-fit: cover; border: 1px solid #E2E8F0; flex-shrink: 0;">
+                                {% endif %}
+                                <div class="eq-title">{{ eq['nombre'] }}</div>
+                            </div>
                             <span class="eq-code">{{ eq['id'] }}</span>
                         </div>
                         <div class="eq-detail">🏷️ <strong>{{ eq['marca'] }}</strong> - {{ eq['modelo'] }} {% if eq['numero_serie'] %}| S/N: {{ eq['numero_serie'] }}{% endif %}</div>
@@ -828,6 +833,13 @@ def ver_equipo(id_equipo):
                 <div style="margin-top: 5px;">
                     <div class="estado {% if eq['estado'] == 'Baja' %}baja{% elif eq['estado'] == 'En Espera de Repuesto' %}espera{% elif eq['estado'] == 'Fuera de Servicio' %}inoperante{% endif %}">{{ eq['estado'] }}</div>
                 </div>
+                
+                {% if eq['foto'] %}
+                <div style="text-align: center; margin: 15px 0;">
+                    <img src="{{ eq['foto'] }}" alt="{{ eq['nombre'] }}" style="max-width: 100%; max-height: 250px; border-radius: 12px; object-fit: contain; box-shadow: 0 4px 16px rgba(0,0,0,0.08); border: 1px solid #E5E5EA;">
+                </div>
+                {% endif %}
+
                 <div style="margin-top: 20px; font-size: 15px; line-height: 1.6;">
                     <p><strong>ID:</strong> {{ eq['id'] }}</p>
                     <p><strong>Red de Salud:</strong> {{ eq['red_salud_nombre'] or 'GAMLP' }}</p>

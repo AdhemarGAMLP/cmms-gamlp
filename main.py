@@ -38,7 +38,9 @@ from database import (
     guardar_mantenimiento_offline_cola,
     sincronizar_mantenimientos_offline_cola,
     obtener_firma_datos_db,
-    ejecutar_en_segundo_plano
+    ejecutar_en_segundo_plano,
+    comprimir_imagen_base64,
+    cargar_imagen_pil
 )
 
 from auth import inicializar_usuarios, login
@@ -1377,14 +1379,19 @@ class SistemaMantenimiento(ctk.CTk):
         combo_estado = ctk.CTkComboBox(sf, values=["Operativo", "Baja"], width=500)
         combo_estado.pack(pady=(20,5))
         
-        # FUNCIONALIDAD DE FOTO RESTAURADA CORRECTAMENTE
+        # FUNCIONALIDAD DE FOTO CON COMPRESIÓN Y SINCRONIZACIÓN EN LA NUBE
         ruta_foto = ctk.StringVar(value="")
         
         def seleccionar_foto():
-            r = filedialog.askopenfilename(filetypes=[("Imágenes", "*.jpg *.jpeg *.png")])
+            r = filedialog.askopenfilename(filetypes=[("Imágenes", "*.jpg;*.jpeg;*.png;*.webp;*.bmp")])
             if r:
-                ruta_foto.set(r)
-                btn_foto.configure(text="✅ Fotografía Adjuntada Correctamente", fg_color=C_BLUE, hover_color=C_BLUE_HOVER)
+                b64 = comprimir_imagen_base64(r)
+                if b64:
+                    ruta_foto.set(b64)
+                    btn_foto.configure(text="✅ Fotografía Comprimida y Sincronizada", fg_color="#16A34A", hover_color="#15803D")
+                else:
+                    ruta_foto.set(r)
+                    btn_foto.configure(text="✅ Fotografía Adjuntada", fg_color=C_BLUE, hover_color=C_BLUE_HOVER)
                 
         btn_foto = ctk.CTkButton(sf, text="📸 Adjuntar Fotografía del Equipo", command=seleccionar_foto, fg_color=C_BLUE, hover_color=C_BLUE_HOVER, width=500, font=ctk.CTkFont(weight="bold", size=14), height=35)
         btn_foto.pack(pady=10)
@@ -1515,9 +1522,11 @@ class SistemaMantenimiento(ctk.CTk):
             actualizar_restante_gar()
             
             foto_guardada = eq_edit.get("foto", "")
-            if foto_guardada and os.path.exists(foto_guardada):
+            if foto_guardada:
+                if not foto_guardada.startswith("data:image") and os.path.exists(foto_guardada):
+                    foto_guardada = comprimir_imagen_base64(foto_guardada)
                 ruta_foto.set(foto_guardada)
-                btn_foto.configure(text="✅ Fotografía Existente en Sistema", fg_color=C_BLUE, hover_color=C_BLUE_HOVER)
+                btn_foto.configure(text="✅ Fotografía Existente en Sistema", fg_color="#16A34A", hover_color="#15803D")
             
             c_det = eq_edit.get("categorizacion_detalle") or []
             if isinstance(c_det, str):
@@ -2258,14 +2267,14 @@ class SistemaMantenimiento(ctk.CTk):
         c_der_col = ctk.CTkFrame(m_info, fg_color="transparent")
         c_der_col.grid(row=0, column=2, padx=(4, 12), pady=6, sticky="nsew")
         
-        foto_path = eq_act.get("foto")
-        if foto_path and os.path.exists(foto_path):
+        foto_raw = eq_act.get("foto")
+        img_pil = cargar_imagen_pil(foto_raw)
+        if img_pil:
             try:
-                img_pil = Image.open(foto_path)
                 ctk_img = ctk.CTkImage(light_image=img_pil, size=(165, 165))
                 lbl_foto = ctk.CTkLabel(c_der_col, image=ctk_img, text="")
                 lbl_foto.pack(expand=True, fill="both")
-            except:
+            except Exception:
                 f_placeholder = ctk.CTkFrame(c_der_col, width=165, height=165, fg_color=C_BG, corner_radius=8)
                 f_placeholder.pack_propagate(False)
                 f_placeholder.pack(expand=True)

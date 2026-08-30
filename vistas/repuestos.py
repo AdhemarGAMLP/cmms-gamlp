@@ -2,7 +2,7 @@
 import customtkinter as ctk
 from tkinter import ttk, messagebox, filedialog
 import psycopg2.extras
-from database import obtener_conexion, mover_a_papelera, ejecutar_en_segundo_plano, guardar_cache_local_datos
+from database import obtener_conexion, mover_a_papelera, ejecutar_en_segundo_plano, guardar_cache_local_datos, comprimir_imagen_base64
 from estilos import *
 from datetime import date, datetime
 import os
@@ -447,14 +447,19 @@ class VistaRepuestos(ctk.CTkFrame):
         f_foto = ctk.CTkFrame(sf, fg_color="transparent")
         f_foto.pack(fill="x", pady=(5, 15))
         
-        lbl_foto_status = ctk.CTkLabel(f_foto, text="📷 Sin imagen adjunta" if not ruta_foto.get() else f"📷 Foto: {os.path.basename(ruta_foto.get())}", text_color=C_SUBTEXT, font=ctk.CTkFont(size=12))
+        lbl_foto_status = ctk.CTkLabel(f_foto, text="📷 Sin imagen adjunta" if not ruta_foto.get() else ("📷 Foto Adjuntada (Base64)" if ruta_foto.get().startswith("data:image") else f"📷 Foto: {os.path.basename(ruta_foto.get())}"), text_color=C_SUBTEXT, font=ctk.CTkFont(size=12))
         lbl_foto_status.pack(side="left", padx=5)
         
         def seleccionar_foto():
-            f = filedialog.askopenfilename(filetypes=[("Imágenes", "*.jpg;*.jpeg;*.png;*.webp")])
+            f = filedialog.askopenfilename(filetypes=[("Imágenes", "*.jpg;*.jpeg;*.png;*.webp;*.bmp")])
             if f:
-                ruta_foto.set(f)
-                lbl_foto_status.configure(text=f"📷 Foto: {os.path.basename(f)}", text_color=C_GREEN)
+                b64_rep = comprimir_imagen_base64(f)
+                if b64_rep:
+                    ruta_foto.set(b64_rep)
+                    lbl_foto_status.configure(text="✅ Foto Comprimida y Lista", text_color=C_GREEN)
+                else:
+                    ruta_foto.set(f)
+                    lbl_foto_status.configure(text=f"📷 Foto: {os.path.basename(f)}", text_color=C_GREEN)
                 
         ctk.CTkButton(f_foto, text="Adjuntar Foto", width=120, command=seleccionar_foto, fg_color=C_ORANGE, hover_color="#D97706").pack(side="right", padx=5)
 

@@ -188,7 +188,7 @@ def inicializar_bd():
             estado VARCHAR(50) DEFAULT 'Operativo',
             fecha_adquisicion DATE,
             fecha_registro DATE,
-            foto VARCHAR(255),
+            foto TEXT,
             costo NUMERIC DEFAULT 0,
             voltaje VARCHAR(255),
             potencia VARCHAR(255),
@@ -1167,6 +1167,68 @@ def obtener_firma_datos_db():
         return row[0] if row else None
     except:
         return None
+
+
+# =========================================================================
+# COMPRESIÓN Y SINCRONIZACIÓN UNIVERSAL DE IMÁGENES (BASE64 OPTIMIZADO)
+# =========================================================================
+def comprimir_imagen_base64(ruta_or_bytes, max_size=(800, 800), quality=80):
+    """
+    Comprime una imagen a formato JPEG optimizado (max 800x800 px, 80% calidad)
+    y retorna una cadena data:image/jpeg;base64,... (peso típico: ~30 a 50 KB).
+    Permite sincronización universal entre 20 PCs y web móvil sin depender de rutas locales.
+    """
+    if not ruta_or_bytes:
+        return ""
+    import base64
+    import io
+    from PIL import Image
+    try:
+        if isinstance(ruta_or_bytes, str):
+            if ruta_or_bytes.startswith("data:image"):
+                return ruta_or_bytes
+            if not os.path.exists(ruta_or_bytes):
+                return ""
+            img = Image.open(ruta_or_bytes)
+        else:
+            img = Image.open(ruta_or_bytes)
+            
+        # Convertir a RGB si es PNG con transparencia (RGBA) o paleta
+        if img.mode in ("RGBA", "LA", "P"):
+            img = img.convert("RGB")
+            
+        img.thumbnail(max_size, Image.LANCZOS)
+        
+        buffer = io.BytesIO()
+        img.save(buffer, format="JPEG", quality=quality, optimize=True)
+        img_bytes = buffer.getvalue()
+        
+        b64_str = base64.b64encode(img_bytes).decode("utf-8")
+        return f"data:image/jpeg;base64,{b64_str}"
+    except Exception as e:
+        print(f"[WARN] Error al comprimir imagen a Base64: {e}")
+        return ""
+
+def cargar_imagen_pil(foto_str):
+    """
+    Decodifica y retorna un objeto PIL.Image tanto si foto_str es data:image/base64
+    como si es una ruta física de archivo local.
+    """
+    if not foto_str:
+        return None
+    import base64
+    import io
+    from PIL import Image
+    try:
+        if isinstance(foto_str, str) and foto_str.startswith("data:image"):
+            header, b64_data = foto_str.split(",", 1)
+            raw_bytes = base64.b64decode(b64_data)
+            return Image.open(io.BytesIO(raw_bytes))
+        elif isinstance(foto_str, str) and os.path.exists(foto_str):
+            return Image.open(foto_str)
+    except Exception as e:
+        print(f"[WARN] No se pudo cargar imagen PIL: {e}")
+    return None
 
 
 
