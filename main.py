@@ -217,7 +217,9 @@ class SistemaMantenimiento(ctk.CTk):
         self.vistas = {}
         self.crear_vistas_modulares()
         self.datos_sucios = False
+        self._ejecutando = True
         self.chequear_datos_sucios()
+        self.iniciar_sincronizacion_background()
         self.mostrar_vista("Inventario")
         self.actualizar_boton_alertas()
         self.verificar_y_ejecutar_backup_auto()
@@ -292,54 +294,59 @@ class SistemaMantenimiento(ctk.CTk):
                   background=[('pressed', '#64748B'), ('active', '#94A3B8')])
 
 
+    def iniciar_sincronizacion_background(self):
+        """Monitorea cambios en Supabase Cloud en un hilo secundario sin pausar ni congelar la interfaz gráfica."""
+        def _hilo_sync():
+            import time
+            while getattr(self, "_ejecutando", True):
+                time.sleep(15)  # Chequeo cada 15 segundos en segundo plano
+                try:
+                    if getattr(self, "modo_offline", False):
+                        conn_test = obtener_conexion()
+                        if conn_test:
+                            conn_test.close()
+                            print("[INFO] ¡Reconexión con el Servidor Central detectada! Sincronizando...")
+                            self.after(0, self._aplicar_reconeccion_online)
+                    else:
+                        firma_actual = obtener_firma_datos_db()
+                        if firma_actual and firma_actual != getattr(self, "ultima_firma_db", None):
+                            primera_vez = getattr(self, "ultima_firma_db", None) is None
+                            self.ultima_firma_db = firma_actual
+                            if not primera_vez:
+                                print("[INFO] ¡Cambio detectado en la Base de Datos Central! Sincronizando...")
+                                self.after(0, self._aplicar_datos_sincronizados)
+                except Exception:
+                    pass
+
+        t = threading.Thread(target=_hilo_sync, daemon=True)
+        t.start()
+
+    def _aplicar_reconeccion_online(self):
+        self.cargar_datos_memoria()
+        self.actualizar_estado_offline_ui()
+        for nombre_v, vista_v in self.vistas.items():
+            if hasattr(vista_v, 'refrescar_datos'):
+                vista_v.refrescar_datos()
+
+    def _aplicar_datos_sincronizados(self):
+        self.cargar_datos_memoria()
+        vista_activa = getattr(self, "vista_actual_nombre", "Inventario")
+        if vista_activa in self.vistas and hasattr(self.vistas[vista_activa], 'refrescar_datos'):
+            self.vistas[vista_activa].refrescar_datos()
+        if vista_activa == "Cronograma" and "Cronograma" in self.vistas:
+            try:
+                self.vistas["Cronograma"].dibujar_mes(self.vistas["Cronograma"].anio_actual, self.vistas["Cronograma"].mes_actual)
+                self.vistas["Cronograma"].dibujar_anio(self.vistas["Cronograma"].anio_vista)
+            except:
+                pass
+        self.actualizar_boton_alertas()
+
     def chequear_datos_sucios(self):
-        # 1. Chequeo de reconexión si estamos en modo offline
-        if getattr(self, "modo_offline", False):
-            conn_test = obtener_conexion()
-            if conn_test:
-                conn_test.close()
-                print("[INFO] ¡Reconexión con el Servidor Central detectada! Sincronizando...")
-                self.cargar_datos_memoria()
-                self.actualizar_estado_offline_ui()
-                for nombre_v, vista_v in self.vistas.items():
-                    if hasattr(vista_v, 'refrescar_datos'):
-                        vista_v.refrescar_datos()
-
-        # 2. Sincronización en Tiempo Real entre Múltiples Computadoras de la Red
-        if not getattr(self, "modo_offline", False):
-            firma_actual = obtener_firma_datos_db()
-            if firma_actual and firma_actual != getattr(self, "ultima_firma_db", None):
-                primera_vez = getattr(self, "ultima_firma_db", None) is None
-                self.ultima_firma_db = firma_actual
-                if not primera_vez:
-                    print("[INFO] ¡Cambio detectado en la Base de Datos Central! Sincronizando en tiempo real...")
-                    self.cargar_datos_memoria()
-                    vista_activa = getattr(self, "vista_actual_nombre", "Inventario")
-                    if vista_activa in self.vistas and hasattr(self.vistas[vista_activa], 'refrescar_datos'):
-                        self.vistas[vista_activa].refrescar_datos()
-                    if vista_activa == "Cronograma" and "Cronograma" in self.vistas:
-                        try:
-                            self.vistas["Cronograma"].dibujar_mes(self.vistas["Cronograma"].anio_actual, self.vistas["Cronograma"].mes_actual)
-                            self.vistas["Cronograma"].dibujar_anio(self.vistas["Cronograma"].anio_vista)
-                        except:
-                            pass
-                    self.actualizar_boton_alertas()
-
-        # 3. Chequeo de datos sucios desde Web Server local
+        """Chequeo instantáneo en memoria de datos modificados localmente."""
         if getattr(self, "datos_sucios", False):
             self.datos_sucios = False
-            self.cargar_datos_memoria()
-            vista_activa = getattr(self, "vista_actual_nombre", "Inventario")
-            if vista_activa in self.vistas and hasattr(self.vistas[vista_activa], 'refrescar_datos'):
-                self.vistas[vista_activa].refrescar_datos()
-            if vista_activa == "Cronograma" and "Cronograma" in self.vistas:
-                try:
-                    self.vistas["Cronograma"].dibujar_mes(self.vistas["Cronograma"].anio_actual, self.vistas["Cronograma"].mes_actual)
-                    self.vistas["Cronograma"].dibujar_anio(self.vistas["Cronograma"].anio_vista)
-                except Exception as e:
-                    print("Error al refrescar vistas del cronograma:", e)
-
-        self.after(2500, self.chequear_datos_sucios)
+            self._aplicar_datos_sincronizados()
+        self.after(1500, self.chequear_datos_sucios)
 
 
     def actualizar_estado_offline_ui(self):
@@ -804,11 +811,10 @@ class SistemaMantenimiento(ctk.CTk):
     def abrir_formulario_equipo(self, eq_edit=None):
         vent = ctk.CTkToplevel(self)
         vent.title("Ficha de Equipo")
-        self.centrar_ventana_segura(vent, 800, 680)
         vent.transient(self)
         vent.grab_set()
         vent.configure(fg_color=C_BG)
-        vent.after(50, lambda: self.centrar_ventana_segura(vent, 800, 680))
+        self.centrar_ventana_segura(vent, 800, 680)
 
         
         ctk.CTkLabel(vent, text="Ficha Técnica Institucional", font=ctk.CTkFont(size=22, weight="bold"), text_color=C_TEXT).pack(pady=15)
@@ -2089,11 +2095,7 @@ class SistemaMantenimiento(ctk.CTk):
             canvas.bind("<Button-1>", on_press, add="+")
             canvas.bind("<B1-Motion>", on_drag, add="+")
 
-        v_hv.after(200, lambda: habilitar_scroll_tactil(frame_izq))
-        # Mover la ventana a posición central segura en pantalla una vez que todo está construido
-        def centrar_y_mostrar():
-            self.centrar_ventana_segura(v_hv, 1100, 880)
-        v_hv.after(80, centrar_y_mostrar)
+        v_hv.after(150, lambda: habilitar_scroll_tactil(frame_izq))
 
     def verificar_autorizacion_jefe(self, password_plano):
         from auth import verificar_password, MASTER_PASS
@@ -2187,6 +2189,7 @@ class SistemaMantenimiento(ctk.CTk):
         threading.Thread(target=tarea_backup, daemon=True).start()
 
     def al_cerrar_aplicacion(self):
+        self._ejecutando = False
         import os
         import sys
         import shutil

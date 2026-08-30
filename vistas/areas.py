@@ -45,18 +45,9 @@ class VistaAreas(ctk.CTkFrame):
         for i in self.tabla_areas.get_children():
             self.tabla_areas.delete(i)
         
-        try:
-            conn = obtener_conexion()
-            cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-            cur.execute("SELECT * FROM areas ORDER BY piso DESC, nombre ASC")
-            filas = [dict(r) for r in cur.fetchall()]
-            cur.close()
-            conn.close()
-            
-            for r in filas:
-                self.tabla_areas.insert("", "end", values=(r["nombre"], r["piso"], r.get("contacto", ""), r.get("encargado", "")))
-        except Exception as e:
-            print("Error al refrescar áreas:", e)
+        filas = self.app.datos.get("areas", [])
+        for r in filas:
+            self.tabla_areas.insert("", "end", values=(r.get("nombre", ""), r.get("piso", "-"), r.get("contacto", "") or "-", r.get("encargado", "") or "-"))
 
     def obtener_seleccion(self):
         sel = self.tabla_areas.focus()
