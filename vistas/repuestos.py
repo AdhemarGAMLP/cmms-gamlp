@@ -137,30 +137,6 @@ class VistaRepuestos(ctk.CTkFrame):
         marco_hist = ctk.CTkFrame(self.tab_hist, fg_color="transparent")
         marco_hist.pack(fill="both", expand=True, padx=10, pady=10)
         
-        # Mostrar por defecto Tab 1
-        self.cambiar_tab("stock")
-
-    def cambiar_tab(self, tab_name):
-        self.tab_activa = tab_name
-        self.tab_stock.pack_forget()
-        self.tab_req.pack_forget()
-        self.tab_hist.pack_forget()
-
-        # Inactivos: fondo transparente, texto negro/oscuro legible, borde suave
-        for btn in (self.btn_tab_stock, self.btn_tab_req, self.btn_tab_hist):
-            btn.configure(fg_color="transparent", text_color=C_TEXT, hover_color="#E2E8F0")
-
-        # Activo: fondo azul vibrante, texto blanco
-        if tab_name == "stock":
-            self.btn_tab_stock.configure(fg_color=C_BLUE, text_color="#FFFFFF", hover_color=C_BLUE_HOVER)
-            self.tab_stock.pack(fill="both", expand=True)
-        elif tab_name == "req":
-            self.btn_tab_req.configure(fg_color=C_BLUE, text_color="#FFFFFF", hover_color=C_BLUE_HOVER)
-            self.tab_req.pack(fill="both", expand=True)
-        elif tab_name == "hist":
-            self.btn_tab_hist.configure(fg_color=C_BLUE, text_color="#FFFFFF", hover_color=C_BLUE_HOVER)
-            self.tab_hist.pack(fill="both", expand=True)
-        
         f_filtros_hist = ctk.CTkFrame(marco_hist, fg_color="transparent")
         f_filtros_hist.pack(fill="x", pady=(0, 10))
         
@@ -186,6 +162,30 @@ class VistaRepuestos(ctk.CTkFrame):
             self.tabla_hist_rep.column(c, anchor="center")
         self.tabla_hist_rep.pack(side="left", fill="both", expand=True)
         scrollbar_hist.pack(side="right", fill="y", padx=(5, 0))
+
+        # Mostrar por defecto Tab 1
+        self.cambiar_tab("stock")
+
+    def cambiar_tab(self, tab_name):
+        self.tab_activa = tab_name
+        self.tab_stock.pack_forget()
+        self.tab_req.pack_forget()
+        self.tab_hist.pack_forget()
+
+        # Inactivos: fondo transparente, texto negro/oscuro legible, borde suave
+        for btn in (self.btn_tab_stock, self.btn_tab_req, self.btn_tab_hist):
+            btn.configure(fg_color="transparent", text_color=C_TEXT, hover_color="#E2E8F0")
+
+        # Activo: fondo azul vibrante, texto blanco
+        if tab_name == "stock":
+            self.btn_tab_stock.configure(fg_color=C_BLUE, text_color="#FFFFFF", hover_color=C_BLUE_HOVER)
+            self.tab_stock.pack(fill="both", expand=True)
+        elif tab_name == "req":
+            self.btn_tab_req.configure(fg_color=C_BLUE, text_color="#FFFFFF", hover_color=C_BLUE_HOVER)
+            self.tab_req.pack(fill="both", expand=True)
+        elif tab_name == "hist":
+            self.btn_tab_hist.configure(fg_color=C_BLUE, text_color="#FFFFFF", hover_color=C_BLUE_HOVER)
+            self.tab_hist.pack(fill="both", expand=True)
 
     def refrescar_datos(self):
         todos_rep = list(self.app.datos.get("repuestos", []))
