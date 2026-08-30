@@ -208,6 +208,10 @@ def inicializar_bd():
             efecto_entorno TEXT,
             observaciones TEXT
         );
+        ALTER TABLE equipos ADD COLUMN IF NOT EXISTS vida_util VARCHAR(255);
+        ALTER TABLE equipos ADD COLUMN IF NOT EXISTS bateria_respaldo VARCHAR(255);
+        ALTER TABLE equipos ADD COLUMN IF NOT EXISTS version_software VARCHAR(255);
+        ALTER TABLE equipos ADD COLUMN IF NOT EXISTS suministro_gases VARCHAR(255);
     """)
 
     # 6. Historial de intervenciones

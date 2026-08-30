@@ -1443,13 +1443,12 @@ class SistemaMantenimiento(ctk.CTk):
         self.f_adicionales_container = ctk.CTkFrame(sf, fg_color="transparent")
         self.adicionales_visible = False
         
-        # Grid para los 8 Datos Técnicos
+        # Grid para los 9 campos técnicos oficiales
         f_grid = ctk.CTkFrame(self.f_adicionales_container, fg_color="transparent")
         f_grid.pack(fill="x", pady=5)
         f_grid.grid_columnconfigure(0, weight=1)
         f_grid.grid_columnconfigure(1, weight=1)
         
-        # Helper para los 8 campos técnicos
         def crear_campo_grid(row, col, lbl_txt, ph_txt):
             f_item = ctk.CTkFrame(f_grid, fg_color="transparent")
             f_item.grid(row=row, column=col, padx=10, pady=5, sticky="ew")
@@ -1461,11 +1460,12 @@ class SistemaMantenimiento(ctk.CTk):
         self.e_voltaje = crear_campo_grid(0, 0, "Voltaje:", "Voltaje (ej: 220V)")
         self.e_corriente = crear_campo_grid(0, 1, "Corriente:", "Corriente (ej: 5A)")
         self.e_potencia = crear_campo_grid(1, 0, "Potencia Consumida:", "Potencia (ej: 500W)")
-        self.e_peso = crear_campo_grid(1, 1, "Peso:", "Peso (ej: 50 kg)")
-        self.e_temperatura = crear_campo_grid(2, 0, "Vida Útil Estimada / Temperatura:", "Vida útil o Temp.")
+        self.e_vida_util = crear_campo_grid(1, 1, "Vida Útil Estimada:", "Vida útil (ej: 10 años)")
+        self.e_peso = crear_campo_grid(2, 0, "Peso:", "Peso (ej: 50 kg)")
         self.e_dimensiones = crear_campo_grid(2, 1, "Dimensiones:", "Dimensiones (ej: 120x80x90 cm)")
-        self.e_humedad = crear_campo_grid(3, 0, "Versión Software / Humedad:", "Versión soft o Humedad")
-        self.e_resolucion = crear_campo_grid(3, 1, "Batería Respaldo / Resolución:", "Batería o Resolución")
+        self.e_bateria_respaldo = crear_campo_grid(3, 0, "Batería de Respaldo:", "Batería (ej: 12V 7Ah / Sí / No)")
+        self.e_version_software = crear_campo_grid(3, 1, "Versión Software:", "Versión (ej: v2.4.1)")
+        self.e_suministro_gases = crear_campo_grid(4, 0, "Suministro de Gases:", "Gases (ej: O2 / Aire / Vacío)")
 
         # Helper para los 9 campos de texto largo
         def crear_campo_texto(label_text, placeholder):
@@ -1583,15 +1583,16 @@ class SistemaMantenimiento(ctk.CTk):
                     else:
                         self.variables_cat[i].set(str(val))
 
-            # Cargar datos adicionales
+            # Cargar datos adicionales oficiales
             self.e_voltaje.insert(0, eq_edit.get("voltaje") or "")
-            self.e_potencia.insert(0, eq_edit.get("potencia") or "")
-            self.e_temperatura.insert(0, eq_edit.get("temperatura") or "")
-            self.e_humedad.insert(0, eq_edit.get("humedad") or "")
             self.e_corriente.insert(0, eq_edit.get("corriente") or "")
+            self.e_potencia.insert(0, eq_edit.get("potencia") or "")
+            self.e_vida_util.insert(0, eq_edit.get("vida_util") or eq_edit.get("temperatura") or "")
             self.e_peso.insert(0, eq_edit.get("peso") or "")
             self.e_dimensiones.insert(0, eq_edit.get("dimensiones") or "")
-            self.e_resolucion.insert(0, eq_edit.get("resolucion") or "")
+            self.e_bateria_respaldo.insert(0, eq_edit.get("bateria_respaldo") or eq_edit.get("resolucion") or "")
+            self.e_version_software.insert(0, eq_edit.get("version_software") or eq_edit.get("humedad") or "")
+            self.e_suministro_gases.insert(0, eq_edit.get("suministro_gases") or "")
             
             self.txt_contexto.delete("1.0", "end")
             self.txt_contexto.insert("1.0", eq_edit.get("contexto_operacional") or "")
@@ -1732,13 +1733,17 @@ class SistemaMantenimiento(ctk.CTk):
                 "fecha_inicio_garantia": str(f_gar_ini_val) if f_gar_ini_val else None,
                 "costo": costo_val,
                 "voltaje": _get_entry(self.e_voltaje),
-                "potencia": _get_entry(self.e_potencia),
-                "temperatura": _get_entry(self.e_temperatura),
-                "humedad": _get_entry(self.e_humedad),
                 "corriente": _get_entry(self.e_corriente),
+                "potencia": _get_entry(self.e_potencia),
+                "vida_util": _get_entry(self.e_vida_util),
+                "temperatura": _get_entry(self.e_vida_util),
                 "peso": _get_entry(self.e_peso),
                 "dimensiones": _get_entry(self.e_dimensiones),
-                "resolucion": _get_entry(self.e_resolucion),
+                "bateria_respaldo": _get_entry(self.e_bateria_respaldo),
+                "resolucion": _get_entry(self.e_bateria_respaldo),
+                "version_software": _get_entry(self.e_version_software),
+                "humedad": _get_entry(self.e_version_software),
+                "suministro_gases": _get_entry(self.e_suministro_gases),
                 "contexto_operacional": _get_txt(self.txt_contexto),
                 "funciones_equipo": _get_txt(self.txt_funciones),
                 "acciones_preventivas": _get_txt(self.txt_acciones_prev),
@@ -1790,20 +1795,20 @@ class SistemaMantenimiento(ctk.CTk):
                             INSERT INTO equipos (
                                 id, nombre, marca, modelo, servicio, area, procedencia, fabricante, proveedor, anio_fab,
                                 t_elec, t_elco, t_mec, t_hid, t_neu, t_vap, a_comp, a_como, a_don, te_fijo, te_mov, te_por, garantia, criticidad, categorizacion_detalle, estado, fecha_adquisicion, fecha_registro, foto, fecha_vencimiento_garantia, numero_serie, fecha_inicio_garantia, costo,
-                                voltaje, potencia, temperatura, humedad, corriente, peso, dimensiones, resolucion, contexto_operacional, funciones_equipo, acciones_preventivas, acciones_falla, fallas_funcionales, causas_fallo, efectos_fallo, efecto_entorno, observaciones,
+                                voltaje, corriente, potencia, vida_util, temperatura, peso, dimensiones, bateria_respaldo, resolucion, version_software, humedad, suministro_gases, contexto_operacional, funciones_equipo, acciones_preventivas, acciones_falla, fallas_funcionales, causas_fallo, efectos_fallo, efecto_entorno, observaciones,
                                 red_salud_id, red_salud_nombre, centro_salud_id, centro_salud_nombre, municipio_nombre, departamento_nombre
                             )
                             VALUES (
                                 %(id)s, %(nombre)s, %(marca)s, %(modelo)s, %(servicio)s, %(area)s, %(procedencia)s, %(fabricante)s, %(proveedor)s, %(anio_fab)s,
                                 %(t_elec)s, %(t_elco)s, %(t_mec)s, %(t_hid)s, %(t_neu)s, %(t_vap)s, %(a_comp)s, %(a_como)s, %(a_don)s, %(te_fijo)s, %(te_mov)s, %(te_por)s, %(garantia)s, %(criticidad)s, %(categorizacion_detalle)s, %(estado)s, %(fecha_adquisicion)s, %(fecha_registro)s, %(foto)s, %(fecha_vencimiento_garantia)s, %(numero_serie)s, %(fecha_inicio_garantia)s, %(costo)s,
-                                %(voltaje)s, %(potencia)s, %(temperatura)s, %(humedad)s, %(corriente)s, %(peso)s, %(dimensiones)s, %(resolucion)s, %(contexto_operacional)s, %(funciones_equipo)s, %(acciones_preventivas)s, %(acciones_falla)s, %(fallas_funcionales)s, %(causas_fallo)s, %(efectos_fallo)s, %(efecto_entorno)s, %(observaciones)s,
+                                %(voltaje)s, %(corriente)s, %(potencia)s, %(vida_util)s, %(temperatura)s, %(peso)s, %(dimensiones)s, %(bateria_respaldo)s, %(resolucion)s, %(version_software)s, %(humedad)s, %(suministro_gases)s, %(contexto_operacional)s, %(funciones_equipo)s, %(acciones_preventivas)s, %(acciones_falla)s, %(fallas_funcionales)s, %(causas_fallo)s, %(efectos_fallo)s, %(efecto_entorno)s, %(observaciones)s,
                                 %(red_salud_id)s, %(red_salud_nombre)s, %(centro_salud_id)s, %(centro_salud_nombre)s, %(municipio_nombre)s, %(departamento_nombre)s
                             )
                             ON CONFLICT (id) DO UPDATE SET
                                 nombre=EXCLUDED.nombre, marca=EXCLUDED.marca, modelo=EXCLUDED.modelo, servicio=EXCLUDED.servicio, area=EXCLUDED.area, procedencia=EXCLUDED.procedencia, fabricante=EXCLUDED.fabricante, proveedor=EXCLUDED.proveedor, anio_fab=EXCLUDED.anio_fab,
                                 t_elec=EXCLUDED.t_elec, t_elco=EXCLUDED.t_elco, t_mec=EXCLUDED.t_mec, t_hid=EXCLUDED.t_hid, t_neu=EXCLUDED.t_neu, t_vap=EXCLUDED.t_vap, a_comp=EXCLUDED.a_comp, a_como=EXCLUDED.a_como, a_don=EXCLUDED.a_don,
                                 te_fijo=EXCLUDED.te_fijo, te_mov=EXCLUDED.te_mov, te_por=EXCLUDED.te_por, garantia=EXCLUDED.garantia, criticidad=EXCLUDED.criticidad, categorizacion_detalle=EXCLUDED.categorizacion_detalle, estado=EXCLUDED.estado, fecha_adquisicion=EXCLUDED.fecha_adquisicion, foto=EXCLUDED.foto, fecha_vencimiento_garantia=EXCLUDED.fecha_vencimiento_garantia, numero_serie=EXCLUDED.numero_serie, fecha_inicio_garantia=EXCLUDED.fecha_inicio_garantia, costo=EXCLUDED.costo,
-                                voltaje=EXCLUDED.voltaje, potencia=EXCLUDED.potencia, temperatura=EXCLUDED.temperatura, humedad=EXCLUDED.humedad, corriente=EXCLUDED.corriente, peso=EXCLUDED.peso, dimensiones=EXCLUDED.dimensiones, resolucion=EXCLUDED.resolucion, contexto_operacional=EXCLUDED.contexto_operacional, funciones_equipo=EXCLUDED.funciones_equipo, acciones_preventivas=EXCLUDED.acciones_preventivas, acciones_falla=EXCLUDED.acciones_falla, fallas_funcionales=EXCLUDED.fallas_funcionales, causas_fallo=EXCLUDED.causas_fallo, efectos_fallo=EXCLUDED.efectos_fallo, efecto_entorno=EXCLUDED.efecto_entorno, observaciones=EXCLUDED.observaciones,
+                                voltaje=EXCLUDED.voltaje, corriente=EXCLUDED.corriente, potencia=EXCLUDED.potencia, vida_util=EXCLUDED.vida_util, temperatura=EXCLUDED.temperatura, peso=EXCLUDED.peso, dimensiones=EXCLUDED.dimensiones, bateria_respaldo=EXCLUDED.bateria_respaldo, resolucion=EXCLUDED.resolucion, version_software=EXCLUDED.version_software, humedad=EXCLUDED.humedad, suministro_gases=EXCLUDED.suministro_gases, contexto_operacional=EXCLUDED.contexto_operacional, funciones_equipo=EXCLUDED.funciones_equipo, acciones_preventivas=EXCLUDED.acciones_preventivas, acciones_falla=EXCLUDED.acciones_falla, fallas_funcionales=EXCLUDED.fallas_funcionales, causas_fallo=EXCLUDED.causas_fallo, efectos_fallo=EXCLUDED.efectos_fallo, efecto_entorno=EXCLUDED.efecto_entorno, observaciones=EXCLUDED.observaciones,
                                 red_salud_id=EXCLUDED.red_salud_id, red_salud_nombre=EXCLUDED.red_salud_nombre, centro_salud_id=EXCLUDED.centro_salud_id, centro_salud_nombre=EXCLUDED.centro_salud_nombre, municipio_nombre=EXCLUDED.municipio_nombre, departamento_nombre=EXCLUDED.departamento_nombre;
                         """
                         cur.execute(sql_q, {**eq_data, "red_salud_id": red_id, "centro_salud_id": cen_id})
@@ -1844,15 +1849,12 @@ class SistemaMantenimiento(ctk.CTk):
                 pass
             return
 
-        eq_id = equipo_id
-        if not eq_id:
-            eq_id = self.vistas["Inventario"].obtener_id_seleccionado()
-        if not eq_id: 
+        seleccion = self.vistas["Inventario"].tabla.selection()
+        if not seleccion and not equipo_id:
             return
-        
-        eq_act = next((eq for eq in self.datos["equipos"] if str(eq["id"]) == str(eq_id)), None)
-        if not eq_act: 
-            return
+        item_id = equipo_id if equipo_id else self.vistas["Inventario"].tabla.item(seleccion[0])['values'][2]
+        eq_act = next((e for e in self.datos["equipos"] if str(e["id"]) == str(item_id)), None)
+        if not eq_act: return
         
         v_hv = ctk.CTkToplevel(self)
         self.window_ficha_tecnica = v_hv
@@ -1870,7 +1872,7 @@ class SistemaMantenimiento(ctk.CTk):
         frame_izq.pack(fill="both", expand=True, padx=10, pady=10)
         
         # Sanitizar el ID para evitar caracteres inválidos en rutas de archivos de Windows (ej. '|')
-        id_sanitizado = "".join(c if c not in '<>:"/\\|?*' else "_" for c in str(eq_act['id']))
+        id_sanitizado = "".join([c for c in str(eq_act['id']) if c.isalnum() or c in ('-', '_')]).strip()
         area_name = eq_act.get("area", "General")
         area_folder = "".join([c for c in area_name if c.isalnum() or c==' ']).strip()
         dir_ficha = os.path.join(CARPETAS["areas"], area_folder, "equipos")
@@ -1920,15 +1922,16 @@ class SistemaMantenimiento(ctk.CTk):
             escribir('H21', str(eq_act.get('anio_fab') or ''))
             escribir('H22', str(eq_act.get('fecha_adquisicion') or ''))
 
-            # 2. Datos Técnicos del Equipo
+            # 2. Datos Técnicos Oficiales del Equipo
             escribir('E24', eq_act.get('voltaje', '') or '')
             escribir('G25', eq_act.get('corriente', '') or '')
             escribir('I26', eq_act.get('potencia', '') or '')
-            escribir('H27', eq_act.get('temperatura', '') or '')
+            escribir('H27', eq_act.get('vida_util', '') or eq_act.get('temperatura', '') or '')
             escribir('D28', eq_act.get('peso', '') or '')
             escribir('F29', eq_act.get('dimensiones', '') or '')
-            escribir('H30', eq_act.get('resolucion', '') or '')
-            escribir('H31', eq_act.get('humedad', '') or '')
+            escribir('H30', eq_act.get('bateria_respaldo', '') or eq_act.get('resolucion', '') or '')
+            escribir('H31', eq_act.get('version_software', '') or eq_act.get('humedad', '') or '')
+            escribir('H32', eq_act.get('suministro_gases', '') or '')
 
             # 3. Existencia de Repuestos con Cantidad/Stock Actual
             cat_str = f"{eq_act['nombre']} - {eq_act.get('marca', '')} - {eq_act.get('modelo', '')}"

@@ -1029,15 +1029,16 @@ def descargar_ficha_tecnica_excel(id_equipo):
         escribir('H21', str(eq_act.get('anio_fab') or ''))
         escribir('H22', str(eq_act.get('fecha_adquisicion') or ''))
 
-        # 2. Datos Técnicos del Equipo
+        # 2. Datos Técnicos Oficiales del Equipo
         escribir('E24', eq_act.get('voltaje', '') or '')
         escribir('G25', eq_act.get('corriente', '') or '')
         escribir('I26', eq_act.get('potencia', '') or '')
-        escribir('H27', eq_act.get('temperatura', '') or '')
+        escribir('H27', eq_act.get('vida_util', '') or eq_act.get('temperatura', '') or '')
         escribir('D28', eq_act.get('peso', '') or '')
         escribir('F29', eq_act.get('dimensiones', '') or '')
-        escribir('H30', eq_act.get('resolucion', '') or '')
-        escribir('H31', eq_act.get('humedad', '') or '')
+        escribir('H30', eq_act.get('bateria_respaldo', '') or eq_act.get('resolucion', '') or '')
+        escribir('H31', eq_act.get('version_software', '') or eq_act.get('humedad', '') or '')
+        escribir('H32', eq_act.get('suministro_gases', '') or '')
 
         # 3. Repuestos
         cat_str = f"{eq_act['nombre']} - {eq_act.get('marca', '')} - {eq_act.get('modelo', '')}"
