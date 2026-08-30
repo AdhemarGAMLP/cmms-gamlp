@@ -504,26 +504,27 @@ class VistaCronograma(ctk.CTkFrame):
             eqs_lista.sort(key=sort_key_crono)
                 
             start_row = 8
-            thin_side = openpyxl.styles.borders.Side(style="thin", color="CBD5E1")
-            grid_border = openpyxl.styles.Border(left=thin_side, right=thin_side, top=thin_side, bottom=thin_side)
-            font_body = openpyxl.styles.Font(name="Segoe UI", size=10)
-            font_marca_x = openpyxl.styles.Font(name="Segoe UI", size=11, bold=True, color="1E3A8A")
-            fill_x = openpyxl.styles.PatternFill(start_color="EFF6FF", end_color="EFF6FF", fill_type="solid")
-
+            
+            # Formatear y clonar estilo exacto de la fila 8 de la plantilla
             for idx, eq in enumerate(eqs_lista):
                 r = start_row + idx
                 
-                # Columnas del nuevo formato:
-                # B (2): N°
-                # C (3): RED
-                # D (4): CENTRO DE SALUD
-                # E (5): AREA
-                # F (6): EQUIPO
-                # G (7): CODIGO DE ACTIVOS FIJOS
-                # H (8): MARCA
-                # I (9): MODELO
-                # J (10): ESTADO
+                # Si es una fila nueva que no existía en la plantilla, clonar el formato exacto de la fila 8
+                if r > 8:
+                    if 8 in ws.row_dimensions and ws.row_dimensions[8].height is not None:
+                        ws.row_dimensions[r].height = ws.row_dimensions[8].height
+                    for c in range(1, 23):
+                        src_cell = ws.cell(row=8, column=c)
+                        dst_cell = ws.cell(row=r, column=c)
+                        if src_cell.has_style:
+                            dst_cell.font = copy(src_cell.font)
+                            dst_cell.border = copy(src_cell.border)
+                            dst_cell.fill = copy(src_cell.fill)
+                            dst_cell.number_format = copy(src_cell.number_format)
+                            dst_cell.protection = copy(src_cell.protection)
+                            dst_cell.alignment = copy(src_cell.alignment)
                 
+                # Escribir solo los valores manteniendo el formato intacto
                 ws.cell(row=r, column=2, value=idx + 1)
                 ws.cell(row=r, column=3, value=eq.get("red_salud_nombre") or "-")
                 ws.cell(row=r, column=4, value=eq.get("centro_salud_nombre") or "-")
@@ -536,24 +537,12 @@ class VistaCronograma(ctk.CTkFrame):
                 estado_str = str(eq.get("estado") or "Operativo")
                 ws.cell(row=r, column=10, value=estado_str)
                 
-                # Formato y estilo base de la fila
-                for c in range(2, 23): # Columnas B (2) a V (22)
-                    c_cell = ws.cell(row=r, column=c)
-                    c_cell.font = font_body
-                    c_cell.border = grid_border
-                    
-                    if c == 2 or c == 7 or c == 10: # N°, Código AF, Estado
-                        c_cell.alignment = openpyxl.styles.Alignment(horizontal="center", vertical="center")
-                    elif c in range(11, 23): # Meses
-                        c_cell.alignment = openpyxl.styles.Alignment(horizontal="center", vertical="center")
-                    else:
-                        c_cell.alignment = openpyxl.styles.Alignment(horizontal="left", vertical="center")
+                # Limpiar cualquier valor previo en los meses
+                for c in range(11, 23):
+                    ws.cell(row=r, column=c, value=None)
 
                 # Proyección para las marcas 'X' según criticidad
-                if estado_str == "Baja":
-                    # No colocar marcas 'X' para equipos de baja
-                    pass
-                else:
+                if estado_str != "Baja":
                     crit_eq = str(eq.get("criticidad") or "Riesgo Medio")
                     meses_eq = 3 if ("Alto" in crit_eq or crit_eq == "I") else (4 if ("Medio" in crit_eq or crit_eq == "II") else 6)
                     
@@ -590,12 +579,17 @@ class VistaCronograma(ctk.CTkFrame):
                         if 11 <= c_idx <= 22:
                             c_cell = ws.cell(row=r, column=c_idx)
                             c_cell.value = "X"
-                            c_cell.alignment = openpyxl.styles.Alignment(horizontal="center", vertical="center")
-                            c_cell.font = font_marca_x
-                            c_cell.fill = fill_x
+                            # Preservar el relleno/fondo de la plantilla original y solo marcar X
+                            src_font = ws.cell(row=8, column=c_idx).font
+                            if src_font:
+                                c_cell.font = copy(src_font)
+                                c_cell.font.bold = True
+                            c_align = ws.cell(row=8, column=c_idx).alignment
+                            if c_align:
+                                c_cell.alignment = copy(c_align)
                         f_iter = f_iter + relativedelta(months=+meses_eq)
                 
-            # Borrar filas sobrantes si la plantilla tenía más filas previas
+            # Borrar filas sobrantes si la plantilla tenía más filas vacías abajo
             total_rows = ws.max_row
             needed_rows = start_row + len(eqs_lista) - 1
             if total_rows > needed_rows and needed_rows >= start_row:
