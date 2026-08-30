@@ -312,35 +312,34 @@ def inicializar_bd():
     cur.execute("SELECT COUNT(*) FROM areas;")
     if cur.fetchone()[0] == 0:
         areas_iniciales = [
-            ("Especialidades Clinicas", "Piso 2", "", ""),
-            ("Especialidades Quirurgicas", "Piso 2", "", ""),
-            ("Pediatria", "Piso 2", "", ""),
-            ("Gineco-Obstetricia", "Piso 2", "", ""),
-            ("Consulta Externa", "Piso 1", "", ""),
-            ("Neonatologia", "Piso 1", "", ""),
-            ("Bloque Quirurgico", "Piso 1", "", ""),
-            ("UCI-A", "Piso 1", "", ""),
-            ("Partos", "Piso 1", "", ""),
-            ("Emergencias", "Piso 0", "", ""),
-            ("Imagenologia", "Piso 0", "", ""),
-            ("Consuta Externa", "Piso 0", "", ""),
-            ("Oncologia", "Piso 0", "", ""),
-            ("Endoscopia", "Piso 0", "", ""),
-            ("Hemodialisis", "Piso 0", "", ""),
-            ("Tranfusional", "Piso 0", "", ""),
-            ("Esterilizacion", "Piso 0", "", ""),
-            ("Braquioterapia", "Piso -1", "", ""),
-            ("Muelle de almacen", "Piso -1", "", ""),
-            ("Parqueo", "Piso -1", "", ""),
-            ("Laboratorio", "Piso -1", "", ""),
-            ("Patologia", "Piso -1", "", "")
+            ("Bloque Quirurgico", "", ""),
+            ("Braquioterapia", "", ""),
+            ("Consulta Externa", "", ""),
+            ("Emergencias", "", ""),
+            ("Endoscopia", "", ""),
+            ("Especialidades Clinicas", "", ""),
+            ("Especialidades Quirurgicas", "", ""),
+            ("Esterilizacion", "", ""),
+            ("Gineco-Obstetricia", "", ""),
+            ("Hemodialisis", "", ""),
+            ("Imagenologia", "", ""),
+            ("Laboratorio", "", ""),
+            ("Muelle de almacen", "", ""),
+            ("Neonatologia", "", ""),
+            ("Oncologia", "", ""),
+            ("Parqueo", "", ""),
+            ("Partos", "", ""),
+            ("Patologia", "", ""),
+            ("Pediatria", "", ""),
+            ("Tranfusional", "", ""),
+            ("UCI-A", "", "")
         ]
-        for name, floor, phone, manager in areas_iniciales:
+        for name, phone, manager in areas_iniciales:
             cur.execute("""
-                INSERT INTO areas (nombre, piso, contacto, encargado)
-                VALUES (%s, %s, %s, %s)
-                ON CONFLICT (nombre, piso) DO NOTHING;
-            """, (name, floor, phone, manager))
+                INSERT INTO areas (nombre, contacto, encargado)
+                VALUES (%s, %s, %s)
+                ON CONFLICT (nombre) DO NOTHING;
+            """, (name, phone, manager))
         conn.commit()
 
     # Sembrar Departamentos, Municipios, Redes y Centros de Salud de GAMLP

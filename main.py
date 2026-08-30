@@ -590,7 +590,7 @@ class SistemaMantenimiento(ctk.CTk):
             cur.execute("SELECT * FROM repuestos")
             self.datos["repuestos"] = [dict(r) for r in cur.fetchall()]
 
-            cur.execute("SELECT * FROM areas ORDER BY piso DESC, nombre ASC")
+            cur.execute("SELECT * FROM areas ORDER BY nombre ASC")
             self.datos["areas"] = [dict(r) for r in cur.fetchall()]
 
             try:
