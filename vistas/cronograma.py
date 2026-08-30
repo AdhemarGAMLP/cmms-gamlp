@@ -156,6 +156,13 @@ class VistaCronograma(ctk.CTkFrame):
                     fila_b.append(b)
                 self.botones_anio[mes].append(fila_b)
 
+    def obtener_eventos_sede(self, f_dia):
+        """Retorna los eventos del calendario que pertenecen a la sede activa."""
+        evs = self.app.eventos_calendario.get(f_dia, [])
+        if not hasattr(self.app, "equipo_cumple_sede_activa"):
+            return evs
+        return [e for e in evs if self.app.equipo_cumple_sede_activa(e)]
+
     def refrescar_datos(self):
         """Actualiza la lista rápida showing ONLY the next scheduled maintenance for each equipment."""
         for i in self.t_cro_lista.get_children():
@@ -165,7 +172,9 @@ class VistaCronograma(ctk.CTkFrame):
         from datetime import datetime, date
         
         items = []
-        for eq in self.app.datos["equipos"]:
+        for eq in self.app.datos.get("equipos", []):
+            if hasattr(self.app, "equipo_cumple_sede_activa") and not self.app.equipo_cumple_sede_activa(eq):
+                continue
             crit = str(eq.get("criticidad") or "Riesgo Medio")
             meses = 3 if "Alto" in crit else (4 if "Medio" in crit else 6)
             
@@ -303,8 +312,9 @@ class VistaCronograma(ctk.CTkFrame):
                     f_iter = date(y, m, dia)
                     bg, text_c = "transparent", C_TEXT
                     
-                    if f_iter in self.app.eventos_calendario:
-                        est = [e['estado'] for e in self.app.eventos_calendario[f_iter]]
+                    evs_sede = self.obtener_eventos_sede(f_iter)
+                    if evs_sede:
+                        est = [e['estado'] for e in evs_sede]
                         if "Vencido" in est: bg, text_c = C_RED, "white"
                         elif "Pendiente Este Mes" in est: bg, text_c = C_YELLOW, "black"
                         elif "Realizado a Tiempo" in est: bg, text_c = C_GREEN, "white"
@@ -331,8 +341,9 @@ class VistaCronograma(ctk.CTkFrame):
                         bg, text_c = C_BG, C_SUBTEXT
                         
                         if f_iter == self.hoy: text_c = C_BLUE
-                        if f_iter in self.app.eventos_calendario:
-                            est = [e['estado'] for e in self.app.eventos_calendario[f_iter]]
+                        evs_sede = self.obtener_eventos_sede(f_iter)
+                        if evs_sede:
+                            est = [e['estado'] for e in evs_sede]
                             if "Vencido" in est: bg, text_c = C_RED, "white"
                             elif "Pendiente Este Mes" in est: bg, text_c = C_YELLOW, "black"
                             elif "Realizado a Tiempo" in est: bg, text_c = C_GREEN, "white"
@@ -349,8 +360,9 @@ class VistaCronograma(ctk.CTkFrame):
         self.lbl_det_fecha.configure(text=f_click.strftime("%d %B, %Y"))
         self.txt_det.configure(state="normal")
         self.txt_det.delete("1.0", "end")
-        if f_click in self.app.eventos_calendario:
-            for ev in self.app.eventos_calendario[f_click]:
+        evs_sede = self.obtener_eventos_sede(f_click)
+        if evs_sede:
+            for ev in evs_sede:
                 if ev['estado'] == "Vencido": sim = "🔴"
                 elif ev['estado'] == "Pendiente Este Mes": sim = "🟡"
                 elif ev['estado'] == "Realizado a Tiempo": sim = "🟢"
@@ -373,8 +385,9 @@ class VistaCronograma(ctk.CTkFrame):
         txt = ctk.CTkTextbox(pop, fg_color=C_CARD, corner_radius=10, text_color=C_TEXT, font=ctk.CTkFont(size=14))
         txt.pack(fill="both", expand=True, padx=20, pady=(0, 20))
         
-        if f_click in self.app.eventos_calendario:
-            for ev in self.app.eventos_calendario[f_click]:
+        evs_sede = self.obtener_eventos_sede(f_click)
+        if evs_sede:
+            for ev in evs_sede:
                 sim = "🔴" if ev['estado'] == "Vencido" else ("🟡" if ev['estado'] == "Por Vencer" else "🟢")
                 txt.insert("end", f"{sim} ID: {ev['id']}\n{ev['eq']}\n\n")
         else:
@@ -425,11 +438,22 @@ class VistaCronograma(ctk.CTkFrame):
         import openpyxl
         from copy import copy
         
+        sede_activa = getattr(self.app, "contexto_sede", {}) or {}
+        cen_nom = sede_activa.get("centro_salud")
+        red_nom = sede_activa.get("red_salud")
+        
+        if cen_nom and not str(cen_nom).startswith("[ Todos"):
+            sufijo_sede = str(cen_nom).replace(" ", "_").replace("/", "_")
+        elif red_nom and not str(red_nom).startswith("[ Todas"):
+            sufijo_sede = str(red_nom).split("(")[0].strip().replace(" ", "_")
+        else:
+            sufijo_sede = "GAMLP_General"
+            
         ruta_guardar = filedialog.asksaveasfilename(
             defaultextension=".xlsx",
             filetypes=[("Archivos de Excel", "*.xlsx")],
             title="Guardar Cronograma Anual",
-            initialfile=f"Cronograma_Anual_GAMLP_{anio_inicio}.xlsx"
+            initialfile=f"Cronograma_Anual_{sufijo_sede}_{anio_inicio}.xlsx"
         )
         if not ruta_guardar:
             return
@@ -451,13 +475,14 @@ class VistaCronograma(ctk.CTkFrame):
             ws["T6"] = f"4to TRIM {Y}"
             
             # Obtener equipos filtrados según la sede activa (o todos si es acceso general)
-            eqs_crono = []
-            for eq in self.app.datos.get("equipos", []):
-                if self.app.equipo_cumple_sede_activa(eq):
-                    eqs_crono.append(eq)
+            if hasattr(self.app, "equipo_cumple_sede_activa"):
+                eqs_crono = [eq for eq in self.app.datos.get("equipos", []) if self.app.equipo_cumple_sede_activa(eq)]
+            else:
+                eqs_crono = list(self.app.datos.get("equipos", []))
             
             if not eqs_crono:
-                eqs_crono = list(self.app.datos.get("equipos", []))
+                messagebox.showwarning("Sin Equipos", "No se encontraron equipos registrados para la sede o centro de salud seleccionado.")
+                return
                     
             # Eliminar duplicados por ID de equipo
             unicos_eqs = {}

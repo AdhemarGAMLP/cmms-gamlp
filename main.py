@@ -931,6 +931,36 @@ class SistemaMantenimiento(ctk.CTk):
 
         VentanaSelectorSede(self, self.usuario_actual, al_cambiar_sede)
 
+    def equipo_cumple_sede_activa(self, eq):
+        """Verifica si un equipo pertenece a la sede territorial activa seleccionada."""
+        contexto = getattr(self, "contexto_sede", None)
+        if not contexto or contexto.get("es_global", True):
+            return True
+        cen_id = contexto.get("centro_salud_id")
+        cen_nom = contexto.get("centro_salud")
+        red_id = contexto.get("red_salud_id")
+        red_nom = contexto.get("red_salud")
+
+        if cen_id or (cen_nom and not str(cen_nom).startswith("[ Todos")):
+            if cen_id and eq.get("centro_salud_id") == cen_id:
+                return True
+            if cen_nom:
+                cen_clean = str(cen_nom).strip().lower()
+                if str(eq.get("centro_salud_nombre", "")).strip().lower() == cen_clean:
+                    return True
+                if str(eq.get("servicio", "")).strip().lower() == cen_clean:
+                    return True
+            return False
+        elif red_id or (red_nom and not str(red_nom).startswith("[ Todas")):
+            if red_id and eq.get("red_salud_id") == red_id:
+                return True
+            if red_nom:
+                red_clean = str(red_nom).strip().lower()
+                if str(eq.get("red_salud_nombre", "")).strip().lower() == red_clean:
+                    return True
+            return False
+        return True
+
 
     def crear_vistas_modulares(self):
         self.vistas["Inventario"] = VistaInventario(self.contenedor_principal, self)
