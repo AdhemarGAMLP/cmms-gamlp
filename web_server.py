@@ -1276,6 +1276,48 @@ def descargar_hoja_trabajo_excel(m_id, id_equipo=None):
     except Exception as e:
         return f"Error generando Hoja de Trabajo Excel: {e}", 500
 
+@app_web.route('/repuestos/descargar_excel')
+def descargar_repuestos_excel_web():
+    tipo = request.args.get('tipo', 'Stock')
+    try:
+        conn = obtener_conexion()
+        if not conn:
+            return "Error de conexión a base de datos", 500
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        
+        tipo_filtro = str(tipo).strip().lower()
+        if tipo_filtro in ["stock", "inventario", "en stock"]:
+            cur.execute("SELECT * FROM repuestos WHERE estado_disponibilidad != 'Requerido' ORDER BY nombre_repuesto ASC")
+            rep_list = [dict(r) for r in cur.fetchall()]
+            nombre_descarga = f"Inventario_Repuestos_{datetime.now().strftime('%Y%m%d')}.xlsx"
+        else:
+            cur.execute("SELECT * FROM repuestos WHERE estado_disponibilidad = 'Requerido' ORDER BY nombre_repuesto ASC")
+            rep_list = [dict(r) for r in cur.fetchall()]
+            nombre_descarga = f"Repuestos_Requeridos_{datetime.now().strftime('%Y%m%d')}.xlsx"
+            
+        cur.close()
+        conn.close()
+
+        from generador_repuestos_excel import generar_excel_repuestos_wb
+        wb, temp_files = generar_excel_repuestos_wb(rep_list, tipo=tipo)
+        
+        out_io = io.BytesIO()
+        wb.save(out_io)
+        out_io.seek(0)
+        
+        for tf in temp_files:
+            try: os.remove(tf)
+            except: pass
+            
+        return send_file(
+            out_io,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            as_attachment=True,
+            download_name=nombre_descarga
+        )
+    except Exception as e:
+        return f"Error generando Excel de Repuestos: {e}", 500
+
 @app_web.route('/equipo/<path:id_equipo>/mantenimiento', methods=['GET', 'POST'])
 def registrar_mantenimiento(id_equipo):
     import urllib.parse

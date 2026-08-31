@@ -6,6 +6,7 @@ from database import obtener_conexion, mover_a_papelera, ejecutar_en_segundo_pla
 from estilos import *
 from datetime import date, datetime
 import os
+from generador_repuestos_excel import guardar_excel_repuestos
 
 class VistaRepuestos(ctk.CTkFrame):
     def __init__(self, master, app):
@@ -58,15 +59,15 @@ class VistaRepuestos(ctk.CTkFrame):
         self.busqueda_stock_var = ctk.StringVar()
         self.busqueda_stock_var.trace_add("write", lambda *args: self.refrescar_datos())
         ctk.CTkLabel(f_filtros_stock, text="🔍 Buscar:", font=ctk.CTkFont(weight="bold"), text_color=C_TEXT).pack(side="left", padx=5)
-        e_buscar_stock = ctk.CTkEntry(f_filtros_stock, textvariable=self.busqueda_stock_var, placeholder_text="Buscar por Equipo, Repuesto, Modelo/PN...", width=260, fg_color=C_CARD, border_color=C_BORDER, corner_radius=10)
+        e_buscar_stock = ctk.CTkEntry(f_filtros_stock, textvariable=self.busqueda_stock_var, placeholder_text="Buscar por Repuesto, Red, Centro, Marca, Modelo...", width=260, fg_color=C_CARD, border_color=C_BORDER, corner_radius=10)
         e_buscar_stock.pack(side="left", padx=5)
         
         ctk.CTkLabel(f_filtros_stock, text="Ordenar por:", font=ctk.CTkFont(weight="bold", size=12), text_color=C_TEXT).pack(side="left", padx=(15, 5))
-        self.combo_ordenar_stock = ctk.CTkComboBox(f_filtros_stock, values=["Repuesto (A-Z)", "Repuesto (Z-A)", "Equipo Médico", "Cantidad (Mayor)", "Cantidad (Menor)", "Costo (Mayor)"], command=lambda e: self.refrescar_datos(), width=170, fg_color=C_CARD, border_color=C_BORDER)
+        self.combo_ordenar_stock = ctk.CTkComboBox(f_filtros_stock, values=["Repuesto (A-Z)", "Repuesto (Z-A)", "Centro de Salud", "Red de Salud", "Cantidad (Mayor)", "Cantidad (Menor)", "Costo (Mayor)"], command=lambda e: self.refrescar_datos(), width=170, fg_color=C_CARD, border_color=C_BORDER)
         self.combo_ordenar_stock.pack(side="left", padx=5)
         self.combo_ordenar_stock.set("Repuesto (A-Z)")
         
-        cols_stock = ("Equipo Médico", "Repuesto", "Modelo / P/N", "Cant. Disponible", "Costo Unit. (Bs.)", "Características", "Observaciones")
+        cols_stock = ("Red", "Centro de Salud", "Área", "Repuesto", "Marca", "Modelo / P/N", "Cant. Disponible", "Costo Unit. (Bs.)", "Costo Total (Bs.)", "Observaciones")
         f_tree_stock = ctk.CTkFrame(marco_stock, fg_color="transparent")
         f_tree_stock.pack(pady=5, padx=5, fill="both", expand=True)
         self.tabla_stock = ttk.Treeview(f_tree_stock, columns=cols_stock, show="headings")
@@ -80,10 +81,11 @@ class VistaRepuestos(ctk.CTkFrame):
         
         f_bot_stock = ctk.CTkFrame(self.tab_stock, fg_color="transparent")
         f_bot_stock.pack(pady=(5, 15), padx=10, fill="x")
-        ctk.CTkButton(f_bot_stock, text="✚ Añadir a Stock", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_BLUE, hover_color=C_BLUE_HOVER, corner_radius=10, height=40, command=lambda: self.abrir_formulario_repuesto(estado_inicial="En Stock")).pack(side="left", expand=True, padx=8)
-        ctk.CTkButton(f_bot_stock, text="✎ Modificar", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_PURPLE, hover_color=C_PURPLE_HOVER, corner_radius=10, height=40, command=lambda: self.modificar_repuesto(tabla_origen="stock")).pack(side="left", expand=True, padx=8)
+        ctk.CTkButton(f_bot_stock, text="✚ Añadir a Stock", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_BLUE, hover_color=C_BLUE_HOVER, corner_radius=10, height=40, command=lambda: self.abrir_formulario_repuesto(estado_inicial="En Stock")).pack(side="left", expand=True, padx=6)
+        ctk.CTkButton(f_bot_stock, text="📥 Descargar Inventario (.xlsx)", font=ctk.CTkFont(weight="bold", size=13), fg_color="#059669", hover_color="#047857", corner_radius=10, height=40, command=lambda: self.descargar_excel_repuestos(tipo="Stock")).pack(side="left", expand=True, padx=6)
+        ctk.CTkButton(f_bot_stock, text="✎ Modificar", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_PURPLE, hover_color=C_PURPLE_HOVER, corner_radius=10, height=40, command=lambda: self.modificar_repuesto(tabla_origen="stock")).pack(side="left", expand=True, padx=6)
         self.btn_eliminar_stock = ctk.CTkButton(f_bot_stock, text="🗑 Eliminar", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_RED, hover_color=C_RED_HOVER, corner_radius=10, height=40, command=lambda: self.eliminar_repuesto(tabla_origen="stock"))
-        self.btn_eliminar_stock.pack(side="left", expand=True, padx=8)
+        self.btn_eliminar_stock.pack(side="left", expand=True, padx=6)
         if not self.app.es_jefe: self.btn_eliminar_stock.configure(state="disabled", fg_color=C_BORDER, text_color=C_SUBTEXT)
 
         # =========================================================================
@@ -99,18 +101,18 @@ class VistaRepuestos(ctk.CTkFrame):
         self.busqueda_req_var = ctk.StringVar()
         self.busqueda_req_var.trace_add("write", lambda *args: self.refrescar_datos())
         ctk.CTkLabel(f_top_req, text="🔍 Buscar:", font=ctk.CTkFont(weight="bold"), text_color=C_TEXT).pack(side="left", padx=5)
-        e_buscar_req = ctk.CTkEntry(f_top_req, textvariable=self.busqueda_req_var, placeholder_text="Buscar Requerimiento, Equipo, P/N...", width=260, fg_color=C_CARD, border_color=C_BORDER, corner_radius=10)
+        e_buscar_req = ctk.CTkEntry(f_top_req, textvariable=self.busqueda_req_var, placeholder_text="Buscar Requerimiento, Red, Centro, Marca, P/N...", width=260, fg_color=C_CARD, border_color=C_BORDER, corner_radius=10)
         e_buscar_req.pack(side="left", padx=5)
         
         ctk.CTkLabel(f_top_req, text="Ordenar por:", font=ctk.CTkFont(weight="bold", size=12), text_color=C_TEXT).pack(side="left", padx=(15, 5))
-        self.combo_ordenar_req = ctk.CTkComboBox(f_top_req, values=["Repuesto (A-Z)", "Repuesto (Z-A)", "Equipo Médico", "Cantidad (Mayor)", "Costo Estimado (Mayor)"], command=lambda e: self.refrescar_datos(), width=180, fg_color=C_CARD, border_color=C_BORDER)
+        self.combo_ordenar_req = ctk.CTkComboBox(f_top_req, values=["Repuesto (A-Z)", "Repuesto (Z-A)", "Centro de Salud", "Red de Salud", "Cantidad (Mayor)", "Costo Estimado (Mayor)"], command=lambda e: self.refrescar_datos(), width=180, fg_color=C_CARD, border_color=C_BORDER)
         self.combo_ordenar_req.pack(side="left", padx=5)
         self.combo_ordenar_req.set("Repuesto (A-Z)")
         
         self.lbl_kpi_req = ctk.CTkLabel(f_top_req, text="Requerimientos: 0 | Total Est.: 0.00 Bs.", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_ORANGE)
         self.lbl_kpi_req.pack(side="right", padx=10)
         
-        cols_req = ("Equipo Médico", "Repuesto Necesario", "Modelo / P/N", "Cant. Requerida", "Costo Est. (Bs.)", "Costo Total (Bs.)", "Características", "Observaciones / Motivo")
+        cols_req = ("Red", "Centro de Salud", "Área", "Repuesto Necesario", "Marca", "Modelo / P/N", "Cant. Requerida", "Costo Est. (Bs.)", "Costo Total (Bs.)", "Observaciones / Motivo")
         f_tree_req = ctk.CTkFrame(marco_req, fg_color="transparent")
         f_tree_req.pack(pady=5, padx=5, fill="both", expand=True)
         self.tabla_req = ttk.Treeview(f_tree_req, columns=cols_req, show="headings")
@@ -124,11 +126,12 @@ class VistaRepuestos(ctk.CTkFrame):
         
         f_bot_req = ctk.CTkFrame(self.tab_req, fg_color="transparent")
         f_bot_req.pack(pady=(5, 15), padx=10, fill="x")
-        ctk.CTkButton(f_bot_req, text="✚ Solicitar Repuesto", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_ORANGE, hover_color="#D97706", corner_radius=10, height=40, command=lambda: self.abrir_formulario_repuesto(estado_inicial="Requerido")).pack(side="left", expand=True, padx=8)
-        ctk.CTkButton(f_bot_req, text="✅ Pasar a Stock (Adquirido)", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_GREEN, hover_color=C_GREEN_HOVER, corner_radius=10, height=40, command=self.pasar_a_stock).pack(side="left", expand=True, padx=8)
-        ctk.CTkButton(f_bot_req, text="✎ Modificar", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_PURPLE, hover_color=C_PURPLE_HOVER, corner_radius=10, height=40, command=lambda: self.modificar_repuesto(tabla_origen="req")).pack(side="left", expand=True, padx=8)
+        ctk.CTkButton(f_bot_req, text="✚ Solicitar Repuesto", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_ORANGE, hover_color="#D97706", corner_radius=10, height=40, command=lambda: self.abrir_formulario_repuesto(estado_inicial="Requerido")).pack(side="left", expand=True, padx=6)
+        ctk.CTkButton(f_bot_req, text="📥 Descargar Requerimientos (.xlsx)", font=ctk.CTkFont(weight="bold", size=13), fg_color="#059669", hover_color="#047857", corner_radius=10, height=40, command=lambda: self.descargar_excel_repuestos(tipo="Requerido")).pack(side="left", expand=True, padx=6)
+        ctk.CTkButton(f_bot_req, text="✅ Pasar a Stock", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_GREEN, hover_color=C_GREEN_HOVER, corner_radius=10, height=40, command=self.pasar_a_stock).pack(side="left", expand=True, padx=6)
+        ctk.CTkButton(f_bot_req, text="✎ Modificar", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_PURPLE, hover_color=C_PURPLE_HOVER, corner_radius=10, height=40, command=lambda: self.modificar_repuesto(tabla_origen="req")).pack(side="left", expand=True, padx=6)
         self.btn_eliminar_req = ctk.CTkButton(f_bot_req, text="🗑 Eliminar", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_RED, hover_color=C_RED_HOVER, corner_radius=10, height=40, command=lambda: self.eliminar_repuesto(tabla_origen="req"))
-        self.btn_eliminar_req.pack(side="left", expand=True, padx=8)
+        self.btn_eliminar_req.pack(side="left", expand=True, padx=6)
         if not self.app.es_jefe: self.btn_eliminar_req.configure(state="disabled", fg_color=C_BORDER, text_color=C_SUBTEXT)
         
         # =========================================================================
@@ -201,9 +204,14 @@ class VistaRepuestos(ctk.CTkFrame):
         t_stock = self.busqueda_stock_var.get().lower().strip()
         if t_stock:
             rep_stock = [r for r in rep_stock if (
-                t_stock in str(r.get("tipo_equipo", "")).lower() or
                 t_stock in str(r.get("nombre_repuesto", "")).lower() or
+                t_stock in str(r.get("red_salud_nombre", "")).lower() or
+                t_stock in str(r.get("centro_salud_nombre", "")).lower() or
+                t_stock in str(r.get("area", "")).lower() or
+                t_stock in str(r.get("marca", "")).lower() or
+                t_stock in str(r.get("modelo", "")).lower() or
                 t_stock in str(r.get("modelo_parte", "")).lower() or
+                t_stock in str(r.get("tipo_equipo", "")).lower() or
                 t_stock in str(r.get("caracteristicas", "")).lower() or
                 t_stock in str(r.get("observaciones", "")).lower()
             )]
@@ -213,26 +221,34 @@ class VistaRepuestos(ctk.CTkFrame):
             rep_stock.sort(key=lambda x: str(x.get("nombre_repuesto", "")).lower())
         elif crit_stock == "Repuesto (Z-A)":
             rep_stock.sort(key=lambda x: str(x.get("nombre_repuesto", "")).lower(), reverse=True)
-        elif crit_stock == "Equipo Médico":
-            rep_stock.sort(key=lambda x: str(x.get("tipo_equipo", "")).lower())
+        elif crit_stock == "Centro de Salud":
+            rep_stock.sort(key=lambda x: str(x.get("centro_salud_nombre", "")).lower())
+        elif crit_stock == "Red de Salud":
+            rep_stock.sort(key=lambda x: str(x.get("red_salud_nombre", "")).lower())
         elif crit_stock == "Cantidad (Mayor)":
-            rep_stock.sort(key=lambda x: int(x.get("cantidad", 0)), reverse=True)
+            rep_stock.sort(key=lambda x: int(x.get("cantidad", 0) or 0), reverse=True)
         elif crit_stock == "Cantidad (Menor)":
-            rep_stock.sort(key=lambda x: int(x.get("cantidad", 0)))
+            rep_stock.sort(key=lambda x: int(x.get("cantidad", 0) or 0))
         elif crit_stock == "Costo (Mayor)":
             rep_stock.sort(key=lambda x: float(x.get("costo", 0) or 0), reverse=True)
             
         for r in rep_stock:
+            cant_val = int(r.get("cantidad", 0) or 0)
             costo_val = float(r.get("costo", 0) or 0)
-            costo_str = f"{costo_val:.2f}" if costo_val > 0 else "-"
+            costo_tot = cant_val * costo_val
+            costo_str = f"{costo_val:,.2f}" if costo_val > 0 else "-"
+            costo_tot_str = f"{costo_tot:,.2f}" if costo_tot > 0 else "-"
             self.tabla_stock.insert("", "end", values=(
-                r.get("tipo_equipo", ""),
+                r.get("red_salud_nombre") or "-",
+                r.get("centro_salud_nombre") or "-",
+                r.get("area") or "-",
                 r.get("nombre_repuesto", ""),
-                r.get("modelo_parte", "-") or "-",
-                r.get("cantidad", 0),
+                r.get("marca") or "-",
+                r.get("modelo") or r.get("modelo_parte") or "-",
+                cant_val,
                 costo_str,
-                r.get("caracteristicas", "-") or "-",
-                r.get("observaciones", "-") or "-"
+                costo_tot_str,
+                r.get("observaciones") or "-"
             ))
         
         # --- TAB 2: REQUERIMIENTOS ---
@@ -242,9 +258,14 @@ class VistaRepuestos(ctk.CTkFrame):
         t_req = self.busqueda_req_var.get().lower().strip()
         if t_req:
             rep_req = [r for r in rep_req if (
-                t_req in str(r.get("tipo_equipo", "")).lower() or
                 t_req in str(r.get("nombre_repuesto", "")).lower() or
+                t_req in str(r.get("red_salud_nombre", "")).lower() or
+                t_req in str(r.get("centro_salud_nombre", "")).lower() or
+                t_req in str(r.get("area", "")).lower() or
+                t_req in str(r.get("marca", "")).lower() or
+                t_req in str(r.get("modelo", "")).lower() or
                 t_req in str(r.get("modelo_parte", "")).lower() or
+                t_req in str(r.get("tipo_equipo", "")).lower() or
                 t_req in str(r.get("caracteristicas", "")).lower() or
                 t_req in str(r.get("observaciones", "")).lower()
             )]
@@ -254,12 +275,14 @@ class VistaRepuestos(ctk.CTkFrame):
             rep_req.sort(key=lambda x: str(x.get("nombre_repuesto", "")).lower())
         elif crit_req == "Repuesto (Z-A)":
             rep_req.sort(key=lambda x: str(x.get("nombre_repuesto", "")).lower(), reverse=True)
-        elif crit_req == "Equipo Médico":
-            rep_req.sort(key=lambda x: str(x.get("tipo_equipo", "")).lower())
+        elif crit_req == "Centro de Salud":
+            rep_req.sort(key=lambda x: str(x.get("centro_salud_nombre", "")).lower())
+        elif crit_req == "Red de Salud":
+            rep_req.sort(key=lambda x: str(x.get("red_salud_nombre", "")).lower())
         elif crit_req == "Cantidad (Mayor)":
-            rep_req.sort(key=lambda x: int(x.get("cantidad", 0)), reverse=True)
+            rep_req.sort(key=lambda x: int(x.get("cantidad", 0) or 0), reverse=True)
         elif crit_req == "Costo Estimado (Mayor)":
-            rep_req.sort(key=lambda x: float(x.get("costo", 0) or 0) * int(x.get("cantidad", 0)), reverse=True)
+            rep_req.sort(key=lambda x: float(x.get("costo", 0) or 0) * int(x.get("cantidad", 0) or 0), reverse=True)
             
         total_inversion_req = 0.0
         for r in rep_req:
@@ -268,18 +291,20 @@ class VistaRepuestos(ctk.CTkFrame):
             costo_tot = cant_r * costo_u
             total_inversion_req += costo_tot
             
-            c_u_str = f"{costo_u:.2f}" if costo_u > 0 else "-"
-            c_tot_str = f"{costo_tot:.2f}" if costo_tot > 0 else "-"
+            c_u_str = f"{costo_u:,.2f}" if costo_u > 0 else "-"
+            c_tot_str = f"{costo_tot:,.2f}" if costo_tot > 0 else "-"
             
             self.tabla_req.insert("", "end", values=(
-                r.get("tipo_equipo", ""),
+                r.get("red_salud_nombre") or "-",
+                r.get("centro_salud_nombre") or "-",
+                r.get("area") or "-",
                 r.get("nombre_repuesto", ""),
-                r.get("modelo_parte", "-") or "-",
+                r.get("marca") or "-",
+                r.get("modelo") or r.get("modelo_parte") or "-",
                 cant_r,
                 c_u_str,
                 c_tot_str,
-                r.get("caracteristicas", "-") or "-",
-                r.get("observaciones", "-") or "-"
+                r.get("observaciones") or "-"
             ))
             
         if hasattr(self, "lbl_kpi_req"):
@@ -351,21 +376,70 @@ class VistaRepuestos(ctk.CTkFrame):
         sel = tabla.focus()
         return tabla.item(sel, "values") if sel else None
 
+    def descargar_excel_repuestos(self, tipo="Stock"):
+        try:
+            todos_rep = list(self.app.datos.get("repuestos", []))
+            tipo_filtro = str(tipo).strip().lower()
+            
+            if tipo_filtro in ["stock", "inventario", "en stock"]:
+                rep_filtrados = [r for r in todos_rep if str(r.get("estado_disponibilidad", "En Stock")).strip().lower() != "requerido"]
+                t_busqueda = self.busqueda_stock_var.get().lower().strip()
+                nombre_defecto = f"Inventario_Repuestos_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+            else:
+                rep_filtrados = [r for r in todos_rep if str(r.get("estado_disponibilidad", "En Stock")).strip().lower() == "requerido"]
+                t_busqueda = self.busqueda_req_var.get().lower().strip()
+                nombre_defecto = f"Repuestos_Requeridos_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+
+            if t_busqueda:
+                rep_filtrados = [r for r in rep_filtrados if (
+                    t_busqueda in str(r.get("nombre_repuesto", "")).lower() or
+                    t_busqueda in str(r.get("red_salud_nombre", "")).lower() or
+                    t_busqueda in str(r.get("centro_salud_nombre", "")).lower() or
+                    t_busqueda in str(r.get("area", "")).lower() or
+                    t_busqueda in str(r.get("marca", "")).lower() or
+                    t_busqueda in str(r.get("modelo", "")).lower() or
+                    t_busqueda in str(r.get("modelo_parte", "")).lower() or
+                    t_busqueda in str(r.get("tipo_equipo", "")).lower()
+                )]
+
+            if not rep_filtrados:
+                messagebox.showinfo("Sin Datos", f"No hay repuestos registrados en '{tipo}' para exportar.")
+                return
+
+            ruta_guardar = filedialog.asksaveasfilename(
+                title=f"Guardar Lista de Repuestos ({tipo})",
+                defaultextension=".xlsx",
+                initialfile=nombre_defecto,
+                filetypes=[("Archivos Excel", "*.xlsx")]
+            )
+            if not ruta_guardar:
+                return
+
+            guardar_excel_repuestos(rep_filtrados, tipo=tipo, ruta_salida=ruta_guardar)
+            
+            try:
+                os.startfile(ruta_guardar)
+            except Exception as oe:
+                print(f"[WARN] No se pudo abrir automáticamente el archivo: {oe}")
+
+            messagebox.showinfo("Exportación Exitosa", f"Se generó correctamente la lista con {len(rep_filtrados)} repuestos en:\n\n{os.path.basename(ruta_guardar)}")
+        except Exception as e:
+            messagebox.showerror("Error al Exportar", f"Ocurrió un error al generar el archivo Excel:\n{e}")
+
     def abrir_formulario_repuesto(self, rep_editar=None, estado_inicial="En Stock"):
         vent = ctk.CTkToplevel(self)
         vent.title("Registrar Repuesto / Requerimiento" if not rep_editar else "Modificar Repuesto")
-        vent.geometry("580x720")
+        vent.geometry("600x780")
         vent.transient(self.app)
         vent.grab_set()
         vent.configure(fg_color=C_CARD)
         
-        # Scroll container para el formulario
         sf = ctk.CTkScrollableFrame(vent, fg_color="transparent")
         sf.pack(fill="both", expand=True, padx=20, pady=20)
         
         ctk.CTkLabel(sf, text="Ficha Técnica de Repuesto / Accesorio", font=ctk.CTkFont(size=18, weight="bold"), text_color=C_TEXT).pack(pady=(0, 15))
         
-        # 1. Selector de Disponibilidad / Estado con Contorno Nítido y Alto Contraste
+        # 1. Selector de Disponibilidad / Estado
         ctk.CTkLabel(sf, text="Estado de Disponibilidad:", font=ctk.CTkFont(weight="bold", size=13), text_color=C_TEXT).pack(anchor="w", pady=(5, 4))
         
         var_estado = ctk.StringVar(value=rep_editar.get("estado_disponibilidad", estado_inicial) if rep_editar else estado_inicial)
@@ -398,51 +472,144 @@ class VistaRepuestos(ctk.CTkFrame):
 
         actualizar_botones_estado()
 
-        # 2. Equipo Médico Compatible (Catálogo)
-        ctk.CTkLabel(sf, text="Equipo Médico Compatible / Tipo:", font=ctk.CTkFont(weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(5, 2))
-        opciones_cat = [f"{c['nombre']} - {c.get('marca', '')} - {c.get('modelo', '')}" for c in self.app.datos.get("catalogo", [])]
-        if not opciones_cat:
-            opciones_cat = ["General / Multiuso"]
-        combo_tipo = ctk.CTkComboBox(sf, values=opciones_cat, height=36)
-        combo_tipo.pack(fill="x", pady=(0, 12))
+        # 2. Red de Salud
+        ctk.CTkLabel(sf, text="Red de Salud *:", font=ctk.CTkFont(weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(5, 2))
+        redes_opts = [r["nombre"] for r in self.app.sedes_data.get("redes", [])]
+        if not redes_opts:
+            redes_opts = [
+                "RED 1-SUR OESTE (MACRODISTRITO COTAHUMA)",
+                "RED 2-NOR OESTE (MACRODISTRITO MAX PAREDES)",
+                "RED 3-NORTE CENTRAL (MACRODISTRITO PERIFERICA CENTRAL)",
+                "RED 4-SAN ANTONIO (MACRODISTRITO SAN ANTONIO)",
+                "RED 5-SUR (MACRODISTRITO SUR)"
+            ]
         
-        # 3. Nombre del Repuesto
+        red_inicial = rep_editar.get("red_salud_nombre") if rep_editar else (self.app.contexto_seleccionado.get("red_salud") if hasattr(self.app, "contexto_seleccionado") else redes_opts[1])
+        if not red_inicial or str(red_inicial).startswith("[ Todas"):
+            red_inicial = redes_opts[1]
+
+        combo_red = ctk.CTkComboBox(sf, values=redes_opts, height=36)
+        combo_red.pack(fill="x", pady=(0, 10))
+        if red_inicial in redes_opts:
+            combo_red.set(red_inicial)
+
+        # 3. Centro de Salud (Dinámico)
+        ctk.CTkLabel(sf, text="Centro de Salud *:", font=ctk.CTkFont(weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(5, 2))
+        combo_centro = ctk.CTkComboBox(sf, values=["Cargando centros..."], height=36)
+        combo_centro.pack(fill="x", pady=(0, 10))
+
+        # 4. Área (Dinámico)
+        ctk.CTkLabel(sf, text="Área Hospitalaria / Servicio *:", font=ctk.CTkFont(weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(5, 2))
+        combo_area = ctk.CTkComboBox(sf, values=["General"], height=36)
+        combo_area.pack(fill="x", pady=(0, 10))
+
+        def actualizar_centros_y_areas(red_sel):
+            red_obj = next((r for r in self.app.sedes_data.get("redes", []) if r["nombre"] == red_sel), None)
+            red_id = red_obj["id"] if red_obj else None
+            centros_nombres = [c["nombre"] for c in self.app.sedes_data.get("centros", []) if c.get("red_salud_id") == red_id]
+            if not centros_nombres:
+                centros_nombres = ["Centro de Salud General"]
+            combo_centro.configure(values=centros_nombres)
+            
+            c_ini = rep_editar.get("centro_salud_nombre") if rep_editar else (self.app.contexto_seleccionado.get("centro_salud") if hasattr(self.app, "contexto_seleccionado") else None)
+            if c_ini and c_ini in centros_nombres:
+                combo_centro.set(c_ini)
+            else:
+                combo_centro.set(centros_nombres[0])
+            actualizar_areas(combo_centro.get())
+
+        def actualizar_areas(centro_sel):
+            cen_obj = next((c for c in self.app.sedes_data.get("centros", []) if c["nombre"] == centro_sel), None)
+            cen_id = cen_obj["id"] if cen_obj else None
+            areas_nombres = sorted(list(set(a["nombre"] for a in self.app.datos.get("areas", []) if a.get("centro_salud_id") == cen_id)))
+            if not areas_nombres:
+                areas_nombres = ["General", "Emergencias", "Odontología", "Laboratorio", "Enfermería", "Esterilización"]
+            combo_area.configure(values=areas_nombres)
+            
+            a_ini = rep_editar.get("area") if rep_editar else None
+            if a_ini:
+                combo_area.set(a_ini)
+            else:
+                combo_area.set(areas_nombres[0])
+
+        combo_red.configure(command=actualizar_centros_y_areas)
+        combo_centro.configure(command=actualizar_areas)
+        actualizar_centros_y_areas(combo_red.get())
+
+        # 5. Nombre del Repuesto
         ctk.CTkLabel(sf, text="Nombre del Repuesto / Accesorio *:", font=ctk.CTkFont(weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(5, 2))
-        e_nombre = ctk.CTkEntry(sf, placeholder_text="Ej: Sensor SpO2 adulto, Batería 12V 7Ah, Manguera NIBP...", height=36)
-        e_nombre.pack(fill="x", pady=(0, 12))
+        e_nombre = ctk.CTkEntry(sf, placeholder_text="Ej: Sensor SpO2 adulto, Batería 12V 7Ah, Manguera NIBP, Turbina...", height=36)
+        e_nombre.pack(fill="x", pady=(0, 10))
+
+        # 6. Marca y Modelo
+        f_row_mm = ctk.CTkFrame(sf, fg_color="transparent")
+        f_row_mm.pack(fill="x", pady=(0, 10))
         
-        # 4. Modelo / Número de Parte (P/N) y Costo Unitario
-        f_row1 = ctk.CTkFrame(sf, fg_color="transparent")
-        f_row1.pack(fill="x", pady=(0, 12))
+        f_col_marca = ctk.CTkFrame(f_row_mm, fg_color="transparent")
+        f_col_marca.pack(side="left", fill="both", expand=True, padx=(0, 5))
+        ctk.CTkLabel(f_col_marca, text="Marca del Repuesto / Equipo:", font=ctk.CTkFont(weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(0, 2))
+        e_marca = ctk.CTkEntry(f_col_marca, placeholder_text="Ej: Mindray, NSK, Philips...", height=36)
+        e_marca.pack(fill="x")
         
-        f_col_mod = ctk.CTkFrame(f_row1, fg_color="transparent")
-        f_col_mod.pack(side="left", fill="both", expand=True, padx=(0, 5))
+        f_col_mod = ctk.CTkFrame(f_row_mm, fg_color="transparent")
+        f_col_mod.pack(side="left", fill="both", expand=True, padx=(5, 0))
         ctk.CTkLabel(f_col_mod, text="Modelo / N° Parte (P/N):", font=ctk.CTkFont(weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(0, 2))
-        e_modelo = ctk.CTkEntry(f_col_mod, placeholder_text="Ej: P/N 115-002345, Mod. BC-500", height=36)
+        e_modelo = ctk.CTkEntry(f_col_mod, placeholder_text="Ej: P/N 115-002345, Pana-Max...", height=36)
         e_modelo.pack(fill="x")
+
+        # 7. Cantidad y Costo Unitario
+        f_row_cc = ctk.CTkFrame(sf, fg_color="transparent")
+        f_row_cc.pack(fill="x", pady=(0, 10))
         
-        f_col_costo = ctk.CTkFrame(f_row1, fg_color="transparent")
+        f_col_cant = ctk.CTkFrame(f_row_cc, fg_color="transparent")
+        f_col_cant.pack(side="left", fill="both", expand=True, padx=(0, 5))
+        ctk.CTkLabel(f_col_cant, text="Cantidad *:", font=ctk.CTkFont(weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(0, 2))
+        e_cantidad = ctk.CTkEntry(f_col_cant, placeholder_text="1", height=36)
+        e_cantidad.pack(fill="x")
+        
+        f_col_costo = ctk.CTkFrame(f_row_cc, fg_color="transparent")
         f_col_costo.pack(side="left", fill="both", expand=True, padx=(5, 0))
         ctk.CTkLabel(f_col_costo, text="Costo Unitario Estimado (Bs.):", font=ctk.CTkFont(weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(0, 2))
         e_costo = ctk.CTkEntry(f_col_costo, placeholder_text="0.00", height=36)
         e_costo.pack(fill="x")
 
-        # 5. Cantidad
-        ctk.CTkLabel(sf, text="Cantidad (Stock disponible o Unidades requeridas) *:", font=ctk.CTkFont(weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(5, 2))
-        e_cantidad = ctk.CTkEntry(sf, placeholder_text="1", height=36)
-        e_cantidad.pack(fill="x", pady=(0, 12))
+        # Badge de Costo Total en Vivo
+        f_costo_tot = ctk.CTkFrame(sf, fg_color="#F8FAFC", corner_radius=8, border_width=1, border_color="#E2E8F0")
+        f_costo_tot.pack(fill="x", pady=(0, 12))
+        lbl_costo_tot_live = ctk.CTkLabel(f_costo_tot, text="💰 Costo Total Calculado: 0.00 Bs.", font=ctk.CTkFont(weight="bold", size=13), text_color="#1D4ED8")
+        lbl_costo_tot_live.pack(pady=8, padx=10)
 
-        # 6. Características Técnicas
+        def actualizar_total_en_vivo(*args):
+            try:
+                c = int(e_cantidad.get().strip() or 0)
+                u = float(e_costo.get().strip() or 0)
+                tot = c * u
+                lbl_costo_tot_live.configure(text=f"💰 Costo Total Calculado: {tot:,.2f} Bs.")
+            except:
+                lbl_costo_tot_live.configure(text="💰 Costo Total Calculado: 0.00 Bs.")
+
+        e_cantidad.bind("<KeyRelease>", actualizar_total_en_vivo)
+        e_costo.bind("<KeyRelease>", actualizar_total_en_vivo)
+
+        # 8. Equipo Compatible (Opcional)
+        ctk.CTkLabel(sf, text="Equipo Médico Compatible / Catálogo (Opcional):", font=ctk.CTkFont(weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(5, 2))
+        opciones_cat = [f"{c['nombre']} - {c.get('marca', '')} - {c.get('modelo', '')}" for c in self.app.datos.get("catalogo", [])]
+        if not opciones_cat:
+            opciones_cat = ["General / Multiuso"]
+        combo_tipo = ctk.CTkComboBox(sf, values=opciones_cat, height=36)
+        combo_tipo.pack(fill="x", pady=(0, 10))
+
+        # 9. Características Técnicas
         ctk.CTkLabel(sf, text="Características Técnicas y Especificaciones:", font=ctk.CTkFont(weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(5, 2))
-        txt_caract = ctk.CTkTextbox(sf, height=65, fg_color=C_BG, corner_radius=8)
-        txt_caract.pack(fill="x", pady=(0, 12))
+        txt_caract = ctk.CTkTextbox(sf, height=60, fg_color=C_BG, corner_radius=8)
+        txt_caract.pack(fill="x", pady=(0, 10))
 
-        # 7. Observaciones / Motivo de Solicitud
+        # 10. Observaciones / Motivo
         ctk.CTkLabel(sf, text="Observaciones / Motivo del Requerimiento:", font=ctk.CTkFont(weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(5, 2))
-        txt_obs = ctk.CTkTextbox(sf, height=65, fg_color=C_BG, corner_radius=8)
-        txt_obs.pack(fill="x", pady=(0, 12))
+        txt_obs = ctk.CTkTextbox(sf, height=60, fg_color=C_BG, corner_radius=8)
+        txt_obs.pack(fill="x", pady=(0, 10))
 
-        # 8. Foto / Imagen
+        # 11. Foto / Imagen
         ruta_foto = ctk.StringVar(value=rep_editar.get("foto", "") if rep_editar else "")
         f_foto = ctk.CTkFrame(sf, fg_color="transparent")
         f_foto.pack(fill="x", pady=(5, 15))
@@ -465,24 +632,31 @@ class VistaRepuestos(ctk.CTkFrame):
 
         # Cargar datos si estamos editando
         if rep_editar:
-            combo_tipo.set(rep_editar.get("tipo_equipo", ""))
+            if rep_editar.get("tipo_equipo"): combo_tipo.set(rep_editar.get("tipo_equipo"))
             e_nombre.insert(0, rep_editar.get("nombre_repuesto", ""))
-            e_modelo.insert(0, rep_editar.get("modelo_parte", "") or "")
-            e_costo.insert(0, str(rep_editar.get("costo", "") or ""))
+            if rep_editar.get("marca"): e_marca.insert(0, rep_editar.get("marca"))
+            if rep_editar.get("modelo") or rep_editar.get("modelo_parte"): e_modelo.insert(0, rep_editar.get("modelo") or rep_editar.get("modelo_parte") or "")
+            e_costo.insert(0, str(rep_editar.get("costo", "") or "0.00"))
             e_cantidad.insert(0, str(rep_editar.get("cantidad", 1)))
             if rep_editar.get("caracteristicas"):
                 txt_caract.insert("1.0", str(rep_editar.get("caracteristicas")))
             if rep_editar.get("observaciones"):
                 txt_obs.insert("1.0", str(rep_editar.get("observaciones")))
+            actualizar_total_en_vivo()
         else:
             e_cantidad.insert(0, "1")
             e_costo.insert(0, "0.00")
+            actualizar_total_en_vivo()
 
         def guardar_repuesto():
             est_disp = var_estado.get().strip()
-            t_eq = combo_tipo.get().strip()
+            red_val = combo_red.get().strip()
+            cen_val = combo_centro.get().strip()
+            area_val = combo_area.get().strip()
             n_rep = e_nombre.get().strip()
-            mod_p = e_modelo.get().strip()
+            marca_val = e_marca.get().strip()
+            mod_val = e_modelo.get().strip()
+            t_eq = combo_tipo.get().strip()
             caract_val = txt_caract.get("1.0", "end-1c").strip()
             obs_val = txt_obs.get("1.0", "end-1c").strip()
             
@@ -506,11 +680,16 @@ class VistaRepuestos(ctk.CTkFrame):
 
             r_foto = ruta_foto.get()
 
-            # 1. Actualizar memoria y caché de inmediato (0 ms)
+            # 1. Actualizar memoria y caché de inmediato
             rep_obj = {
                 "tipo_equipo": t_eq,
                 "nombre_repuesto": n_rep,
-                "modelo_parte": mod_p,
+                "red_salud_nombre": red_val,
+                "centro_salud_nombre": cen_val,
+                "area": area_val,
+                "marca": marca_val,
+                "modelo": mod_val,
+                "modelo_parte": mod_val,
                 "cantidad": c_cant,
                 "costo": c_costo,
                 "estado_disponibilidad": est_disp,
@@ -518,10 +697,12 @@ class VistaRepuestos(ctk.CTkFrame):
                 "observaciones": obs_val,
                 "foto": r_foto
             }
+            if rep_editar and rep_editar.get("id"):
+                rep_obj["id"] = rep_editar["id"]
             
             if rep_editar:
                 for idx_r, ex in enumerate(self.app.datos.get("repuestos", [])):
-                    if ex.get("tipo_equipo") == rep_editar["tipo_equipo"] and ex.get("nombre_repuesto") == rep_editar["nombre_repuesto"]:
+                    if (rep_editar.get("id") and ex.get("id") == rep_editar["id"]) or (ex.get("nombre_repuesto") == rep_editar["nombre_repuesto"] and ex.get("centro_salud_nombre") == rep_editar.get("centro_salud_nombre")):
                         self.app.datos["repuestos"][idx_r] = rep_obj
                         break
             else:
@@ -532,38 +713,41 @@ class VistaRepuestos(ctk.CTkFrame):
             vent.destroy()
 
             # 2. Guardar en PostgreSQL en segundo plano
-            def _guardar_rep_db(tipo_e, nom_r, mod_r, cant_r, cos_r, est_r, car_r, obs_r, fot_r, es_edit, old_rep):
+            def _guardar_rep_db(tipo_e, nom_r, red_r, cen_r, area_r, marca_r, mod_r, cant_r, cos_r, est_r, car_r, obs_r, fot_r, es_edit, old_rep):
                 conn = obtener_conexion()
                 if conn:
                     try:
                         cur = conn.cursor()
-                        if es_edit:
-                            cur.execute("""
-                                UPDATE repuestos 
-                                SET tipo_equipo=%s, nombre_repuesto=%s, modelo_parte=%s, cantidad=%s, 
-                                    costo=%s, estado_disponibilidad=%s, caracteristicas=%s, observaciones=%s, foto=%s 
-                                WHERE tipo_equipo=%s AND nombre_repuesto=%s
-                            """, (tipo_e, nom_r, mod_r, cant_r, cos_r, est_r, car_r, obs_r, fot_r, old_rep["tipo_equipo"], old_rep["nombre_repuesto"]))
+                        if es_edit and old_rep:
+                            old_id = old_rep.get("id")
+                            if old_id:
+                                cur.execute("""
+                                    UPDATE repuestos 
+                                    SET tipo_equipo=%s, nombre_repuesto=%s, red_salud_nombre=%s, centro_salud_nombre=%s, 
+                                        area=%s, marca=%s, modelo=%s, modelo_parte=%s, cantidad=%s, 
+                                        costo=%s, estado_disponibilidad=%s, caracteristicas=%s, observaciones=%s, foto=%s 
+                                    WHERE id=%s
+                                """, (tipo_e, nom_r, red_r, cen_r, area_r, marca_r, mod_r, mod_r, cant_r, cos_r, est_r, car_r, obs_r, fot_r, old_id))
+                            else:
+                                cur.execute("""
+                                    UPDATE repuestos 
+                                    SET tipo_equipo=%s, nombre_repuesto=%s, red_salud_nombre=%s, centro_salud_nombre=%s, 
+                                        area=%s, marca=%s, modelo=%s, modelo_parte=%s, cantidad=%s, 
+                                        costo=%s, estado_disponibilidad=%s, caracteristicas=%s, observaciones=%s, foto=%s 
+                                    WHERE nombre_repuesto=%s
+                                """, (tipo_e, nom_r, red_r, cen_r, area_r, marca_r, mod_r, mod_r, cant_r, cos_r, est_r, car_r, obs_r, fot_r, old_rep["nombre_repuesto"]))
                         else:
                             cur.execute("""
-                                INSERT INTO repuestos (tipo_equipo, nombre_repuesto, modelo_parte, cantidad, costo, estado_disponibilidad, caracteristicas, observaciones, foto) 
-                                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-                                ON CONFLICT (tipo_equipo, nombre_repuesto) DO UPDATE
-                                SET modelo_parte=EXCLUDED.modelo_parte,
-                                    cantidad=EXCLUDED.cantidad,
-                                    costo=EXCLUDED.costo,
-                                    estado_disponibilidad=EXCLUDED.estado_disponibilidad,
-                                    caracteristicas=EXCLUDED.caracteristicas,
-                                    observaciones=EXCLUDED.observaciones,
-                                    foto=EXCLUDED.foto
-                            """, (tipo_e, nom_r, mod_r, cant_r, cos_r, est_r, car_r, obs_r, fot_r))
+                                INSERT INTO repuestos (tipo_equipo, nombre_repuesto, red_salud_nombre, centro_salud_nombre, area, marca, modelo, modelo_parte, cantidad, costo, estado_disponibilidad, caracteristicas, observaciones, foto) 
+                                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                            """, (tipo_e, nom_r, red_r, cen_r, area_r, marca_r, mod_r, mod_r, cant_r, cos_r, est_r, car_r, obs_r, fot_r))
                         conn.commit()
                         cur.close()
                         conn.close()
                     except Exception as e:
                         print(f"[ERROR] Error al guardar repuesto en PostgreSQL: {e}")
 
-            ejecutar_en_segundo_plano(_guardar_rep_db, t_eq, n_rep, mod_p, c_cant, c_costo, est_disp, caract_val, obs_val, r_foto, bool(rep_editar), rep_editar)
+            ejecutar_en_segundo_plano(_guardar_rep_db, t_eq, n_rep, red_val, cen_val, area_val, marca_val, mod_val, c_cant, c_costo, est_disp, caract_val, obs_val, r_foto, bool(rep_editar), rep_editar)
 
         ctk.CTkButton(sf, text="Guardar Ficha de Repuesto", font=ctk.CTkFont(weight="bold", size=14), fg_color=C_BLUE, hover_color=C_BLUE_HOVER, height=42, command=guardar_repuesto).pack(fill="x", pady=(10, 20))
 
@@ -574,8 +758,11 @@ class VistaRepuestos(ctk.CTkFrame):
             messagebox.showinfo("Selección Requerida", "Seleccione un repuesto de la lista de requerimientos.")
             return
             
-        t_eq, n_rep = v[0], v[1]
-        rep = next((r for r in self.app.datos.get("repuestos", []) if r["tipo_equipo"] == t_eq and r["nombre_repuesto"] == n_rep), None)
+        n_rep = v[3]
+        cen_rep = v[1]
+        rep = next((r for r in self.app.datos.get("repuestos", []) if r.get("nombre_repuesto") == n_rep and (not r.get("centro_salud_nombre") or r.get("centro_salud_nombre") == cen_rep or cen_rep == "-")), None)
+        if not rep:
+            rep = next((r for r in self.app.datos.get("repuestos", []) if r.get("nombre_repuesto") == n_rep), None)
         if not rep:
             return
             
@@ -584,19 +771,22 @@ class VistaRepuestos(ctk.CTkFrame):
             guardar_cache_local_datos(self.app.datos)
             self.refrescar_datos()
             
-            def _actualizar_stock_db(tipo_e, nom_r):
+            def _actualizar_stock_db(rep_id, nom_r):
                 conn = obtener_conexion()
                 if conn:
                     try:
                         cur = conn.cursor()
-                        cur.execute("UPDATE repuestos SET estado_disponibilidad='En Stock' WHERE tipo_equipo=%s AND nombre_repuesto=%s", (tipo_e, nom_r))
+                        if rep_id:
+                            cur.execute("UPDATE repuestos SET estado_disponibilidad='En Stock' WHERE id=%s", (rep_id,))
+                        else:
+                            cur.execute("UPDATE repuestos SET estado_disponibilidad='En Stock' WHERE nombre_repuesto=%s", (nom_r,))
                         conn.commit()
                         cur.close()
                         conn.close()
                     except Exception as e:
                         print(f"[ERROR] Error al actualizar estado de repuesto: {e}")
                         
-            ejecutar_en_segundo_plano(_actualizar_stock_db, t_eq, n_rep)
+            ejecutar_en_segundo_plano(_actualizar_stock_db, rep.get("id"), n_rep)
             messagebox.showinfo("Éxito", f"El repuesto '{n_rep}' ahora está disponible en Stock.")
 
     def modificar_repuesto(self, tabla_origen="stock"):
@@ -605,7 +795,11 @@ class VistaRepuestos(ctk.CTkFrame):
             return
         v = self.obtener_seleccion(tabla_origen=tabla_origen)
         if v:
-            rep = next((r for r in self.app.datos["repuestos"] if r["tipo_equipo"] == v[0] and r["nombre_repuesto"] == v[1]), None)
+            n_rep = v[3]
+            cen_rep = v[1]
+            rep = next((r for r in self.app.datos["repuestos"] if r.get("nombre_repuesto") == n_rep and (not r.get("centro_salud_nombre") or r.get("centro_salud_nombre") == cen_rep or cen_rep == "-")), None)
+            if not rep:
+                rep = next((r for r in self.app.datos["repuestos"] if r.get("nombre_repuesto") == n_rep), None)
             if rep: self.abrir_formulario_repuesto(rep)
         else:
             messagebox.showinfo("Selección Requerida", "Seleccione un repuesto de la tabla para modificar.")
@@ -616,20 +810,33 @@ class VistaRepuestos(ctk.CTkFrame):
         if not v:
             messagebox.showinfo("Selección Requerida", "Seleccione un repuesto de la tabla para eliminar.")
             return
-        if messagebox.askyesno("Confirmar", f"¿Eliminar el registro de repuesto '{v[1]}'?"):
+        n_rep = v[3]
+        cen_rep = v[1]
+        if messagebox.askyesno("Confirmar", f"¿Eliminar el registro de repuesto '{n_rep}'?"):
             try:
+                rep_encontrado = next((r for r in self.app.datos.get("repuestos", []) if r.get("nombre_repuesto") == n_rep and (not r.get("centro_salud_nombre") or r.get("centro_salud_nombre") == cen_rep or cen_rep == "-")), None)
+                if not rep_encontrado:
+                    rep_encontrado = next((r for r in self.app.datos.get("repuestos", []) if r.get("nombre_repuesto") == n_rep), None)
+                
                 # 1. Eliminar en memoria instantáneamente
-                self.app.datos["repuestos"] = [r for r in self.app.datos.get("repuestos", []) if not (r["tipo_equipo"] == v[0] and r["nombre_repuesto"] == v[1])]
+                if rep_encontrado:
+                    self.app.datos["repuestos"].remove(rep_encontrado)
+                else:
+                    self.app.datos["repuestos"] = [r for r in self.app.datos.get("repuestos", []) if r.get("nombre_repuesto") != n_rep]
+                    
                 guardar_cache_local_datos(self.app.datos)
                 self.refrescar_datos()
                 
                 # 2. Eliminar en base de datos en segundo plano
-                def _eliminar_rep_db(tipo_e, nom_r, usr_nom):
+                def _eliminar_rep_db(nom_r, r_id, usr_nom):
                     conn = obtener_conexion()
                     if conn:
                         try:
                             cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-                            cur.execute("SELECT * FROM repuestos WHERE tipo_equipo=%s AND nombre_repuesto=%s", (tipo_e, nom_r))
+                            if r_id:
+                                cur.execute("SELECT * FROM repuestos WHERE id=%s", (r_id,))
+                            else:
+                                cur.execute("SELECT * FROM repuestos WHERE nombre_repuesto=%s", (nom_r,))
                             fila = cur.fetchone()
                             if fila:
                                 mover_a_papelera(cur, "repuestos", fila["id"], dict(fila), usr_nom)
@@ -640,6 +847,6 @@ class VistaRepuestos(ctk.CTkFrame):
                         except Exception as e:
                             print(f"[ERROR] Error al eliminar repuesto de DB: {e}")
                             
-                ejecutar_en_segundo_plano(_eliminar_rep_db, v[0], v[1], self.app.usuario_actual.get("nombre_usuario", "jefe"))
+                ejecutar_en_segundo_plano(_eliminar_rep_db, n_rep, rep_encontrado.get("id") if rep_encontrado else None, self.app.usuario_actual.get("nombre_usuario", "jefe"))
             except Exception as e: 
                 messagebox.showerror("Error", str(e))
