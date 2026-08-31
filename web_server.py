@@ -13,7 +13,6 @@ except ImportError:
     pythoncom = None
     win32com = None
 from flask import Flask, render_template_string, request, redirect, url_for, send_from_directory, send_file
-from xhtml2pdf import pisa
 from database import obtener_conexion
 from datetime import date, datetime
 from auth import login
@@ -857,7 +856,6 @@ def ver_equipo(id_equipo):
                 
                 <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;">
                     <a href="/equipo/{{ eq['id'] }}/mantenimiento" class="btn-action" style="margin:0;">🛠️ Registrar Mantenimiento</a>
-                    <a href="/equipo/{{ eq['id'] }}/descargar_ficha" class="btn-action" style="background: #2563EB; margin:0;">📄 Descargar Ficha Técnica (PDF)</a>
                     <a href="/equipo/{{ eq['id'] }}/descargar_qr" class="btn-action" style="background: #34C759; margin:0;">📥 Descargar Código QR (Etiqueta)</a>
                 </div>
                 
@@ -869,7 +867,7 @@ def ver_equipo(id_equipo):
                     <td>{{ m['realizado_por'] or 'Técnico' }}</td>
                     <td>{{ m['trabajo'] or m['detalle'] or 'Sin detalle' }}</td>
                     <td>
-                        <a href="/equipo/{{ eq['id'] }}/mantenimiento/{{ m['id'] }}/descargar_pdf" style="text-decoration:none; color:#1D4ED8; font-weight:bold; padding: 4px 10px; border-radius: 6px; background: #EFF6FF; border: 1px solid #BFDBFE; display: inline-block; font-size: 12px;" title="Descargar Hoja de Trabajo PDF">📄 Ficha (PDF)</a>
+                        <a href="/equipo/{{ eq['id'] }}/mantenimiento/{{ m['id'] }}/descargar_excel" style="text-decoration:none; color:#1D4ED8; font-weight:bold; padding: 4px 10px; border-radius: 6px; background: #EFF6FF; border: 1px solid #BFDBFE; display: inline-block; font-size: 12px;" title="Descargar Hoja de Trabajo Excel">📥 Ficha (.xlsx)</a>
                     </td>
                 </tr>
                 {% else %}<tr><td colspan="5" style="text-align:center; color:#8E8E93;">Sin intervenciones registradas</td></tr>{% endfor %}
@@ -970,11 +968,9 @@ def ver_equipo(id_equipo):
     except Exception as e:
         return f"Error en el servidor web: {e}"
 
-@app_web.route('/equipo/<id_equipo>/descargar_ficha_pdf')
 @app_web.route('/equipo/<id_equipo>/descargar_ficha')
-@app_web.route('/equipo/<id_equipo>/ficha_pdf')
-@app_web.route('/equipo/<id_equipo>/ficha_tecnica')
-def descargar_ficha_tecnica_pdf(id_equipo):
+@app_web.route('/equipo/<id_equipo>/ficha_excel')
+def descargar_ficha_tecnica_excel(id_equipo):
     try:
         conn = obtener_conexion()
         if not conn:
@@ -991,573 +987,261 @@ def descargar_ficha_tecnica_pdf(id_equipo):
         if not eq_act:
             return "Equipo no encontrado", 404
 
-        eq = dict(eq_act)
+        ruta_plantilla = obtener_ruta_plantilla("plantilla_ficha.xlsx")
+        if not os.path.exists(ruta_plantilla):
+            return "Plantilla no encontrada", 500
 
-        # 1. Categorización
-        cat_data = eq.get("categorizacion_detalle") or []
-        if isinstance(cat_data, str):
-            try: cat_data = json.loads(cat_data)
-            except: cat_data = []
+        wb = openpyxl.load_workbook(ruta_plantilla)
+        hoja = wb.active
 
-        puntajes = []
-        for x in cat_data:
-            if str(x).isdigit(): puntajes.append(int(x))
-            elif str(x) == 'I': puntajes.append(1)
-            elif str(x) == 'II': puntajes.append(2)
-            elif str(x) == 'III': puntajes.append(3)
-            else: puntajes.append(0)
-        total_puntos = sum(puntajes)
+        def escribir(celda, valor):
+            try:
+                if valor is not None:
+                    hoja[celda].value = valor
+            except:
+                pass
 
-        if total_puntos >= 30 or eq.get("criticidad") == "Riesgo Alto":
-            cat_final = "Categoría III"
-            veces_anio = "3 veces al año"
-            cat_check = [False, False, True]
-        elif total_puntos >= 20 or eq.get("criticidad") == "Riesgo Medio":
-            cat_final = "Categoría II"
-            veces_anio = "2 veces al año"
-            cat_check = [False, True, False]
+        def escribir_rcm(celda, texto):
+            try:
+                hoja[celda].value = texto if texto else ''
+            except:
+                pass
+
+        # 1. Datos Generales de Identificación y Territorio
+        escribir('K4', eq_act.get('red_salud_nombre', ''))
+        escribir('K5', eq_act.get('centro_salud_nombre', ''))
+        escribir('K8', eq_act.get('nombre', ''))
+        escribir('H11', eq_act.get('area', ''))
+        escribir('H12', eq_act.get('servicio', ''))
+        escribir('H13', eq_act.get('marca', ''))
+        escribir('H14', eq_act.get('modelo', ''))
+        escribir('H15', str(eq_act.get('id', '')))
+        escribir('H16', eq_act.get('procedencia', ''))
+        escribir('H17', eq_act.get('fabricante', ''))
+        escribir('H18', eq_act.get('garantia', ''))
+        escribir('H19', eq_act.get('proveedor', ''))
+        escribir('H20', eq_act.get('numero_serie', ''))
+        escribir('H21', str(eq_act.get('anio_fab') or ''))
+        escribir('H22', str(eq_act.get('fecha_adquisicion') or ''))
+
+        # 2. Datos Técnicos Oficiales del Equipo
+        escribir('E24', eq_act.get('voltaje', '') or '')
+        escribir('G25', eq_act.get('corriente', '') or '')
+        escribir('I26', eq_act.get('potencia', '') or '')
+        escribir('H27', eq_act.get('vida_util', '') or eq_act.get('temperatura', '') or '')
+        escribir('D28', eq_act.get('peso', '') or '')
+        escribir('F29', eq_act.get('dimensiones', '') or '')
+        escribir('H30', eq_act.get('bateria_respaldo', '') or eq_act.get('resolucion', '') or '')
+        escribir('H31', eq_act.get('version_software', '') or eq_act.get('humedad', '') or '')
+        escribir('H32', eq_act.get('suministro_gases', '') or '')
+
+        # 3. Repuestos
+        cat_str = f"{eq_act['nombre']} - {eq_act.get('marca', '')} - {eq_act.get('modelo', '')}"
+        repuestos_equipo = [r for r in repuestos if r.get("tipo_equipo") == cat_str]
+        for idx, r in enumerate(repuestos_equipo[:5]):
+            cell_row = 34 + idx
+            nom_rep = r.get("nombre_repuesto", "")
+            cant_rep = r.get("cantidad", 0)
+            txt_rep = f"{nom_rep}  (Cantidad: {cant_rep})" if cant_rep is not None else nom_rep
+            escribir(f'C{cell_row}', txt_rep)
+
+        # 4. Tecnología Predominante (X)
+        escribir('S25', eq_act.get('t_elec', ''))
+        escribir('S27', eq_act.get('t_elco', ''))
+        escribir('S29', eq_act.get('t_mec', ''))
+        escribir('Z25', eq_act.get('t_hid', ''))
+        escribir('Z27', eq_act.get('t_neu', ''))
+        escribir('Z29', eq_act.get('t_vap', ''))
+
+        # 5. Tipo Adquisición y Tipo de Equipo (X)
+        escribir('S33', eq_act.get('a_comp', ''))
+        escribir('S35', eq_act.get('a_como', ''))
+        escribir('S37', eq_act.get('a_don', ''))
+        escribir('Y33', eq_act.get('te_fijo', ''))
+        escribir('Y35', eq_act.get('te_mov', ''))
+        escribir('Y37', eq_act.get('te_por', ''))
+
+        # 6. Categorización
+        try:
+            puntajes_int = []
+            for x in cat_data:
+                if str(x).isdigit():
+                    puntajes_int.append(int(x))
+                elif str(x) == "I":
+                    puntajes_int.append(1)
+                elif str(x) == "II":
+                    puntajes_int.append(2)
+                elif str(x) == "III":
+                    puntajes_int.append(3)
+                else:
+                    puntajes_int.append(0)
+            puntaje_total = sum(puntajes_int)
+        except:
+            puntaje_total = 0
+
+        if puntaje_total >= 30 or eq_act.get("criticidad") == "Riesgo Alto":
+            escribir('AO37', 'X')
+            escribir('AB38', "3 veces al año")
+        elif puntaje_total >= 20 or eq_act.get("criticidad") == "Riesgo Medio":
+            escribir('AM37', 'X')
+            escribir('AB38', "2 veces al año")
         else:
-            cat_final = "Categoría I"
-            veces_anio = "1 vez al año"
-            cat_check = [True, False, False]
+            escribir('AK37', 'X')
+            escribir('AB38', "1 vez al año")
+            pass
 
-        crit_names = [
-            "1. Intercambiabilidad", "2. Función Clínica", "3. Frecuencia de Uso",
-            "4. Impacto en el Servicio", "5. Mantenibilidad", "6. Historial de Fallas",
-            "7. Complejidad Tecnológica", "8. Valor de Compra", "9. Exigencia Normativa",
-            "10. Seguridad Operacional", "11. Vulnerabilidad Ambiental", "12. Riesgo a Explosiones",
-            "13. Edad del Equipo"
-        ]
+        # 7. Tablas RCM y Observaciones
+        escribir_rcm('B41', eq_act.get('contexto_operacional'))
+        escribir_rcm('L41', eq_act.get('funciones_equipo'))
+        escribir_rcm('V41', eq_act.get('acciones_preventivas'))
+        escribir_rcm('AE41', eq_act.get('acciones_falla'))
 
-        cat_rows_html = ""
-        for idx, name in enumerate(crit_names):
-            val = str(cat_data[idx]) if idx < len(cat_data) else ""
-            c1 = "X" if val in ("1", "I") else ""
-            c2 = "X" if val in ("2", "II") else ""
-            c3 = "X" if val in ("3", "III") else ""
-            cat_rows_html += f"""
-            <tr>
-                <td style="font-size:7.5px; padding:1px 3px;">{name}</td>
-                <td style="text-align:center; font-weight:bold; font-size:8px;">{c1}</td>
-                <td style="text-align:center; font-weight:bold; font-size:8px;">{c2}</td>
-                <td style="text-align:center; font-weight:bold; font-size:8px;">{c3}</td>
-            </tr>
-            """
+        escribir_rcm('B49', eq_act.get('fallas_funcionales'))
+        escribir_rcm('L49', eq_act.get('causas_fallo'))
+        escribir_rcm('V49', eq_act.get('efectos_fallo'))
+        escribir_rcm('AE49', eq_act.get('efecto_entorno'))
 
-        # 2. Repuestos
-        cat_str = f"{eq['nombre']} - {eq.get('marca', '')} - {eq.get('modelo', '')}"
-        rep_eq = [r for r in repuestos if r.get("tipo_equipo") == cat_str][:5]
-        rep_html = ""
-        for i in range(5):
-            if i < len(rep_eq):
-                r = rep_eq[i]
-                rep_html += f"<tr><td style='width:20px; text-align:center;'>{i+1}</td><td>{r.get('nombre_repuesto','')} (Stock: {r.get('cantidad',0)})</td></tr>"
-            else:
-                rep_html += f"<tr><td style='width:20px; text-align:center;'>{i+1}</td><td>-</td></tr>"
+        escribir_rcm('B58', eq_act.get('observaciones'))
 
-        # 3. Foto
-        foto_img_html = ""
-        if eq.get('foto'):
-            foto_img_html = f'<img src="{eq["foto"]}" style="max-width:180px; max-height:160px; object-fit:contain;" />'
-        else:
-            foto_img_html = '<div style="color:#94A3B8; font-size:11px; padding:50px 0; text-align:center;">Sin Fotografía Registrada</div>'
+        # Insertar Foto si existe
+        foto_path = eq_act.get('foto')
+        if foto_path:
+            try:
+                foto_str = str(foto_path).strip()
+                if foto_str.startswith("data:image") or len(foto_str) > 200:
+                    foto_b64 = foto_str.split(",", 1)[1] if "," in foto_str else foto_str
+                    img_bytes = base64.b64decode(foto_b64)
+                    img_stream = io.BytesIO(img_bytes)
+                    from openpyxl.drawing.image import Image as ExcelImage
+                    img_excel = ExcelImage(img_stream)
+                elif os.path.exists(foto_str):
+                    from openpyxl.drawing.image import Image as ExcelImage
+                    img_excel = ExcelImage(foto_str)
+                else:
+                    img_excel = None
 
-        html_ficha = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-        <meta charset="utf-8">
-        <style>
-            @page {{
-                size: letter portrait;
-                margin: 8mm 10mm;
-            }}
-            body {{
-                font-family: Helvetica, Arial, sans-serif;
-                font-size: 8.5px;
-                color: #0F172A;
-                line-height: 1.2;
-            }}
-            table {{
-                width: 100%;
-                border-collapse: collapse;
-            }}
-            .border-table, .border-table td, .border-table th {{
-                border: 0.8px solid #334155;
-            }}
-            .title-box {{
-                text-align: center;
-                font-weight: bold;
-                font-size: 9.5px;
-                background-color: #F8FAFC;
-                padding: 3px;
-            }}
-            .header-main {{
-                text-align: center;
-                font-weight: bold;
-                font-size: 11px;
-                color: #0F172A;
-                margin-bottom: 2px;
-            }}
-            .lbl {{
-                font-weight: bold;
-                background-color: #F1F5F9;
-                font-size: 8px;
-                padding: 2px 4px;
-                width: 32%;
-            }}
-            .val {{
-                font-size: 8.5px;
-                padding: 2px 4px;
-            }}
-            .check-box {{
-                width: 12px;
-                height: 12px;
-                text-align: center;
-                font-weight: bold;
-                font-size: 9px;
-            }}
-            .rcm-head {{
-                background-color: #F1F5F9;
-                font-weight: bold;
-                text-align: center;
-                font-size: 8px;
-                padding: 3px 2px;
-            }}
-            .rcm-content {{
-                vertical-align: top;
-                font-size: 8px;
-                padding: 4px;
-                height: 38px;
-            }}
-        </style>
-        </head>
-        <body>
-            <!-- ENCABEZADO INSTITUCIONAL -->
-            <table class="border-table" style="margin-bottom: 6px;">
-                <tr>
-                    <td style="width: 20%; text-align: center; vertical-align: middle; padding: 4px;">
-                        <div style="font-weight: bold; font-size: 10px; color: #1E3A8A;">🏛️ GAMLP</div>
-                        <div style="font-size: 7px; color: #64748B;">GOBIERNO AUTÓNOMO<br>MUNICIPAL DE LA PAZ</div>
-                    </td>
-                    <td style="width: 60%; text-align: center; vertical-align: middle; padding: 4px;">
-                        <div class="header-main">Gobierno Autónomo Municipal de La Paz</div>
-                        <div style="font-weight: bold; font-size: 9.5px; color: #1E3A8A;">{eq.get('red_salud_nombre', 'RED DE SALUD')}</div>
-                        <div style="font-size: 9px; font-weight: bold;">{eq.get('centro_salud_nombre', 'CENTRO DE SALUD')}</div>
-                        <div style="font-size: 8px; color: #475569;">MANTENIMIENTO Y REPARACIÓN DE EQUIPOS MÉDICOS</div>
-                        <div style="font-size: 9.5px; font-weight: bold; color: #0F172A; text-decoration: underline; margin-top: 2px;">FORMULARIO DE FICHA TÉCNICA</div>
-                        <div style="font-size: 10px; font-weight: bold; color: #1E3A8A;">{eq.get('nombre', '')}</div>
-                    </td>
-                    <td style="width: 20%; text-align: center; vertical-align: middle; padding: 4px;">
-                        <div style="font-weight: bold; font-size: 12px; color: #059669;">LA PAZ</div>
-                        <div style="font-size: 7px; color: #64748B;">CAPITAL DEL CIELO</div>
-                        <div style="font-size: 8px; font-weight: bold; margin-top: 4px; color: #0F172A;">AF: {eq.get('id', '')}</div>
-                    </td>
-                </tr>
-            </table>
+                if img_excel:
+                    img_excel.width = 220
+                    img_excel.height = 220
+                    hoja.add_image(img_excel, 'AA11')
+            except Exception as ex_foto:
+                print(f"[WARN] No se pudo incrustar la foto en Ficha: {ex_foto}")
 
-            <!-- SECCIÓN 1: DATOS DEL EQUIPO Y FOTO -->
-            <table style="margin-bottom: 6px;">
-                <tr>
-                    <td style="width: 58%; vertical-align: top; padding-right: 4px;">
-                        <table class="border-table">
-                            <tr><td colspan="2" class="title-box">DATOS DEL EQUIPO</td></tr>
-                            <tr><td class="lbl">UBICACIÓN:</td><td class="val">{eq.get('servicio', '')}</td></tr>
-                            <tr><td class="lbl">SERVICIO:</td><td class="val">{eq.get('servicio', '')} ({eq.get('area', '')})</td></tr>
-                            <tr><td class="lbl">MARCA:</td><td class="val">{eq.get('marca', '')}</td></tr>
-                            <tr><td class="lbl">MODELO:</td><td class="val">{eq.get('modelo', '')}</td></tr>
-                            <tr><td class="lbl">COD. ACTIVOS FIJOS:</td><td class="val"><b>{eq.get('id', '')}</b></td></tr>
-                            <tr><td class="lbl">PROCEDENCIA:</td><td class="val">{eq.get('procedencia', '')}</td></tr>
-                            <tr><td class="lbl">FABRICANTE:</td><td class="val">{eq.get('fabricante', '')}</td></tr>
-                            <tr><td class="lbl">GARANTÍA:</td><td class="val">{eq.get('garantia', 'Sin Garantía')}</td></tr>
-                            <tr><td class="lbl">DATOS PROVEEDOR:</td><td class="val">{eq.get('proveedor', '')}</td></tr>
-                            <tr><td class="lbl">SERIE:</td><td class="val">{eq.get('numero_serie', '')}</td></tr>
-                            <tr><td class="lbl">AÑO FABRICACIÓN:</td><td class="val">{eq.get('anio_fab', '')}</td></tr>
-                            <tr><td class="lbl">FECHA INSTALACIÓN:</td><td class="val">{eq.get('fecha_adquisicion', '')}</td></tr>
-                        </table>
-                    </td>
-                    <td style="width: 42%; vertical-align: middle; text-align: center; border: 0.8px solid #334155; padding: 2px;">
-                        {foto_img_html}
-                    </td>
-                </tr>
-            </table>
-
-            <!-- SECCIÓN 2: DATOS TÉCNICOS, TECNOLOGÍA, ADQUISICIÓN Y CATEGORIZACIÓN -->
-            <table style="margin-bottom: 6px;">
-                <tr>
-                    <!-- Columna Izquierda: Parámetros Técnicos y Repuestos -->
-                    <td style="width: 32%; vertical-align: top; padding-right: 3px;">
-                        <table class="border-table">
-                            <tr><td colspan="2" class="title-box">DATOS TÉCNICOS DEL EQUIPO</td></tr>
-                            <tr><td class="lbl">VOLTAJE:</td><td class="val">{eq.get('voltaje', '')}</td></tr>
-                            <tr><td class="lbl">CORRIENTE:</td><td class="val">{eq.get('corriente', '')}</td></tr>
-                            <tr><td class="lbl">POTENCIA:</td><td class="val">{eq.get('potencia', '')}</td></tr>
-                            <tr><td class="lbl">VIDA ÚTIL:</td><td class="val">{eq.get('vida_util', '')}</td></tr>
-                            <tr><td class="lbl">PESO:</td><td class="val">{eq.get('peso', '')}</td></tr>
-                            <tr><td class="lbl">DIMENSIONES:</td><td class="val">{eq.get('dimensiones', '')}</td></tr>
-                            <tr><td class="lbl">BATERÍA RESP.:</td><td class="val">{eq.get('bateria_respaldo', '')}</td></tr>
-                            <tr><td class="lbl">VER. SOFTWARE:</td><td class="val">{eq.get('version_software', '')}</td></tr>
-                            <tr><td class="lbl">SUMINISTRO GASES:</td><td class="val">{eq.get('suministro_gases', '')}</td></tr>
-                        </table>
-                        <div style="height: 4px;"></div>
-                        <table class="border-table">
-                            <tr><td colspan="2" class="title-box">EXISTENCIA DE REPUESTOS</td></tr>
-                            {rep_html}
-                        </table>
-                    </td>
-
-                    <!-- Columna Central: Tecnología y Adquisición -->
-                    <td style="width: 32%; vertical-align: top; padding-right: 3px;">
-                        <table class="border-table">
-                            <tr><td colspan="4" class="title-box">TECNOLOGÍA PREDOMINANTE</td></tr>
-                            <tr>
-                                <td style="font-size:7.5px; width:60px;">ELÉCTRICO:</td><td class="check-box">{eq.get('t_elec','')}</td>
-                                <td style="font-size:7.5px; width:60px;">HIDRÁULICO:</td><td class="check-box">{eq.get('t_hid','')}</td>
-                            </tr>
-                            <tr>
-                                <td style="font-size:7.5px;">ELECTRÓNICO:</td><td class="check-box">{eq.get('t_elco','')}</td>
-                                <td style="font-size:7.5px;">NEUMÁTICO:</td><td class="check-box">{eq.get('t_neu','')}</td>
-                            </tr>
-                            <tr>
-                                <td style="font-size:7.5px;">MECÁNICO:</td><td class="check-box">{eq.get('t_mec','')}</td>
-                                <td style="font-size:7.5px;">VAPOR:</td><td class="check-box">{eq.get('t_vap','')}</td>
-                            </tr>
-                        </table>
-
-                        <div style="height: 4px;"></div>
-                        <table class="border-table">
-                            <tr><td colspan="2" class="title-box">TIPO ADQUISICIÓN</td><td colspan="2" class="title-box">TIPO EQUIPO</td></tr>
-                            <tr>
-                                <td style="font-size:7.5px;">COMPRA:</td><td class="check-box">{eq.get('a_comp','')}</td>
-                                <td style="font-size:7.5px;">FIJO:</td><td class="check-box">{eq.get('te_fijo','')}</td>
-                            </tr>
-                            <tr>
-                                <td style="font-size:7.5px;">COMODATO:</td><td class="check-box">{eq.get('a_como','')}</td>
-                                <td style="font-size:7.5px;">MÓVIL:</td><td class="check-box">{eq.get('te_mov','')}</td>
-                            </tr>
-                            <tr>
-                                <td style="font-size:7.5px;">DONACIÓN:</td><td class="check-box">{eq.get('a_don','')}</td>
-                                <td style="font-size:7.5px;">PORTÁTIL:</td><td class="check-box">{eq.get('te_por','')}</td>
-                            </tr>
-                        </table>
-                    </td>
-
-                    <!-- Columna Derecha: 13 Criterios de Categorización -->
-                    <td style="width: 36%; vertical-align: top;">
-                        <table class="border-table">
-                            <tr>
-                                <td class="title-box" style="font-size:8px;">CATEGORIZACIÓN</td>
-                                <td style="width:14px; text-align:center; font-weight:bold; font-size:8px;">I</td>
-                                <td style="width:14px; text-align:center; font-weight:bold; font-size:8px;">II</td>
-                                <td style="width:14px; text-align:center; font-weight:bold; font-size:8px;">III</td>
-                            </tr>
-                            {cat_rows_html}
-                            <tr>
-                                <td style="font-weight:bold; background-color:#F1F5F9; font-size:8px;">Categoría Final</td>
-                                <td style="text-align:center; font-weight:bold;">{"X" if cat_check[0] else ""}</td>
-                                <td style="text-align:center; font-weight:bold;">{"X" if cat_check[1] else ""}</td>
-                                <td style="text-align:center; font-weight:bold;">{"X" if cat_check[2] else ""}</td>
-                            </tr>
-                            <tr>
-                                <td colspan="4" style="text-align:center; font-weight:bold; color:#1E3A8A; font-size:8.5px; background-color:#EFF6FF; padding:3px;">
-                                    {cat_final} ({veces_anio})
-                                </td>
-                            </tr>
-                        </table>
-                    </td>
-                </tr>
-            </table>
-
-            <!-- SECCIÓN 3: TABLAS RCM Y OBSERVACIONES -->
-            <table class="border-table" style="margin-bottom: 4px;">
-                <tr>
-                    <td class="rcm-head" style="width:25%;">CONTEXTO OPERACIONAL</td>
-                    <td class="rcm-head" style="width:25%;">FUNCIONES DEL EQUIPO</td>
-                    <td class="rcm-head" style="width:25%;">ACCIONES PREVENTIVAS</td>
-                    <td class="rcm-head" style="width:25%;">INSUMOS / ACCESORIOS</td>
-                </tr>
-                <tr>
-                    <td class="rcm-content">{eq.get('contexto_operacional') or '-'}</td>
-                    <td class="rcm-content">{eq.get('funciones_equipo') or '-'}</td>
-                    <td class="rcm-content">{eq.get('acciones_preventivas') or '-'}</td>
-                    <td class="rcm-content">{eq.get('acciones_falla') or '-'}</td>
-                </tr>
-                <tr>
-                    <td class="rcm-head">FALLAS COMUNES</td>
-                    <td class="rcm-head">CAUSAS DE FALLO</td>
-                    <td class="rcm-head">CONSECUENCIAS DE FALLO</td>
-                    <td class="rcm-head">ACCIONES CORRECTIVAS</td>
-                </tr>
-                <tr>
-                    <td class="rcm-content">{eq.get('fallas_funcionales') or '-'}</td>
-                    <td class="rcm-content">{eq.get('causas_fallo') or '-'}</td>
-                    <td class="rcm-content">{eq.get('efectos_fallo') or '-'}</td>
-                    <td class="rcm-content">{eq.get('efecto_entorno') or '-'}</td>
-                </tr>
-            </table>
-
-            <table class="border-table">
-                <tr><td class="rcm-head" style="text-align:left; padding-left:6px;">OBSERVACIONES GENERALES:</td></tr>
-                <tr><td style="font-size:8px; padding:4px; height:24px; vertical-align:top;">{eq.get('observaciones') or 'Sin observaciones adicionales.'}</td></tr>
-            </table>
-
-            <!-- FIRMAS -->
-            <table style="margin-top: 14px;">
-                <tr>
-                    <td style="width: 50%; text-align: center; padding: 0 20px;">
-                        <div style="border-top: 0.8px solid #0F172A; padding-top: 3px; font-weight: bold; font-size: 8px;">
-                            RESPONSABLE DE EQUIPAMIENTO MÉDICO<br><span style="font-weight:normal; font-size:7px; color:#475569;">GAMLP - DIRECCIÓN DE SALUD</span>
-                        </div>
-                    </td>
-                    <td style="width: 50%; text-align: center; padding: 0 20px;">
-                        <div style="border-top: 0.8px solid #0F172A; padding-top: 3px; font-weight: bold; font-size: 8px;">
-                            JEFATURA DEL ESTABLECIMIENTO DE SALUD<br><span style="font-weight:normal; font-size:7px; color:#475569;">RECEPCIÓN Y CONFORMIDAD</span>
-                        </div>
-                    </td>
-                </tr>
-            </table>
-        </body>
-        </html>
-        """
-
-        pdf_out = io.BytesIO()
-        pisa.CreatePDF(html_ficha, dest=pdf_out)
-        pdf_out.seek(0)
+        out_io = io.BytesIO()
+        wb.save(out_io)
+        out_io.seek(0)
 
         id_sanitizado = str(id_equipo).replace("/", "_").replace("\\", "_")
         return send_file(
-            pdf_out,
-            mimetype='application/pdf',
+            out_io,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             as_attachment=True,
-            download_name=f"Ficha_Tecnica_{id_sanitizado}.pdf"
+            download_name=f"Ficha_Tecnica_{id_sanitizado}.xlsx"
         )
     except Exception as e:
-        return f"Error generando Ficha Técnica PDF: {e}", 500
+        return f"Error generando Ficha Técnica Excel: {e}", 500
 
-@app_web.route('/equipo/<id_equipo>/mantenimiento/<int:m_id>/descargar_pdf')
-@app_web.route('/mantenimiento/<int:m_id>/descargar_pdf')
-@app_web.route('/equipo/<id_equipo>/mantenimiento/<int:m_id>/pdf')
-@app_web.route('/mantenimiento/<int:m_id>/pdf')
-def descargar_hoja_trabajo_pdf(m_id, id_equipo=None):
+@app_web.route('/equipo/<id_equipo>/mantenimiento/<int:m_id>/descargar_excel')
+@app_web.route('/mantenimiento/<int:m_id>/descargar_excel')
+def descargar_hoja_trabajo_excel(m_id, id_equipo=None):
     try:
         conn = obtener_conexion()
         if not conn:
             return "Error de conexión", 500
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
         cur.execute("SELECT * FROM historial_intervenciones WHERE id = %s", (m_id,))
-        m_row = cur.fetchone()
-        if not m_row:
+        m = cur.fetchone()
+        if not m:
             cur.close()
             conn.close()
             return "Mantenimiento no encontrado", 404
             
-        cur.execute("SELECT * FROM equipos WHERE id = %s", (m_row['equipo_id'],))
-        eq_row = cur.fetchone()
+        cur.execute("SELECT * FROM equipos WHERE id = %s", (m['equipo_id'],))
+        eq_data = cur.fetchone()
         cur.close()
         conn.close()
         
-        if not eq_row:
+        if not eq_data:
             return "Equipo no encontrado", 404
+            
+        ruta_plantilla_ht = obtener_ruta_plantilla("plantilla_trabajo.xlsx")
+        wb = openpyxl.load_workbook(ruta_plantilla_ht)
+        ws = wb.active
+        
+        # Escribir campos de cabecera y equipo
+        escribir_en_celda_segura(ws, 'F11', eq_data.get('area', ''))
+        escribir_en_celda_segura(ws, 'AA11', eq_data.get('servicio', ''))
+        escribir_en_celda_segura(ws, 'S21', m.get('tipo_ht', '1'))
+        escribir_en_celda_segura(ws, 'J15', eq_data.get('nombre', ''))
+        escribir_en_celda_segura(ws, 'AE15', str(eq_data.get('id', '')))
+        escribir_en_celda_segura(ws, 'E17', eq_data.get('procedencia', ''))
+        escribir_en_celda_segura(ws, 'AB17', str(eq_data.get('anio_fab', '')))
+        escribir_en_celda_segura(ws, 'E19', eq_data.get('marca', ''))
+        escribir_en_celda_segura(ws, 'AB19', eq_data.get('fabricante', ''))
+        escribir_en_celda_segura(ws, 'F21', eq_data.get('modelo', ''))
+        escribir_en_celda_segura(ws, 'AG21', eq_data.get('numero_serie', ''))
+        
+        # Fechas
+        f_rec_raw = str(m.get('fecha') or date.today())
+        f_ent_raw = str(m.get('fecha_entrega') or m.get('fecha') or date.today())
+        h_ejec = str(m.get('hora_entrega') or datetime.now().strftime('%H:%M'))
+        try:
+            f_rec_dt = datetime.strptime(f_rec_raw, '%Y-%m-%d').date()
+            f_rec_str = f_rec_dt.strftime('%d / %m / %Y')
+        except:
+            f_rec_str = f_rec_raw
+            
+        try:
+            f_ent_dt = datetime.strptime(f_ent_raw, '%Y-%m-%d').date()
+            f_ent_str = f_ent_dt.strftime('%d / %m / %Y')
+        except:
+            f_ent_str = f_ent_raw
+            
+        escribir_en_celda_segura(ws, 'M23', f_rec_str)
+        escribir_en_celda_segura(ws, 'I62', f"{f_ent_str}  {h_ejec}")
+        
+        # Nombre del técnico firmante responsable
+        escribir_en_celda_segura(ws, 'J64', m.get('realizado_por') or 'Técnico GAMLP')
+        
+        # Condición
+        cond = m.get('condicion')
+        if cond == "Óptimo": marcar_x(ws, 'P26')
+        elif cond == "Aceptable": marcar_x(ws, 'W26')
+        elif cond == "Crítica": marcar_x(ws, 'AC26')
+        elif cond == "Inoperante": marcar_x(ws, 'AJ26')
+        elif cond == "F/Servicio": marcar_x(ws, 'AP26')
 
-        m = dict(m_row)
-        eq = dict(eq_row)
+        # Estado Físico
+        est = m.get('estado_equipo')
+        if est == "Óptimo": marcar_x(ws, 'O29')
+        elif est == "Bueno": marcar_x(ws, 'U29')
+        elif est == "Regular": marcar_x(ws, 'AB29')
+        elif est == "Malo": marcar_x(ws, 'AH29')
+        elif est == "Obsoleto": marcar_x(ws, 'AO29')
 
-        html_ht = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-        <meta charset="utf-8">
-        <style>
-            @page {{
-                size: letter portrait;
-                margin: 8mm 10mm;
-            }}
-            body {{
-                font-family: Helvetica, Arial, sans-serif;
-                font-size: 8.5px;
-                color: #0F172A;
-                line-height: 1.2;
-            }}
-            table {{
-                width: 100%;
-                border-collapse: collapse;
-            }}
-            .border-table, .border-table td, .border-table th {{
-                border: 0.8px solid #334155;
-            }}
-            .title-box {{
-                text-align: center;
-                font-weight: bold;
-                font-size: 9.5px;
-                background-color: #F8FAFC;
-                padding: 3px;
-            }}
-            .header-main {{
-                text-align: center;
-                font-weight: bold;
-                font-size: 11px;
-                color: #0F172A;
-            }}
-            .lbl {{
-                font-weight: bold;
-                background-color: #F1F5F9;
-                font-size: 8px;
-                padding: 2px 4px;
-                width: 25%;
-            }}
-            .val {{
-                font-size: 8.5px;
-                padding: 2px 4px;
-            }}
-            .check-box {{
-                width: 14px;
-                text-align: center;
-                font-weight: bold;
-                font-size: 9px;
-            }}
-            .box-text {{
-                border: 0.8px solid #334155;
-                padding: 5px;
-                min-height: 45px;
-                font-size: 8.5px;
-            }}
-        </style>
-        </head>
-        <body>
-            <!-- ENCABEZADO INSTITUCIONAL -->
-            <table class="border-table" style="margin-bottom: 8px;">
-                <tr>
-                    <td style="width: 20%; text-align: center; vertical-align: middle; padding: 4px;">
-                        <div style="font-weight: bold; font-size: 10px; color: #1E3A8A;">🏛️ GAMLP</div>
-                        <div style="font-size: 7px; color: #64748B;">GOBIERNO AUTÓNOMO<br>MUNICIPAL DE LA PAZ</div>
-                    </td>
-                    <td style="width: 58%; text-align: center; vertical-align: middle; padding: 4px;">
-                        <div class="header-main">Gobierno Autónomo Municipal de La Paz</div>
-                        <div style="font-size: 8px; color: #475569;">Secretaría Municipal de Salud y Deportes — Dirección de Salud</div>
-                        <div style="font-weight: bold; font-size: 9px; color: #1E3A8A; margin-top: 1px;">{eq.get('red_salud_nombre', 'RED DE SALUD')} - {eq.get('centro_salud_nombre', 'CENTRO DE SALUD')}</div>
-                        <div style="font-size: 10px; font-weight: bold; color: #0F172A; text-decoration: underline; margin-top: 2px;">ORDEN Y HOJA DE TRABAJO DE MANTENIMIENTO TÉCNICO</div>
-                    </td>
-                    <td style="width: 22%; text-align: center; vertical-align: middle; padding: 4px;">
-                        <div style="font-size: 8px; color: #64748B; font-weight: bold;">ORDEN DE TRABAJO</div>
-                        <div style="font-size: 12px; font-weight: bold; color: #DC2626;">OT-{m['id']:05d}</div>
-                        <div style="font-size: 7.5px; color: #475569; margin-top: 2px;">Tipo / Turno: <b>{m.get('tipo_ht', '1')}</b></div>
-                    </td>
-                </tr>
-            </table>
+        # Tipo Mantenimiento
+        tipo = m.get('tipo')
+        if tipo == "Preventivo": marcar_x(ws, 'Q43')
+        else: marcar_x(ws, 'AL43')
 
-            <!-- SECCIÓN 1: DATOS DEL EQUIPO -->
-            <table class="border-table" style="margin-bottom: 8px;">
-                <tr><td colspan="4" class="title-box">1. IDENTIFICACIÓN DEL EQUIPO Y UBICACIÓN</td></tr>
-                <tr>
-                    <td class="lbl">CÓDIGO ACTIVO FIJO:</td><td class="val" style="font-weight: bold; color: #1E3A8A;">{eq.get('id', '')}</td>
-                    <td class="lbl">NOMBRE DEL EQUIPO:</td><td class="val" style="font-weight: bold;">{eq.get('nombre', '')}</td>
-                </tr>
-                <tr>
-                    <td class="lbl">MARCA:</td><td class="val">{eq.get('marca', '')}</td>
-                    <td class="lbl">MODELO:</td><td class="val">{eq.get('modelo', '')}</td>
-                </tr>
-                <tr>
-                    <td class="lbl">NÚMERO DE SERIE:</td><td class="val">{eq.get('numero_serie', '')}</td>
-                    <td class="lbl">PROCEDENCIA:</td><td class="val">{eq.get('procedencia', '')}</td>
-                </tr>
-                <tr>
-                    <td class="lbl">ÁREA / SERVICIO:</td><td class="val">{eq.get('servicio', '')} ({eq.get('area', '')})</td>
-                    <td class="lbl">AÑO FABRICACIÓN:</td><td class="val">{eq.get('anio_fab', '')}</td>
-                </tr>
-                <tr>
-                    <td class="lbl">FECHA RECEPCIÓN:</td><td class="val">{m.get('fecha', '')}</td>
-                    <td class="lbl">FECHA / HORA ENTREGA:</td><td class="val">{m.get('fecha_entrega', '')} {m.get('hora_entrega', '')} (Tiempo: {m.get('tiempo_reparacion', 0)} hrs)</td>
-                </tr>
-            </table>
-
-            <!-- SECCIÓN 2: CONDICIÓN Y TIPO DE MANTENIMIENTO -->
-            <table class="border-table" style="margin-bottom: 8px;">
-                <tr>
-                    <td colspan="5" class="title-box" style="width: 50%;">CONDICIÓN ENCONTRADA</td>
-                    <td colspan="5" class="title-box" style="width: 50%;">ESTADO FÍSICO DEL EQUIPO</td>
-                </tr>
-                <tr>
-                    <td style="font-size:7.5px;">ÓPTIMO:</td><td class="check-box">{"X" if m.get('condicion') == "Óptimo" else ""}</td>
-                    <td style="font-size:7.5px;">ACEPTABLE:</td><td class="check-box">{"X" if m.get('condicion') == "Aceptable" else ""}</td>
-                    <td style="font-size:7.5px;">CRÍTICA:</td><td class="check-box">{"X" if m.get('condicion') == "Crítica" else ""}</td>
-                    <td style="font-size:7.5px;">ÓPTIMO:</td><td class="check-box">{"X" if m.get('estado_equipo') == "Óptimo" else ""}</td>
-                    <td style="font-size:7.5px;">BUENO:</td><td class="check-box">{"X" if m.get('estado_equipo') == "Bueno" else ""}</td>
-                </tr>
-                <tr>
-                    <td style="font-size:7.5px;">INOPERANTE:</td><td class="check-box">{"X" if m.get('condicion') == "Inoperante" else ""}</td>
-                    <td style="font-size:7.5px;">F/SERVICIO:</td><td class="check-box">{"X" if m.get('condicion') == "F/Servicio" else ""}</td>
-                    <td style="font-size:7.5px;"></td><td></td>
-                    <td style="font-size:7.5px;">REGULAR:</td><td class="check-box">{"X" if m.get('estado_equipo') == "Regular" else ""}</td>
-                    <td style="font-size:7.5px;">MALO:</td><td class="check-box">{"X" if m.get('estado_equipo') == "Malo" else ""}</td>
-                </tr>
-            </table>
-
-            <table class="border-table" style="margin-bottom: 8px;">
-                <tr>
-                    <td class="title-box" style="width: 50%;">TIPO DE MANTENIMIENTO</td>
-                    <td class="title-box" style="width: 50%;">REPUESTOS UTILIZADOS</td>
-                </tr>
-                <tr>
-                    <td style="padding: 4px;">
-                        <table style="width: 100%;">
-                            <tr>
-                                <td style="font-size: 8px; font-weight: bold;">PREVENTIVO:</td>
-                                <td class="check-box" style="border: 0.8px solid #334155;">{"X" if m.get('tipo') == "Preventivo" else ""}</td>
-                                <td style="font-size: 8px; font-weight: bold; padding-left: 10px;">CORRECTIVO:</td>
-                                <td class="check-box" style="border: 0.8px solid #334155;">{"X" if m.get('tipo') == "Correctivo" else ""}</td>
-                            </tr>
-                        </table>
-                    </td>
-                    <td style="padding: 4px; font-size: 8px;">
-                        {"<b>Repuesto:</b> " + m.get('repuesto_nombre', '') + " (Cant: " + str(m.get('repuesto_cantidad', 1)) + ")" if m.get('repuesto_usado') else "No se utilizaron repuestos"}
-                    </td>
-                </tr>
-            </table>
-
-            <!-- SECCIÓN 3: TEXTOS DE TRABAJO -->
-            <div style="font-weight: bold; font-size: 8.5px; margin-bottom: 2px;">A. DEFICIENCIA ENCONTRADA / PROBLEMA REPORTADO:</div>
-            <div class="box-text" style="margin-bottom: 6px;">{m.get('deficiencia') or '-'}</div>
-
-            <div style="font-weight: bold; font-size: 8.5px; margin-bottom: 2px;">B. TRABAJO REALIZADO Y PRUEBAS OPERACIONALES:</div>
-            <div class="box-text" style="min-height: 60px; margin-bottom: 6px;">{m.get('trabajo') or '-'}</div>
-
-            <div style="font-weight: bold; font-size: 8.5px; margin-bottom: 2px;">C. OBSERVACIONES Y RECOMENDACIONES TÉCNICAS:</div>
-            <div class="box-text" style="margin-bottom: 12px;">{m.get('observaciones') or '-'}</div>
-
-            <!-- FIRMAS -->
-            <table style="margin-top: 25px;">
-                <tr>
-                    <td style="width: 50%; text-align: center; padding: 0 25px;">
-                        <div style="border-top: 0.8px solid #0F172A; padding-top: 4px; font-weight: bold; font-size: 8.5px;">
-                            {m.get('realizado_por') or 'TÉCNICO BIOMÉDICO'}<br>
-                            <span style="font-weight:normal; font-size:7px; color:#475569;">RESPONSABLE DE MANTENIMIENTO GAMLP</span>
-                        </div>
-                    </td>
-                    <td style="width: 50%; text-align: center; padding: 0 25px;">
-                        <div style="border-top: 0.8px solid #0F172A; padding-top: 4px; font-weight: bold; font-size: 8.5px;">
-                            JEFATURA DE SERVICIO / ENCARGADO<br>
-                            <span style="font-weight:normal; font-size:7px; color:#475569;">CONFORMIDAD Y RECEPCIÓN DEL SERVICIO</span>
-                        </div>
-                    </td>
-                </tr>
-            </table>
-        </body>
-        </html>
-        """
-
-        pdf_out = io.BytesIO()
-        pisa.CreatePDF(html_ht, dest=pdf_out)
-        pdf_out.seek(0)
-
-        id_sanitizado = str(eq.get('id', '')).replace("/", "_").replace("\\", "_")
+        # Textos largos
+        escribir_texto_largo(ws, 'B33', m.get('deficiencia', ''))
+        escribir_texto_largo(ws, 'B47', m.get('trabajo', ''))
+        escribir_texto_largo(ws, 'B53', m.get('observaciones', ''))
+        
+        out_io = io.BytesIO()
+        wb.save(out_io)
+        out_io.seek(0)
+        
+        id_sanitizado = str(eq_data['id']).replace("/", "_").replace("\\", "_")
         return send_file(
-            pdf_out,
-            mimetype='application/pdf',
+            out_io,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             as_attachment=True,
-            download_name=f"Hoja_Trabajo_OT_{m['id']:05d}_{id_sanitizado}.pdf"
+            download_name=f"HT_{id_sanitizado}_OT{m_id}.xlsx"
         )
     except Exception as e:
-        return f"Error generando Hoja de Trabajo PDF: {e}", 500
+        return f"Error generando Hoja de Trabajo Excel: {e}", 500
 
 @app_web.route('/equipo/<id_equipo>/mantenimiento', methods=['GET', 'POST'])
 def registrar_mantenimiento(id_equipo):
