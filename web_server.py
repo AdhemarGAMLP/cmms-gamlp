@@ -997,18 +997,14 @@ def descargar_ficha_tecnica_excel(id_equipo):
 
         def escribir(celda, valor):
             try:
-                hoja[celda] = valor
-                if valor == 'X':
-                    hoja[celda].font = Font(name='Calibri', bold=True, color='000000', size=11)
-                    hoja[celda].alignment = Alignment(horizontal='center', vertical='center')
+                if valor is not None:
+                    hoja[celda].value = valor
             except:
                 pass
 
         def escribir_rcm(celda, texto):
             try:
-                hoja[celda] = texto or ''
-                hoja[celda].font = Font(name='Calibri', size=9, color='000000')
-                hoja[celda].alignment = Alignment(wrap_text=True, vertical='top', horizontal='left')
+                hoja[celda].value = texto if texto else ''
             except:
                 pass
 
@@ -1093,11 +1089,6 @@ def descargar_ficha_tecnica_excel(id_equipo):
         else:
             escribir('AK37', 'X')
             escribir('AB38', "1 vez al año")
-            
-        try:
-            hoja['AB38'].font = Font(name='Calibri', size=10, bold=True, color='000000')
-            hoja['AB38'].alignment = Alignment(horizontal='center', vertical='center')
-        except:
             pass
 
         # 7. Tablas RCM y Observaciones
