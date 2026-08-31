@@ -1067,19 +1067,38 @@ def descargar_ficha_tecnica_excel(id_equipo):
         escribir('Y37', eq_act.get('te_por', ''))
 
         # 6. Categorización
-        cat_data = eq_act.get("categorizacion_detalle") or []
-        if isinstance(cat_data, str):
-            try: cat_data = json.loads(cat_data)
-            except: cat_data = []
+        try:
+            puntajes_int = []
+            for x in cat_data:
+                if str(x).isdigit():
+                    puntajes_int.append(int(x))
+                elif str(x) == "I":
+                    puntajes_int.append(1)
+                elif str(x) == "II":
+                    puntajes_int.append(2)
+                elif str(x) == "III":
+                    puntajes_int.append(3)
+                else:
+                    puntajes_int.append(0)
+            puntaje_total = sum(puntajes_int)
+        except:
+            puntaje_total = 0
+
+        if puntaje_total >= 30 or eq_act.get("criticidad") == "Riesgo Alto":
+            escribir('AO37', 'X')
+            escribir('AB38', "3 veces al año")
+        elif puntaje_total >= 20 or eq_act.get("criticidad") == "Riesgo Medio":
+            escribir('AM37', 'X')
+            escribir('AB38', "2 veces al año")
+        else:
+            escribir('AK37', 'X')
+            escribir('AB38', "1 vez al año")
             
-        for i in range(13):
-            valor = str(cat_data[i]) if i < len(cat_data) else ""
-            if valor in ("1", "I"): 
-                escribir(f'AK{24+i}', 'X')
-            elif valor in ("2", "II"): 
-                escribir(f'AM{24+i}', 'X')
-            elif valor in ("3", "III"): 
-                escribir(f'AO{24+i}', 'X')
+        try:
+            hoja['AB38'].font = Font(name='Calibri', size=10, bold=True, color='000000')
+            hoja['AB38'].alignment = Alignment(horizontal='center', vertical='center')
+        except:
+            pass
 
         # 7. Tablas RCM y Observaciones
         escribir_rcm('B41', eq_act.get('contexto_operacional'))
@@ -1097,15 +1116,15 @@ def descargar_ficha_tecnica_excel(id_equipo):
         # Insertar Foto si existe
         if eq_act.get('foto'):
             try:
-                foto_data = eq_act['foto']
-                if foto_data.startswith("data:image"):
-                    foto_b64 = foto_data.split(",", 1)[1]
+                foto_str = str(eq_act['foto']).strip()
+                if foto_str.startswith("data:image") or len(foto_str) > 200:
+                    foto_b64 = foto_str.split(",", 1)[1] if "," in foto_str else foto_str
                     img_bytes = base64.b64decode(foto_b64)
                     img_stream = io.BytesIO(img_bytes)
                     from openpyxl.drawing.image import Image as ExcelImage
                     img_excel = ExcelImage(img_stream)
-                    img_excel.width = 220
-                    img_excel.height = 210
+                    img_excel.width = 230
+                    img_excel.height = 205
                     hoja.add_image(img_excel, 'Y10')
             except Exception as ex_foto:
                 print(f"[WARN] No se pudo incrustar la foto en Ficha: {ex_foto}")

@@ -1,6 +1,8 @@
 # main.py
 import os
 import sys
+import io
+import base64
 
 # Asegurar que el directorio de trabajo sea siempre el de main.py
 dir_actual = os.path.dirname(os.path.abspath(__file__))
@@ -2022,28 +2024,38 @@ class SistemaMantenimiento(ctk.CTk):
             except:
                 puntaje_total = 0
                 
-            if puntaje_total >= 30:
+            if puntaje_total >= 30 or eq_act.get("criticidad") == "Riesgo Alto":
                 escribir('AO37', 'X')
-            elif puntaje_total >= 20:
+                escribir('AB38', "3 veces al año")
+            elif puntaje_total >= 20 or eq_act.get("criticidad") == "Riesgo Medio":
                 escribir('AM37', 'X')
+                escribir('AB38', "2 veces al año")
             else:
                 escribir('AK37', 'X')
+                escribir('AB38', "1 vez al año")
+                
+            try:
+                hoja['AB38'].font = Font(name='Calibri', size=10, bold=True, color='000000')
+                hoja['AB38'].alignment = Alignment(horizontal='center', vertical='center')
+            except:
+                pass
                 
             foto_path = eq_act.get('foto')
             if foto_path:
                 try:
-                    if str(foto_path).startswith("data:image"):
-                        foto_b64 = str(foto_path).split(",", 1)[1]
+                    foto_str = str(foto_path).strip()
+                    if foto_str.startswith("data:image") or len(foto_str) > 200:
+                        foto_b64 = foto_str.split(",", 1)[1] if "," in foto_str else foto_str
                         img_bytes = base64.b64decode(foto_b64)
                         img_stream = io.BytesIO(img_bytes)
                         img = ExcelImage(img_stream)
-                    elif os.path.exists(foto_path):
-                        img = ExcelImage(foto_path)
+                    elif os.path.exists(foto_str):
+                        img = ExcelImage(foto_str)
                     else:
                         img = None
                     if img:
-                        img.width = 220
-                        img.height = 210
+                        img.width = 230
+                        img.height = 205
                         hoja.add_image(img, 'Y10')
                 except Exception as e:
                     print(f"Aviso: No se pudo inyectar la imagen en el Excel: {e}")
