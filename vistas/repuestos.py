@@ -546,10 +546,61 @@ class VistaRepuestos(ctk.CTkFrame):
         combo_centro.configure(command=actualizar_areas)
         actualizar_centros_y_areas(combo_red.get())
 
-        # 5. Nombre del Repuesto
+        # 5. Nombre del Repuesto con Sugerencias
         ctk.CTkLabel(sf, text="Nombre del Repuesto / Accesorio *:", font=ctk.CTkFont(weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(5, 2))
-        e_nombre = ctk.CTkEntry(sf, placeholder_text="Ej: Sensor SpO2 adulto, Batería 12V 7Ah, Manguera NIBP, Turbina...", height=36)
-        e_nombre.pack(fill="x", pady=(0, 10))
+        
+        f_rep_box = ctk.CTkFrame(sf, fg_color="transparent")
+        f_rep_box.pack(fill="x", pady=(0, 10))
+        
+        e_nombre = ctk.CTkEntry(f_rep_box, placeholder_text="Ej: Sensor SpO2 adulto, Batería 12V 7Ah, Manguera NIBP, Turbina...", height=36)
+        e_nombre.pack(fill="x")
+        
+        f_sug_rep = ctk.CTkFrame(f_rep_box, fg_color="#F8FAFC", corner_radius=8, border_width=1, border_color="#CBD5E1")
+        
+        # Lista de repuestos conocidos para sugerencias
+        nombres_rep_conocidos = sorted(list(set(
+            str(r.get("nombre_repuesto", "")).strip() for r in self.app.datos.get("repuestos", []) if r.get("nombre_repuesto")
+        )))
+
+        def seleccionar_sug_rep(nom_txt):
+            e_nombre.delete(0, "end")
+            e_nombre.insert(0, nom_txt)
+            f_sug_rep.pack_forget()
+            # Buscar datos previos de este repuesto para auto-rellenar
+            rep_prev = next((r for r in self.app.datos.get("repuestos", []) if str(r.get("nombre_repuesto", "")).strip().lower() == nom_txt.lower()), None)
+            if rep_prev:
+                if rep_prev.get("marca") and not e_marca.get().strip():
+                    e_marca.delete(0, "end"); e_marca.insert(0, rep_prev["marca"])
+                if (rep_prev.get("modelo") or rep_prev.get("modelo_parte")) and not e_modelo.get().strip():
+                    e_modelo.delete(0, "end"); e_modelo.insert(0, rep_prev.get("modelo") or rep_prev.get("modelo_parte") or "")
+                if rep_prev.get("costo") and (not e_costo.get().strip() or e_costo.get().strip() == "0.00"):
+                    e_costo.delete(0, "end"); e_costo.insert(0, str(rep_prev["costo"]))
+                    actualizar_total_en_vivo()
+
+        def on_escribir_repuesto(event):
+            if event.keysym in ("Escape", "Tab", "Return"):
+                f_sug_rep.pack_forget()
+                return
+            t = e_nombre.get().strip().lower()
+            if not t or len(t) < 2:
+                f_sug_rep.pack_forget()
+                return
+            matches = [nr for nr in nombres_rep_conocidos if t in nr.lower()][:4]
+            if not matches:
+                f_sug_rep.pack_forget()
+                return
+            for w in f_sug_rep.winfo_children():
+                w.destroy()
+            ctk.CTkLabel(f_sug_rep, text="💡 Repuestos sugeridos previamente:", font=ctk.CTkFont(size=11, weight="bold"), text_color="#64748B").pack(anchor="w", padx=8, pady=(4, 2))
+            for m in matches:
+                ctk.CTkButton(
+                    f_sug_rep, text=f"🔧 {m}", anchor="w", fg_color="#FFFFFF", hover_color="#EFF6FF",
+                    text_color="#1E293B", font=ctk.CTkFont(size=12), height=26, corner_radius=6,
+                    command=lambda nom=m: seleccionar_sug_rep(nom)
+                ).pack(fill="x", padx=4, pady=2)
+            f_sug_rep.pack(fill="x", pady=(4, 0))
+
+        e_nombre.bind("<KeyRelease>", on_escribir_repuesto)
 
         # 6. Marca y Modelo
         f_row_mm = ctk.CTkFrame(sf, fg_color="transparent")
@@ -601,13 +652,98 @@ class VistaRepuestos(ctk.CTkFrame):
         e_cantidad.bind("<KeyRelease>", actualizar_total_en_vivo)
         e_costo.bind("<KeyRelease>", actualizar_total_en_vivo)
 
-        # 8. Equipo Compatible (Opcional)
+        # 8. Equipo Compatible (Opcional) con Sugerencias Predictivas en Vivo
         ctk.CTkLabel(sf, text="Equipo Médico Compatible / Catálogo (Opcional):", font=ctk.CTkFont(weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(5, 2))
-        opciones_cat = [f"{c['nombre']} - {c.get('marca', '')} - {c.get('modelo', '')}" for c in self.app.datos.get("catalogo", [])]
-        if not opciones_cat:
-            opciones_cat = ["General / Multiuso"]
-        combo_tipo = ctk.CTkComboBox(sf, values=opciones_cat, height=36)
-        combo_tipo.pack(fill="x", pady=(0, 10))
+        
+        # Consolidar base de catálogo y equipos para búsqueda predictiva
+        catalogo_items = []
+        vistos_eq = set()
+        for c in self.app.datos.get("catalogo", []):
+            nom = str(c.get("nombre", "")).strip()
+            mrc = str(c.get("marca", "")).strip()
+            mdl = str(c.get("modelo", "")).strip()
+            partes = [p for p in [nom, mrc, mdl] if p]
+            item_str = " - ".join(partes)
+            if item_str and item_str not in vistos_eq:
+                vistos_eq.add(item_str)
+                catalogo_items.append({"nombre": nom, "marca": mrc, "modelo": mdl, "texto": item_str})
+                
+        for eq in self.app.datos.get("equipos", []):
+            nom = str(eq.get("nombre", "")).strip()
+            mrc = str(eq.get("marca", "")).strip()
+            mdl = str(eq.get("modelo", "")).strip()
+            partes = [p for p in [nom, mrc, mdl] if p]
+            item_str = " - ".join(partes)
+            if item_str and item_str not in vistos_eq:
+                vistos_eq.add(item_str)
+                catalogo_items.append({"nombre": nom, "marca": mrc, "modelo": mdl, "texto": item_str})
+
+        f_equipo_box = ctk.CTkFrame(sf, fg_color="transparent")
+        f_equipo_box.pack(fill="x", pady=(0, 10))
+
+        e_equipo_compat = ctk.CTkEntry(f_equipo_box, placeholder_text="🔍 Escribe para buscar equipo (Ej: Sillón dental, Monitor, Balanza...)", height=38)
+        e_equipo_compat.pack(fill="x")
+
+        f_sugerencias_eq = ctk.CTkFrame(f_equipo_box, fg_color="#F8FAFC", corner_radius=8, border_width=1, border_color="#CBD5E1")
+
+        def seleccionar_sugerencia_eq(item):
+            e_equipo_compat.delete(0, "end")
+            e_equipo_compat.insert(0, item["texto"])
+            f_sugerencias_eq.pack_forget()
+            
+            # Auto-completar marca y modelo si están vacíos
+            if item.get("marca") and not e_marca.get().strip():
+                e_marca.delete(0, "end")
+                e_marca.insert(0, item["marca"])
+            if item.get("modelo") and not e_modelo.get().strip():
+                e_modelo.delete(0, "end")
+                e_modelo.insert(0, item["modelo"])
+
+        def on_escribir_equipo(event):
+            if event.keysym in ("Escape", "Tab", "Return"):
+                f_sugerencias_eq.pack_forget()
+                return
+            
+            texto = e_equipo_compat.get().strip().lower()
+            if not texto or len(texto) < 1:
+                f_sugerencias_eq.pack_forget()
+                return
+
+            # Filtrar coincidencias
+            coincidencias = []
+            for item in catalogo_items:
+                if texto in item["texto"].lower():
+                    coincidencias.append(item)
+                if len(coincidencias) >= 6:
+                    break
+
+            if not coincidencias:
+                f_sugerencias_eq.pack_forget()
+                return
+
+            for w in f_sugerencias_eq.winfo_children():
+                w.destroy()
+
+            ctk.CTkLabel(f_sugerencias_eq, text="💡 Sugerencias de Equipos Compatibles (haz clic para elegir):", font=ctk.CTkFont(size=11, weight="bold"), text_color="#64748B").pack(anchor="w", padx=8, pady=(4, 2))
+
+            for match in coincidencias:
+                btn_sug = ctk.CTkButton(
+                    f_sugerencias_eq,
+                    text=f"🏥 {match['texto']}",
+                    anchor="w",
+                    fg_color="#FFFFFF",
+                    hover_color="#EFF6FF",
+                    text_color="#1E293B",
+                    font=ctk.CTkFont(size=12),
+                    height=28,
+                    corner_radius=6,
+                    command=lambda m=match: seleccionar_sugerencia_eq(m)
+                )
+                btn_sug.pack(fill="x", padx=4, pady=2)
+
+            f_sugerencias_eq.pack(fill="x", pady=(4, 0))
+
+        e_equipo_compat.bind("<KeyRelease>", on_escribir_equipo)
 
         # 9. Características Técnicas
         ctk.CTkLabel(sf, text="Características Técnicas y Especificaciones:", font=ctk.CTkFont(weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(5, 2))
@@ -642,7 +778,7 @@ class VistaRepuestos(ctk.CTkFrame):
 
         # Cargar datos si estamos editando
         if rep_editar:
-            if rep_editar.get("tipo_equipo"): combo_tipo.set(rep_editar.get("tipo_equipo"))
+            if rep_editar.get("tipo_equipo"): e_equipo_compat.insert(0, rep_editar.get("tipo_equipo"))
             e_nombre.insert(0, rep_editar.get("nombre_repuesto", ""))
             if rep_editar.get("marca"): e_marca.insert(0, rep_editar.get("marca"))
             if rep_editar.get("modelo") or rep_editar.get("modelo_parte"): e_modelo.insert(0, rep_editar.get("modelo") or rep_editar.get("modelo_parte") or "")
@@ -666,7 +802,7 @@ class VistaRepuestos(ctk.CTkFrame):
             n_rep = e_nombre.get().strip()
             marca_val = e_marca.get().strip()
             mod_val = e_modelo.get().strip()
-            t_eq = combo_tipo.get().strip()
+            t_eq = e_equipo_compat.get().strip()
             caract_val = txt_caract.get("1.0", "end-1c").strip()
             obs_val = txt_obs.get("1.0", "end-1c").strip()
             
