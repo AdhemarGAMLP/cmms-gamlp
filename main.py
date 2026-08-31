@@ -388,6 +388,13 @@ class SistemaMantenimiento(ctk.CTk):
         super().__init__()
         self.usuario_actual = usuario
         self.contexto_sede = contexto_sede or {"resumen_texto": "🌐 Acceso General GAMLP", "es_global": True}
+        self.contexto_seleccionado = self.contexto_sede
+        from database import obtener_jerarquia_sedes_db
+        try:
+            self.sedes_data = obtener_jerarquia_sedes_db()
+        except Exception as e:
+            print(f"[WARN] Error cargando jerarquia de sedes: {e}")
+            self.sedes_data = {}
         self.es_jefe = usuario.get("rol") == "jefe"
         self.modo_offline = False
         

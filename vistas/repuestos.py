@@ -2,7 +2,7 @@
 import customtkinter as ctk
 from tkinter import ttk, messagebox, filedialog
 import psycopg2.extras
-from database import obtener_conexion, mover_a_papelera, ejecutar_en_segundo_plano, guardar_cache_local_datos, comprimir_imagen_base64
+from database import obtener_conexion, mover_a_papelera, ejecutar_en_segundo_plano, guardar_cache_local_datos, comprimir_imagen_base64, obtener_jerarquia_sedes_db
 from estilos import *
 from datetime import date, datetime
 import os
@@ -474,7 +474,17 @@ class VistaRepuestos(ctk.CTkFrame):
 
         # 2. Red de Salud
         ctk.CTkLabel(sf, text="Red de Salud *:", font=ctk.CTkFont(weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(5, 2))
-        redes_opts = [r["nombre"] for r in self.app.sedes_data.get("redes", [])]
+        
+        sedes_data = getattr(self.app, "sedes_data", None)
+        if not sedes_data:
+            try:
+                sedes_data = obtener_jerarquia_sedes_db()
+                self.app.sedes_data = sedes_data
+            except Exception as e:
+                print(f"[WARN] Error obteniendo sedes: {e}")
+                sedes_data = {}
+                
+        redes_opts = [r["nombre"] for r in sedes_data.get("redes", [])]
         if not redes_opts:
             redes_opts = [
                 "RED 1-SUR OESTE (MACRODISTRITO COTAHUMA)",
@@ -484,7 +494,7 @@ class VistaRepuestos(ctk.CTkFrame):
                 "RED 5-SUR (MACRODISTRITO SUR)"
             ]
         
-        red_inicial = rep_editar.get("red_salud_nombre") if rep_editar else (self.app.contexto_seleccionado.get("red_salud") if hasattr(self.app, "contexto_seleccionado") else redes_opts[1])
+        red_inicial = rep_editar.get("red_salud_nombre") if rep_editar else (getattr(self.app, "contexto_seleccionado", {}).get("red_salud") if hasattr(self.app, "contexto_seleccionado") else redes_opts[1])
         if not red_inicial or str(red_inicial).startswith("[ Todas"):
             red_inicial = redes_opts[1]
 
@@ -504,14 +514,14 @@ class VistaRepuestos(ctk.CTkFrame):
         combo_area.pack(fill="x", pady=(0, 10))
 
         def actualizar_centros_y_areas(red_sel):
-            red_obj = next((r for r in self.app.sedes_data.get("redes", []) if r["nombre"] == red_sel), None)
+            red_obj = next((r for r in sedes_data.get("redes", []) if r["nombre"] == red_sel), None)
             red_id = red_obj["id"] if red_obj else None
-            centros_nombres = [c["nombre"] for c in self.app.sedes_data.get("centros", []) if c.get("red_salud_id") == red_id]
+            centros_nombres = [c["nombre"] for c in sedes_data.get("centros", []) if c.get("red_salud_id") == red_id]
             if not centros_nombres:
                 centros_nombres = ["Centro de Salud General"]
             combo_centro.configure(values=centros_nombres)
             
-            c_ini = rep_editar.get("centro_salud_nombre") if rep_editar else (self.app.contexto_seleccionado.get("centro_salud") if hasattr(self.app, "contexto_seleccionado") else None)
+            c_ini = rep_editar.get("centro_salud_nombre") if rep_editar else (getattr(self.app, "contexto_seleccionado", {}).get("centro_salud") if hasattr(self.app, "contexto_seleccionado") else None)
             if c_ini and c_ini in centros_nombres:
                 combo_centro.set(c_ini)
             else:
@@ -519,7 +529,7 @@ class VistaRepuestos(ctk.CTkFrame):
             actualizar_areas(combo_centro.get())
 
         def actualizar_areas(centro_sel):
-            cen_obj = next((c for c in self.app.sedes_data.get("centros", []) if c["nombre"] == centro_sel), None)
+            cen_obj = next((c for c in sedes_data.get("centros", []) if c["nombre"] == centro_sel), None)
             cen_id = cen_obj["id"] if cen_obj else None
             areas_nombres = sorted(list(set(a["nombre"] for a in self.app.datos.get("areas", []) if a.get("centro_salud_id") == cen_id)))
             if not areas_nombres:
