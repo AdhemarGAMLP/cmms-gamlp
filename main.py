@@ -2037,15 +2037,35 @@ class SistemaMantenimiento(ctk.CTk):
                     if foto_str.startswith("data:image") or len(foto_str) > 200:
                         foto_b64 = foto_str.split(",", 1)[1] if "," in foto_str else foto_str
                         img_bytes = base64.b64decode(foto_b64)
-                        img_stream = io.BytesIO(img_bytes)
-                        img = ExcelImage(img_stream)
+                        pil_img = Image.open(io.BytesIO(img_bytes)).convert('RGB')
                     elif os.path.exists(foto_str):
-                        img = ExcelImage(foto_str)
+                        pil_img = Image.open(foto_str).convert('RGB')
                     else:
-                        img = None
-                    if img:
-                        img.width = 230
-                        img.height = 205
+                        pil_img = None
+                    
+                    if pil_img:
+                        orig_w, orig_h = pil_img.size
+                        BOX_W = 435
+                        BOX_H = 215
+                        
+                        scale = min(BOX_W / orig_w, BOX_H / orig_h)
+                        new_w = int(orig_w * scale)
+                        new_h = int(orig_h * scale)
+                        resized_img = pil_img.resize((new_w, new_h), Image.Resampling.LANCZOS)
+                        
+                        # Canvas blanco para centrar perfectamente la imagen en el cuadro Y10:AP22
+                        canvas = Image.new('RGB', (BOX_W, BOX_H), (255, 255, 255))
+                        offset_x = (BOX_W - new_w) // 2
+                        offset_y = (BOX_H - new_h) // 2
+                        canvas.paste(resized_img, (offset_x, offset_y))
+                        
+                        img_stream = io.BytesIO()
+                        canvas.save(img_stream, format='JPEG', quality=95)
+                        img_stream.seek(0)
+                        
+                        img = ExcelImage(img_stream)
+                        img.width = BOX_W
+                        img.height = BOX_H
                         hoja.add_image(img, 'Y10')
                 except Exception as e:
                     print(f"Aviso: No se pudo inyectar la imagen en el Excel: {e}")
