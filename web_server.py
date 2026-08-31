@@ -1105,44 +1105,26 @@ def descargar_ficha_tecnica_excel(id_equipo):
         escribir_rcm('B58', eq_act.get('observaciones'))
 
         # Insertar Foto si existe
-        if eq_act.get('foto'):
+        foto_path = eq_act.get('foto')
+        if foto_path:
             try:
-                foto_str = str(eq_act['foto']).strip()
+                foto_str = str(foto_path).strip()
                 if foto_str.startswith("data:image") or len(foto_str) > 200:
                     foto_b64 = foto_str.split(",", 1)[1] if "," in foto_str else foto_str
                     img_bytes = base64.b64decode(foto_b64)
-                    from PIL import Image as PILImage
-                    pil_img = PILImage.open(io.BytesIO(img_bytes)).convert('RGB')
-                elif os.path.exists(foto_str):
-                    from PIL import Image as PILImage
-                    pil_img = PILImage.open(foto_str).convert('RGB')
-                else:
-                    pil_img = None
-
-                if pil_img:
-                    orig_w, orig_h = pil_img.size
-                    BOX_W = 435
-                    BOX_H = 215
-
-                    scale = min(BOX_W / orig_w, BOX_H / orig_h)
-                    new_w = int(orig_w * scale)
-                    new_h = int(orig_h * scale)
-                    resized_img = pil_img.resize((new_w, new_h), PILImage.Resampling.LANCZOS)
-
-                    canvas = PILImage.new('RGB', (BOX_W, BOX_H), (255, 255, 255))
-                    offset_x = (BOX_W - new_w) // 2
-                    offset_y = (BOX_H - new_h) // 2
-                    canvas.paste(resized_img, (offset_x, offset_y))
-
-                    img_stream = io.BytesIO()
-                    canvas.save(img_stream, format='JPEG', quality=95)
-                    img_stream.seek(0)
-
+                    img_stream = io.BytesIO(img_bytes)
                     from openpyxl.drawing.image import Image as ExcelImage
                     img_excel = ExcelImage(img_stream)
-                    img_excel.width = BOX_W
-                    img_excel.height = BOX_H
-                    hoja.add_image(img_excel, 'Y10')
+                elif os.path.exists(foto_str):
+                    from openpyxl.drawing.image import Image as ExcelImage
+                    img_excel = ExcelImage(foto_str)
+                else:
+                    img_excel = None
+
+                if img_excel:
+                    img_excel.width = 220
+                    img_excel.height = 220
+                    hoja.add_image(img_excel, 'AA11')
             except Exception as ex_foto:
                 print(f"[WARN] No se pudo incrustar la foto en Ficha: {ex_foto}")
 
