@@ -856,7 +856,7 @@ def ver_equipo(id_equipo):
                 
                 <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;">
                     <a href="/equipo/{{ eq['id'] }}/mantenimiento" class="btn-action" style="margin:0;">🛠️ Registrar Mantenimiento</a>
-                    <a href="/equipo/{{ eq['id'] }}/descargar_ficha" class="btn-action" style="background: #2563EB; margin:0;">📥 Descargar Ficha Técnica (.xlsx)</a>
+                    <a href="/equipo/{{ eq['id'] }}/ficha_pdf" target="_blank" class="btn-action" style="background: #2563EB; margin:0;">📄 Ver / Descargar Ficha Técnica (PDF)</a>
                     <a href="/equipo/{{ eq['id'] }}/descargar_qr" class="btn-action" style="background: #34C759; margin:0;">📥 Descargar Código QR (Etiqueta)</a>
                 </div>
                 
@@ -868,7 +868,7 @@ def ver_equipo(id_equipo):
                     <td>{{ m['realizado_por'] or 'Técnico' }}</td>
                     <td>{{ m['trabajo'] or m['detalle'] or 'Sin detalle' }}</td>
                     <td>
-                        <a href="/equipo/{{ eq['id'] }}/mantenimiento/{{ m['id'] }}/descargar_excel" style="text-decoration:none; color:#1D4ED8; font-weight:bold; padding: 4px 10px; border-radius: 6px; background: #EFF6FF; border: 1px solid #BFDBFE; display: inline-block; font-size: 12px;" title="Descargar Hoja de Trabajo Excel">📥 Ficha (.xlsx)</a>
+                        <a href="/equipo/{{ eq['id'] }}/mantenimiento/{{ m['id'] }}/pdf" target="_blank" style="text-decoration:none; color:#1D4ED8; font-weight:bold; padding: 4px 10px; border-radius: 6px; background: #EFF6FF; border: 1px solid #BFDBFE; display: inline-block; font-size: 12px;" title="Ver Hoja de Trabajo (PDF)">📕 Ficha PDF</a>
                     </td>
                 </tr>
                 {% else %}<tr><td colspan="5" style="text-align:center; color:#8E8E93;">Sin intervenciones registradas</td></tr>{% endfor %}
@@ -969,280 +969,734 @@ def ver_equipo(id_equipo):
     except Exception as e:
         return f"Error en el servidor web: {e}"
 
+@app_web.route('/equipo/<id_equipo>/ficha_pdf')
 @app_web.route('/equipo/<id_equipo>/descargar_ficha')
+@app_web.route('/equipo/<id_equipo>/ficha_tecnica')
 @app_web.route('/equipo/<id_equipo>/ficha_excel')
-def descargar_ficha_tecnica_excel(id_equipo):
+def descargar_ficha_tecnica_pdf(id_equipo):
     try:
         conn = obtener_conexion()
         if not conn:
             return "Error de conexión a base de datos", 500
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
         cur.execute("SELECT * FROM equipos WHERE id = %s", (id_equipo,))
-        eq_act = cur.fetchone()
+        eq = cur.fetchone()
+        
+        cur.execute("SELECT * FROM historial_intervenciones WHERE equipo_id = %s ORDER BY COALESCE(fecha_entrega, fecha) DESC, id DESC", (id_equipo,))
+        hist = cur.fetchall()
         
         cur.execute("SELECT * FROM repuestos")
-        repuestos = cur.fetchall()
+        repuestos_todos = cur.fetchall()
         cur.close()
         conn.close()
 
-        if not eq_act:
+        if not eq:
             return "Equipo no encontrado", 404
 
-        ruta_plantilla = obtener_ruta_plantilla("plantilla_ficha.xlsx")
-        if not os.path.exists(ruta_plantilla):
-            return "Plantilla no encontrada", 500
+        cat_str = f"{eq['nombre']} - {eq.get('marca', '')} - {eq.get('modelo', '')}"
+        rep_asociados = [r for r in repuestos_todos if r.get("tipo_equipo") == cat_str]
 
-        wb = openpyxl.load_workbook(ruta_plantilla)
-        hoja = wb.active
-
-        def escribir(celda, valor):
-            try:
-                if valor is not None:
-                    hoja[celda].value = valor
-            except:
-                pass
-
-        def escribir_rcm(celda, texto):
-            try:
-                hoja[celda].value = texto if texto else ''
-            except:
-                pass
-
-        # 1. Datos Generales de Identificación y Territorio
-        escribir('K4', eq_act.get('red_salud_nombre', ''))
-        escribir('K5', eq_act.get('centro_salud_nombre', ''))
-        escribir('K8', eq_act.get('nombre', ''))
-        escribir('H11', eq_act.get('area', ''))
-        escribir('H12', eq_act.get('servicio', ''))
-        escribir('H13', eq_act.get('marca', ''))
-        escribir('H14', eq_act.get('modelo', ''))
-        escribir('H15', str(eq_act.get('id', '')))
-        escribir('H16', eq_act.get('procedencia', ''))
-        escribir('H17', eq_act.get('fabricante', ''))
-        escribir('H18', eq_act.get('garantia', ''))
-        escribir('H19', eq_act.get('proveedor', ''))
-        escribir('H20', eq_act.get('numero_serie', ''))
-        escribir('H21', str(eq_act.get('anio_fab') or ''))
-        escribir('H22', str(eq_act.get('fecha_adquisicion') or ''))
-
-        # 2. Datos Técnicos Oficiales del Equipo
-        escribir('E24', eq_act.get('voltaje', '') or '')
-        escribir('G25', eq_act.get('corriente', '') or '')
-        escribir('I26', eq_act.get('potencia', '') or '')
-        escribir('H27', eq_act.get('vida_util', '') or eq_act.get('temperatura', '') or '')
-        escribir('D28', eq_act.get('peso', '') or '')
-        escribir('F29', eq_act.get('dimensiones', '') or '')
-        escribir('H30', eq_act.get('bateria_respaldo', '') or eq_act.get('resolucion', '') or '')
-        escribir('H31', eq_act.get('version_software', '') or eq_act.get('humedad', '') or '')
-        escribir('H32', eq_act.get('suministro_gases', '') or '')
-
-        # 3. Repuestos
-        cat_str = f"{eq_act['nombre']} - {eq_act.get('marca', '')} - {eq_act.get('modelo', '')}"
-        repuestos_equipo = [r for r in repuestos if r.get("tipo_equipo") == cat_str]
-        for idx, r in enumerate(repuestos_equipo[:5]):
-            cell_row = 34 + idx
-            nom_rep = r.get("nombre_repuesto", "")
-            cant_rep = r.get("cantidad", 0)
-            txt_rep = f"{nom_rep}  (Cantidad: {cant_rep})" if cant_rep is not None else nom_rep
-            escribir(f'C{cell_row}', txt_rep)
-
-        # 4. Tecnología Predominante (X)
-        escribir('S25', eq_act.get('t_elec', ''))
-        escribir('S27', eq_act.get('t_elco', ''))
-        escribir('S29', eq_act.get('t_mec', ''))
-        escribir('Z25', eq_act.get('t_hid', ''))
-        escribir('Z27', eq_act.get('t_neu', ''))
-        escribir('Z29', eq_act.get('t_vap', ''))
-
-        # 5. Tipo Adquisición y Tipo de Equipo (X)
-        escribir('S33', eq_act.get('a_comp', ''))
-        escribir('S35', eq_act.get('a_como', ''))
-        escribir('S37', eq_act.get('a_don', ''))
-        escribir('Y33', eq_act.get('te_fijo', ''))
-        escribir('Y35', eq_act.get('te_mov', ''))
-        escribir('Y37', eq_act.get('te_por', ''))
-
-        # 6. Categorización
-        try:
-            puntajes_int = []
-            for x in cat_data:
-                if str(x).isdigit():
-                    puntajes_int.append(int(x))
-                elif str(x) == "I":
-                    puntajes_int.append(1)
-                elif str(x) == "II":
-                    puntajes_int.append(2)
-                elif str(x) == "III":
-                    puntajes_int.append(3)
-                else:
-                    puntajes_int.append(0)
-            puntaje_total = sum(puntajes_int)
-        except:
-            puntaje_total = 0
-
-        if puntaje_total >= 30 or eq_act.get("criticidad") == "Riesgo Alto":
-            escribir('AO37', 'X')
-            escribir('AB38', "3 veces al año")
-        elif puntaje_total >= 20 or eq_act.get("criticidad") == "Riesgo Medio":
-            escribir('AM37', 'X')
-            escribir('AB38', "2 veces al año")
+        # Categorización
+        cat_data = eq.get("categorizacion_detalle") or []
+        if isinstance(cat_data, str):
+            try: cat_data = json.loads(cat_data)
+            except: cat_data = []
+            
+        criterios_nombres = [
+            "Intercambiabilidad", "Función Clínica", "Frecuencia de Uso", "Impacto en el Servicio",
+            "Mantenibilidad", "Historial de Fallas", "Complejidad Tecnológica", "Valor de Compra",
+            "Exigencia Normativa", "Seguridad Operacional", "Vulnerabilidad Ambiental", "Riesgo a Explosiones",
+            "Edad del Equipo"
+        ]
+        
+        criterios_evaluados = []
+        puntajes_int = []
+        for idx, nom_crit in enumerate(criterios_nombres):
+            val_raw = str(cat_data[idx]) if idx < len(cat_data) else ""
+            romano = "I" if val_raw in ("1", "I") else ("II" if val_raw in ("2", "II") else ("III" if val_raw in ("3", "III") else "-"))
+            if romano == "I": puntajes_int.append(1)
+            elif romano == "II": puntajes_int.append(2)
+            elif romano == "III": puntajes_int.append(3)
+            criterios_evaluados.append({"num": idx+1, "nombre": nom_crit, "nivel": romano})
+            
+        puntaje_total = sum(puntajes_int)
+        if puntaje_total >= 30 or eq.get("criticidad") == "Riesgo Alto":
+            cat_final_txt = "Categoría III — Riesgo Alto (3 veces al año)"
+        elif puntaje_total >= 20 or eq.get("criticidad") == "Riesgo Medio":
+            cat_final_txt = "Categoría II — Riesgo Medio (2 veces al año)"
         else:
-            escribir('AK37', 'X')
-            escribir('AB38', "1 vez al año")
-            pass
+            cat_final_txt = "Categoría I — Riesgo Bajo (1 vez al año)"
 
-        # 7. Tablas RCM y Observaciones
-        escribir_rcm('B41', eq_act.get('contexto_operacional'))
-        escribir_rcm('L41', eq_act.get('funciones_equipo'))
-        escribir_rcm('V41', eq_act.get('acciones_preventivas'))
-        escribir_rcm('AE41', eq_act.get('acciones_falla'))
+        html_ficha = """
+        <!DOCTYPE html>
+        <html lang="es">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Ficha Técnica - {{ eq['id'] }} - {{ eq['nombre'] }}</title>
+            <style>
+                @page {
+                    size: letter portrait;
+                    margin: 8mm 10mm;
+                }
+                * { box-sizing: border-box; }
+                body {
+                    font-family: 'Segoe UI', Arial, sans-serif;
+                    color: #0F172A;
+                    background: #F1F5F9;
+                    margin: 0;
+                    padding: 15px;
+                    font-size: 11.5px;
+                }
+                .sheet {
+                    background: #FFFFFF;
+                    max-width: 820px;
+                    margin: 0 auto;
+                    padding: 20px 25px;
+                    border-radius: 8px;
+                    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+                }
+                .toolbar {
+                    max-width: 820px;
+                    margin: 0 auto 12px auto;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                }
+                .btn-print {
+                    background: #2563EB;
+                    color: white;
+                    border: none;
+                    padding: 9px 18px;
+                    border-radius: 6px;
+                    font-weight: bold;
+                    font-size: 13px;
+                    cursor: pointer;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;
+                }
+                .btn-print:hover { background: #1D4ED8; }
+                .btn-back {
+                    background: #64748B;
+                    color: white;
+                    padding: 9px 15px;
+                    border-radius: 6px;
+                    text-decoration: none;
+                    font-size: 13px;
+                    font-weight: 600;
+                }
+                .header-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin-bottom: 10px;
+                    border-bottom: 2px solid #0F172A;
+                    padding-bottom: 6px;
+                }
+                .header-title {
+                    text-align: center;
+                }
+                .header-title h1 {
+                    font-size: 14px;
+                    margin: 0;
+                    color: #0F172A;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                }
+                .header-title h2 {
+                    font-size: 11px;
+                    margin: 2px 0 0 0;
+                    color: #475569;
+                    font-weight: 600;
+                }
+                .header-title h3 {
+                    font-size: 12.5px;
+                    margin: 4px 0 0 0;
+                    color: #1E3A8A;
+                    font-weight: bold;
+                    text-transform: uppercase;
+                }
+                .section-title {
+                    background: #F8FAFC;
+                    border-left: 4px solid #2563EB;
+                    padding: 3px 8px;
+                    font-weight: bold;
+                    font-size: 11px;
+                    color: #0F172A;
+                    margin: 10px 0 5px 0;
+                    text-transform: uppercase;
+                }
+                .grid-2 {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 4px 14px;
+                }
+                .grid-3 {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr 1fr;
+                    gap: 4px 10px;
+                }
+                .field-row {
+                    display: flex;
+                    justify-content: space-between;
+                    border-bottom: 1px dashed #E2E8F0;
+                    padding: 2px 0;
+                }
+                .field-label {
+                    color: #64748B;
+                    font-weight: 600;
+                    font-size: 10.5px;
+                }
+                .field-val {
+                    color: #0F172A;
+                    font-weight: 600;
+                    text-align: right;
+                    font-size: 11px;
+                }
+                .badge {
+                    display: inline-block;
+                    padding: 2px 7px;
+                    border-radius: 4px;
+                    font-size: 10px;
+                    font-weight: bold;
+                }
+                .badge-op { background: #DCFCE7; color: #166534; }
+                .badge-baja { background: #FEE2E2; color: #991B1B; }
+                .badge-crit { background: #FEF3C7; color: #92400E; }
+                .photo-box {
+                    text-align: center;
+                    border: 1px solid #E2E8F0;
+                    border-radius: 6px;
+                    padding: 6px;
+                    background: #FAFAFA;
+                    max-height: 190px;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                }
+                .photo-img {
+                    max-width: 100%;
+                    max-height: 165px;
+                    object-fit: contain;
+                    border-radius: 4px;
+                }
+                .table-clean {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin-top: 4px;
+                    font-size: 10.5px;
+                }
+                .table-clean th {
+                    background: #F1F5F9;
+                    color: #475569;
+                    font-weight: bold;
+                    border: 1px solid #CBD5E1;
+                    padding: 3px 6px;
+                    text-align: left;
+                }
+                .table-clean td {
+                    border: 1px solid #E2E8F0;
+                    padding: 3px 6px;
+                }
+                .box-rcm {
+                    border: 1px solid #CBD5E1;
+                    background: #F8FAFC;
+                    padding: 6px 8px;
+                    border-radius: 4px;
+                    font-size: 10.5px;
+                    line-height: 1.35;
+                    margin-bottom: 5px;
+                    min-height: 28px;
+                }
+                .signatures {
+                    margin-top: 25px;
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 35px;
+                    text-align: center;
+                }
+                .sig-line {
+                    border-top: 1px solid #0F172A;
+                    margin-top: 35px;
+                    padding-top: 4px;
+                    font-size: 10.5px;
+                    color: #334155;
+                    font-weight: 600;
+                }
+                @media print {
+                    body {
+                        background: white !important;
+                        padding: 0 !important;
+                    }
+                    .sheet {
+                        box-shadow: none !important;
+                        padding: 0 !important;
+                        max-width: 100% !important;
+                    }
+                    .toolbar {
+                        display: none !important;
+                    }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="toolbar no-print">
+                <a href="/equipo/{{ eq['id'] }}" class="btn-back">⬅ Volver al Equipo</a>
+                <button onclick="window.print()" class="btn-print">🖨️ Imprimir / Guardar en PDF</button>
+            </div>
 
-        escribir_rcm('B49', eq_act.get('fallas_funcionales'))
-        escribir_rcm('L49', eq_act.get('causas_fallo'))
-        escribir_rcm('V49', eq_act.get('efectos_fallo'))
-        escribir_rcm('AE49', eq_act.get('efecto_entorno'))
+            <div class="sheet">
+                <table class="header-table">
+                    <tr>
+                        <td style="width: 70px; vertical-align: middle;">
+                            <div style="font-size: 22px; font-weight: bold; color: #1E3A8A; text-align: center;">🏛️</div>
+                        </td>
+                        <td class="header-title">
+                            <h1>Gobierno Autónomo Municipal de La Paz</h1>
+                            <h2>RED: {{ eq['red_salud_nombre'] or 'RED DE SALUD' }} | CENTRO: {{ eq['centro_salud_nombre'] or 'CENTRO DE SALUD' }}</h2>
+                            <h3>FORMULARIO DE FICHA TÉCNICA INSTITUCIONAL — {{ eq['nombre'] }}</h3>
+                        </td>
+                        <td style="width: 90px; text-align: right; vertical-align: middle;">
+                            <div style="font-size: 9.5px; color: #64748B; line-height: 1.2;">
+                                <strong>CÓDIGO AF</strong><br>
+                                <span style="font-size: 12px; color: #0F172A; font-weight: bold;">{{ eq['id'] }}</span>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
 
-        escribir_rcm('B58', eq_act.get('observaciones'))
+                <!-- 1. IDENTIFICACIÓN Y FOTO -->
+                <div class="section-title">1. Identificación y Especificaciones Generales</div>
+                <div style="display: grid; grid-template-columns: {% if eq['foto'] %}1.8fr 1.2fr{% else %}1fr{% endif %}; gap: 12px; align-items: start;">
+                    <div class="grid-2">
+                        <div class="field-row"><span class="field-label">Nombre del Equipo:</span><span class="field-val">{{ eq['nombre'] }}</span></div>
+                        <div class="field-row"><span class="field-label">Marca:</span><span class="field-val">{{ eq['marca'] or '-' }}</span></div>
+                        <div class="field-row"><span class="field-label">Modelo:</span><span class="field-val">{{ eq['modelo'] or '-' }}</span></div>
+                        <div class="field-row"><span class="field-label">Número de Serie:</span><span class="field-val">{{ eq['numero_serie'] or '-' }}</span></div>
+                        <div class="field-row"><span class="field-label">Área:</span><span class="field-val">{{ eq['area'] or '-' }}</span></div>
+                        <div class="field-row"><span class="field-label">Servicio:</span><span class="field-val">{{ eq['servicio'] or '-' }}</span></div>
+                        <div class="field-row"><span class="field-label">Procedencia:</span><span class="field-val">{{ eq['procedencia'] or '-' }}</span></div>
+                        <div class="field-row"><span class="field-label">Fabricante:</span><span class="field-val">{{ eq['fabricante'] or '-' }}</span></div>
+                        <div class="field-row"><span class="field-label">Proveedor:</span><span class="field-val">{{ eq['proveedor'] or '-' }}</span></div>
+                        <div class="field-row"><span class="field-label">Garantía:</span><span class="field-val">{{ eq['garantia'] or 'Sin Garantía' }}</span></div>
+                        <div class="field-row"><span class="field-label">Año Fabricación:</span><span class="field-val">{{ eq['anio_fab'] or '-' }}</span></div>
+                        <div class="field-row"><span class="field-label">Fecha Instalación:</span><span class="field-val">{{ eq['fecha_adquisicion'] or '-' }}</span></div>
+                    </div>
+                    {% if eq['foto'] %}
+                    <div class="photo-box">
+                        <img src="{{ eq['foto'] }}" class="photo-img" alt="Fotografía del Equipo">
+                        <div style="font-size: 9px; color: #64748B; margin-top: 2px;">Fotografía Registrada</div>
+                    </div>
+                    {% endif %}
+                </div>
 
-        # Insertar Foto si existe
-        foto_path = eq_act.get('foto')
-        if foto_path:
-            try:
-                foto_str = str(foto_path).strip()
-                if foto_str.startswith("data:image") or len(foto_str) > 200:
-                    foto_b64 = foto_str.split(",", 1)[1] if "," in foto_str else foto_str
-                    img_bytes = base64.b64decode(foto_b64)
-                    img_stream = io.BytesIO(img_bytes)
-                    from openpyxl.drawing.image import Image as ExcelImage
-                    img_excel = ExcelImage(img_stream)
-                elif os.path.exists(foto_str):
-                    from openpyxl.drawing.image import Image as ExcelImage
-                    img_excel = ExcelImage(foto_str)
-                else:
-                    img_excel = None
+                <!-- 2. PARÁMETROS TÉCNICOS OFICIALES (9 CAMPOS) -->
+                <div class="section-title">2. Parámetros Técnicos Oficiales</div>
+                <div class="grid-3">
+                    <div class="field-row"><span class="field-label">Voltaje:</span><span class="field-val">{{ eq['voltaje'] or '-' }}</span></div>
+                    <div class="field-row"><span class="field-label">Corriente:</span><span class="field-val">{{ eq['corriente'] or '-' }}</span></div>
+                    <div class="field-row"><span class="field-label">Potencia Consumida:</span><span class="field-val">{{ eq['potencia'] or '-' }}</span></div>
+                    <div class="field-row"><span class="field-label">Vida Útil Estimada:</span><span class="field-val">{{ eq['vida_util'] or eq['temperatura'] or '-' }}</span></div>
+                    <div class="field-row"><span class="field-label">Peso:</span><span class="field-val">{{ eq['peso'] or '-' }}</span></div>
+                    <div class="field-row"><span class="field-label">Dimensiones:</span><span class="field-val">{{ eq['dimensiones'] or '-' }}</span></div>
+                    <div class="field-row"><span class="field-label">Batería de Respaldo:</span><span class="field-val">{{ eq['bateria_respaldo'] or eq['resolucion'] or '-' }}</span></div>
+                    <div class="field-row"><span class="field-label">Versión Software:</span><span class="field-val">{{ eq['version_software'] or eq['humedad'] or '-' }}</span></div>
+                    <div class="field-row"><span class="field-label">Suministro de Gases:</span><span class="field-val">{{ eq['suministro_gases'] or '-' }}</span></div>
+                </div>
 
-                if img_excel:
-                    img_excel.width = 220
-                    img_excel.height = 220
-                    hoja.add_image(img_excel, 'AA11')
-            except Exception as ex_foto:
-                print(f"[WARN] No se pudo incrustar la foto en Ficha: {ex_foto}")
+                <!-- 3. CATEGORIZACIÓN Y CRITICIDAD -->
+                <div class="section-title">3. Categorización de Criticidad y Frecuencia de Mantenimiento</div>
+                <div style="background:#F8FAFC; border:1px solid #CBD5E1; padding:6px 10px; border-radius:4px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
+                    <div><strong>Resultado:</strong> <span style="color:#1E3A8A; font-weight:bold;">{{ cat_final_txt }}</span></div>
+                    <div><strong>Puntaje Obtenido:</strong> {{ puntaje_total }} pts.</div>
+                </div>
 
-        out_io = io.BytesIO()
-        wb.save(out_io)
-        out_io.seek(0)
+                <!-- 4. RCM Y CONTEXTO OPERACIONAL -->
+                {% if eq['contexto_operacional'] or eq['funciones_equipo'] or eq['acciones_preventivas'] or eq['fallas_funcionales'] or eq['observaciones'] %}
+                <div class="section-title">4. Análisis de Mantenibilidad (RCM) y Observaciones</div>
+                <div class="grid-2">
+                    {% if eq['contexto_operacional'] %}
+                    <div>
+                        <strong style="font-size:10px; color:#475569;">Contexto Operacional:</strong>
+                        <div class="box-rcm">{{ eq['contexto_operacional'] }}</div>
+                    </div>
+                    {% endif %}
+                    {% if eq['funciones_equipo'] %}
+                    <div>
+                        <strong style="font-size:10px; color:#475569;">Funciones Principales:</strong>
+                        <div class="box-rcm">{{ eq['funciones_equipo'] }}</div>
+                    </div>
+                    {% endif %}
+                    {% if eq['acciones_preventivas'] %}
+                    <div>
+                        <strong style="font-size:10px; color:#475569;">Acciones Preventivas:</strong>
+                        <div class="box-rcm">{{ eq['acciones_preventivas'] }}</div>
+                    </div>
+                    {% endif %}
+                    {% if eq['acciones_falla'] %}
+                    <div>
+                        <strong style="font-size:10px; color:#475569;">Insumos / Accesorios:</strong>
+                        <div class="box-rcm">{{ eq['acciones_falla'] }}</div>
+                    </div>
+                    {% endif %}
+                    {% if eq['fallas_funcionales'] %}
+                    <div>
+                        <strong style="font-size:10px; color:#475569;">Fallas Comunes:</strong>
+                        <div class="box-rcm">{{ eq['fallas_funcionales'] }}</div>
+                    </div>
+                    {% endif %}
+                    {% if eq['causas_fallo'] %}
+                    <div>
+                        <strong style="font-size:10px; color:#475569;">Causas de Fallo:</strong>
+                        <div class="box-rcm">{{ eq['causas_fallo'] }}</div>
+                    </div>
+                    {% endif %}
+                    {% if eq['efectos_fallo'] %}
+                    <div>
+                        <strong style="font-size:10px; color:#475569;">Consecuencias de Fallo:</strong>
+                        <div class="box-rcm">{{ eq['efectos_fallo'] }}</div>
+                    </div>
+                    {% endif %}
+                    {% if eq['efecto_entorno'] %}
+                    <div>
+                        <strong style="font-size:10px; color:#475569;">Acciones Correctivas Comunes:</strong>
+                        <div class="box-rcm">{{ eq['efecto_entorno'] }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% if eq['observaciones'] %}
+                <div style="margin-top:2px;">
+                    <strong style="font-size:10px; color:#475569;">Observaciones:</strong>
+                    <div class="box-rcm">{{ eq['observaciones'] }}</div>
+                </div>
+                {% endif %}
+                {% endif %}
 
-        id_sanitizado = str(id_equipo).replace("/", "_").replace("\\", "_")
-        return send_file(
-            out_io,
-            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            as_attachment=True,
-            download_name=f"Ficha_Tecnica_{id_sanitizado}.xlsx"
-        )
+                <!-- 5. HISTORIAL DE INTERVENCIONES -->
+                <div class="section-title">5. Registro de Mantenimientos Recientes</div>
+                <table class="table-clean">
+                    <thead>
+                        <tr>
+                            <th style="width: 75px;">Fecha</th>
+                            <th style="width: 85px;">Tipo</th>
+                            <th style="width: 130px;">Realizado Por</th>
+                            <th>Trabajo Realizado / Diagnóstico</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for m in hist[:5] %}
+                        <tr>
+                            <td>{{ m['fecha'] }}</td>
+                            <td><strong>{{ m['tipo'] }}</strong></td>
+                            <td>{{ m['realizado_por'] or 'Técnico GAMLP' }}</td>
+                            <td>{{ m['trabajo'] or m['detalle'] or 'Mantenimiento registrado' }}</td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="4" style="text-align:center; color:#94A3B8;">Sin intervenciones registradas.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                <!-- FIRMAS -->
+                <div class="signatures">
+                    <div>
+                        <div class="sig-line">Responsable de Mantenimiento / Biomédica<br>GAMLP</div>
+                    </div>
+                    <div>
+                        <div class="sig-line">Jefatura de Establecimiento de Salud<br>Recepción y Control</div>
+                    </div>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        return render_template_string(html_ficha, eq=eq, hist=hist, cat_final_txt=cat_final_txt, puntaje_total=puntaje_total)
     except Exception as e:
-        return f"Error generando Ficha Técnica Excel: {e}", 500
+        return f"Error generando Ficha Técnica PDF: {e}", 500
 
+@app_web.route('/equipo/<id_equipo>/mantenimiento/<int:m_id>/pdf')
+@app_web.route('/mantenimiento/<int:m_id>/pdf')
 @app_web.route('/equipo/<id_equipo>/mantenimiento/<int:m_id>/descargar_excel')
 @app_web.route('/mantenimiento/<int:m_id>/descargar_excel')
-def descargar_hoja_trabajo_excel(m_id, id_equipo=None):
+def descargar_hoja_trabajo_pdf(m_id, id_equipo=None):
     try:
         conn = obtener_conexion()
         if not conn:
-            return "Error de conexión", 500
+            return "Error de conexión a base de datos", 500
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
         cur.execute("SELECT * FROM historial_intervenciones WHERE id = %s", (m_id,))
         m = cur.fetchone()
+        
         if not m:
             cur.close()
             conn.close()
-            return "Mantenimiento no encontrado", 404
+            return "Intervención no encontrada", 404
             
         cur.execute("SELECT * FROM equipos WHERE id = %s", (m['equipo_id'],))
-        eq_data = cur.fetchone()
+        eq = cur.fetchone()
         cur.close()
         conn.close()
-        
-        if not eq_data:
-            return "Equipo no encontrado", 404
-            
-        ruta_plantilla_ht = obtener_ruta_plantilla("plantilla_trabajo.xlsx")
-        wb = openpyxl.load_workbook(ruta_plantilla_ht)
-        ws = wb.active
-        
-        # Escribir campos de cabecera y equipo
-        escribir_en_celda_segura(ws, 'F11', eq_data.get('area', ''))
-        escribir_en_celda_segura(ws, 'AA11', eq_data.get('servicio', ''))
-        escribir_en_celda_segura(ws, 'S21', m.get('tipo_ht', '1'))
-        escribir_en_celda_segura(ws, 'J15', eq_data.get('nombre', ''))
-        escribir_en_celda_segura(ws, 'AE15', str(eq_data.get('id', '')))
-        escribir_en_celda_segura(ws, 'E17', eq_data.get('procedencia', ''))
-        escribir_en_celda_segura(ws, 'AB17', str(eq_data.get('anio_fab', '')))
-        escribir_en_celda_segura(ws, 'E19', eq_data.get('marca', ''))
-        escribir_en_celda_segura(ws, 'AB19', eq_data.get('fabricante', ''))
-        escribir_en_celda_segura(ws, 'F21', eq_data.get('modelo', ''))
-        escribir_en_celda_segura(ws, 'AG21', eq_data.get('numero_serie', ''))
-        
-        # Fechas
-        f_rec_raw = str(m.get('fecha') or date.today())
-        f_ent_raw = str(m.get('fecha_entrega') or m.get('fecha') or date.today())
-        h_ejec = str(m.get('hora_entrega') or datetime.now().strftime('%H:%M'))
-        try:
-            f_rec_dt = datetime.strptime(f_rec_raw, '%Y-%m-%d').date()
-            f_rec_str = f_rec_dt.strftime('%d / %m / %Y')
-        except:
-            f_rec_str = f_rec_raw
-            
-        try:
-            f_ent_dt = datetime.strptime(f_ent_raw, '%Y-%m-%d').date()
-            f_ent_str = f_ent_dt.strftime('%d / %m / %Y')
-        except:
-            f_ent_str = f_ent_raw
-            
-        escribir_en_celda_segura(ws, 'M23', f_rec_str)
-        escribir_en_celda_segura(ws, 'I62', f"{f_ent_str}  {h_ejec}")
-        
-        # Nombre del técnico firmante responsable
-        escribir_en_celda_segura(ws, 'J64', m.get('realizado_por') or 'Técnico GAMLP')
-        
-        # Condición
-        cond = m.get('condicion')
-        if cond == "Óptimo": marcar_x(ws, 'P26')
-        elif cond == "Aceptable": marcar_x(ws, 'W26')
-        elif cond == "Crítica": marcar_x(ws, 'AC26')
-        elif cond == "Inoperante": marcar_x(ws, 'AJ26')
-        elif cond == "F/Servicio": marcar_x(ws, 'AP26')
 
-        # Estado Físico
-        est = m.get('estado_equipo')
-        if est == "Óptimo": marcar_x(ws, 'O29')
-        elif est == "Bueno": marcar_x(ws, 'U29')
-        elif est == "Regular": marcar_x(ws, 'AB29')
-        elif est == "Malo": marcar_x(ws, 'AH29')
-        elif est == "Obsoleto": marcar_x(ws, 'AO29')
+        if not eq:
+            return "Equipo asociado no encontrado", 404
 
-        # Tipo Mantenimiento
-        tipo = m.get('tipo')
-        if tipo == "Preventivo": marcar_x(ws, 'Q43')
-        else: marcar_x(ws, 'AL43')
+        html_ht = """
+        <!DOCTYPE html>
+        <html lang="es">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Hoja de Trabajo - OT-{{ "%05d"|format(m['id']) }} - {{ eq['id'] }}</title>
+            <style>
+                @page {
+                    size: letter portrait;
+                    margin: 8mm 10mm;
+                }
+                * { box-sizing: border-box; }
+                body {
+                    font-family: 'Segoe UI', Arial, sans-serif;
+                    color: #0F172A;
+                    background: #F1F5F9;
+                    margin: 0;
+                    padding: 15px;
+                    font-size: 11.5px;
+                }
+                .sheet {
+                    background: #FFFFFF;
+                    max-width: 820px;
+                    margin: 0 auto;
+                    padding: 20px 25px;
+                    border-radius: 8px;
+                    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+                }
+                .toolbar {
+                    max-width: 820px;
+                    margin: 0 auto 12px auto;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                }
+                .btn-print {
+                    background: #2563EB;
+                    color: white;
+                    border: none;
+                    padding: 9px 18px;
+                    border-radius: 6px;
+                    font-weight: bold;
+                    font-size: 13px;
+                    cursor: pointer;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;
+                }
+                .btn-print:hover { background: #1D4ED8; }
+                .btn-back {
+                    background: #64748B;
+                    color: white;
+                    padding: 9px 15px;
+                    border-radius: 6px;
+                    text-decoration: none;
+                    font-size: 13px;
+                    font-weight: 600;
+                }
+                .header-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin-bottom: 10px;
+                    border-bottom: 2px solid #0F172A;
+                    padding-bottom: 6px;
+                }
+                .header-title {
+                    text-align: center;
+                }
+                .header-title h1 {
+                    font-size: 14px;
+                    margin: 0;
+                    color: #0F172A;
+                    text-transform: uppercase;
+                }
+                .header-title h2 {
+                    font-size: 11px;
+                    margin: 2px 0 0 0;
+                    color: #475569;
+                }
+                .header-title h3 {
+                    font-size: 12.5px;
+                    margin: 4px 0 0 0;
+                    color: #1E3A8A;
+                    font-weight: bold;
+                }
+                .section-title {
+                    background: #F8FAFC;
+                    border-left: 4px solid #2563EB;
+                    padding: 3px 8px;
+                    font-weight: bold;
+                    font-size: 11px;
+                    color: #0F172A;
+                    margin: 10px 0 5px 0;
+                    text-transform: uppercase;
+                }
+                .grid-2 {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 4px 14px;
+                }
+                .grid-3 {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr 1fr;
+                    gap: 4px 10px;
+                }
+                .field-row {
+                    display: flex;
+                    justify-content: space-between;
+                    border-bottom: 1px dashed #E2E8F0;
+                    padding: 2px 0;
+                }
+                .field-label {
+                    color: #64748B;
+                    font-weight: 600;
+                    font-size: 10.5px;
+                }
+                .field-val {
+                    color: #0F172A;
+                    font-weight: 600;
+                    text-align: right;
+                    font-size: 11px;
+                }
+                .box-text {
+                    border: 1px solid #CBD5E1;
+                    background: #F8FAFC;
+                    padding: 6px 10px;
+                    border-radius: 4px;
+                    min-height: 35px;
+                    font-size: 11px;
+                    color: #1E293B;
+                    line-height: 1.4;
+                    margin-bottom: 5px;
+                }
+                .signatures {
+                    margin-top: 30px;
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 35px;
+                    text-align: center;
+                }
+                .sig-line {
+                    border-top: 1px solid #0F172A;
+                    margin-top: 40px;
+                    padding-top: 4px;
+                    font-size: 10.5px;
+                    color: #334155;
+                    font-weight: 600;
+                }
+                @media print {
+                    body {
+                        background: white !important;
+                        padding: 0 !important;
+                    }
+                    .sheet {
+                        box-shadow: none !important;
+                        padding: 0 !important;
+                        max-width: 100% !important;
+                    }
+                    .toolbar {
+                        display: none !important;
+                    }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="toolbar no-print">
+                <a href="/equipo/{{ eq['id'] }}" class="btn-back">⬅ Volver al Equipo</a>
+                <button onclick="window.print()" class="btn-print">🖨️ Imprimir / Guardar en PDF</button>
+            </div>
 
-        # Textos largos
-        escribir_texto_largo(ws, 'B33', m.get('deficiencia', ''))
-        escribir_texto_largo(ws, 'B47', m.get('trabajo', ''))
-        escribir_texto_largo(ws, 'B53', m.get('observaciones', ''))
-        
-        out_io = io.BytesIO()
-        wb.save(out_io)
-        out_io.seek(0)
-        
-        id_sanitizado = str(eq_data['id']).replace("/", "_").replace("\\", "_")
-        return send_file(
-            out_io,
-            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            as_attachment=True,
-            download_name=f"HT_{id_sanitizado}_OT{m_id}.xlsx"
-        )
+            <div class="sheet">
+                <table class="header-table">
+                    <tr>
+                        <td style="width: 70px; vertical-align: middle;">
+                            <div style="font-size: 22px; font-weight: bold; color: #1E3A8A; text-align: center;">🛠️</div>
+                        </td>
+                        <td class="header-title">
+                            <h1>Gobierno Autónomo Municipal de La Paz</h1>
+                            <h2>Secretaría Municipal de Salud y Deportes — Dirección de Salud</h2>
+                            <h3>ORDEN Y HOJA DE TRABAJO DE MANTENIMIENTO TÉCNICO</h3>
+                        </td>
+                        <td style="width: 100px; text-align: right; vertical-align: middle;">
+                            <div style="font-size: 9.5px; color: #64748B; line-height: 1.2;">
+                                <strong>ORDEN N°:</strong><br>
+                                <span style="font-size: 12.5px; color: #DC2626; font-weight: bold;">OT-{{ "%05d"|format(m['id']) }}</span>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+
+                <!-- SECCIÓN 1: DATOS GENERALES Y EQUIPO -->
+                <div class="section-title">1. Identificación del Equipo y Ubicación</div>
+                <div class="grid-2">
+                    <div class="field-row"><span class="field-label">Código Activo Fijo:</span><span class="field-val">{{ eq['id'] }}</span></div>
+                    <div class="field-row"><span class="field-label">Nombre del Equipo:</span><span class="field-val">{{ eq['nombre'] }}</span></div>
+                    <div class="field-row"><span class="field-label">Marca / Modelo:</span><span class="field-val">{{ eq['marca'] or '-' }} / {{ eq['modelo'] or '-' }}</span></div>
+                    <div class="field-row"><span class="field-label">Número de Serie:</span><span class="field-val">{{ eq['numero_serie'] or '-' }}</span></div>
+                    <div class="field-row"><span class="field-label">Red de Salud:</span><span class="field-val">{{ eq['red_salud_nombre'] or '-' }}</span></div>
+                    <div class="field-row"><span class="field-label">Centro de Salud:</span><span class="field-val">{{ eq['centro_salud_nombre'] or '-' }}</span></div>
+                    <div class="field-row"><span class="field-label">Área / Servicio:</span><span class="field-val">{{ eq['servicio'] or '-' }} - {{ eq['area'] or '-' }}</span></div>
+                    <div class="field-row"><span class="field-label">Estado Posterior:</span><span class="field-val"><strong>{{ m['estado_equipo'] or eq['estado'] or 'Operativo' }}</strong></span></div>
+                </div>
+
+                <!-- SECCIÓN 2: DATOS DE LA INTERVENCIÓN -->
+                <div class="section-title">2. Datos de la Intervención Técnica</div>
+                <div class="grid-3">
+                    <div class="field-row"><span class="field-label">Tipo Mantenimiento:</span><span class="field-val"><strong>{{ m['tipo'] }}</strong></span></div>
+                    <div class="field-row"><span class="field-label">Fecha Recepción:</span><span class="field-val">{{ m['fecha'] }}</span></div>
+                    <div class="field-row"><span class="field-label">Fecha Entrega:</span><span class="field-val">{{ m['fecha_entrega'] or m['fecha'] }}</span></div>
+                    <div class="field-row"><span class="field-label">Técnico Ejecutor:</span><span class="field-val">{{ m['realizado_por'] or 'Técnico GAMLP' }}</span></div>
+                    <div class="field-row"><span class="field-label">Tiempo Invertido:</span><span class="field-val">{{ m['tiempo_reparacion'] or 0 }} hrs</span></div>
+                    <div class="field-row"><span class="field-label">Condición Equipo:</span><span class="field-val">{{ m['condicion'] or 'Operativo' }}</span></div>
+                </div>
+
+                <!-- SECCIÓN 3: DETALLE DEL TRABAJO -->
+                <div class="section-title">3. Deficiencia Reportada / Diagnóstico</div>
+                <div class="box-text">
+                    {{ m['deficiencia'] or m['detalle'] or 'Revisión y protocolo preventivo periódico.' }}
+                </div>
+
+                <div class="section-title">4. Trabajo Técnico Efectuado</div>
+                <div class="box-text">
+                    {{ m['trabajo'] or m['detalle'] or 'Mantenimiento preventivo, limpieza, calibración y pruebas de funcionamiento realizadas de acuerdo a norma.' }}
+                </div>
+
+                {% if m['repuesto_usado'] or m['repuesto_nombre'] %}
+                <div class="section-title">5. Repuestos y Materiales Utilizados</div>
+                <div class="box-text">
+                    <strong>Repuesto / Insumo:</strong> {{ m['repuesto_nombre'] or 'Repuesto genérico' }} | <strong>Cantidad:</strong> {{ m['repuesto_cantidad'] or 1 }} unidad(es)
+                </div>
+                {% endif %}
+
+                {% if m['observaciones'] %}
+                <div class="section-title">6. Observaciones y Recomendaciones</div>
+                <div class="box-text">
+                    {{ m['observaciones'] }}
+                </div>
+                {% endif %}
+
+                <!-- FIRMAS -->
+                <div class="signatures">
+                    <div>
+                        <div class="sig-line">Técnico Responsable del Servicio<br>{{ m['realizado_por'] or 'Biomédica GAMLP' }}</div>
+                    </div>
+                    <div>
+                        <div class="sig-line">Recepción Conforme<br>Jefatura de Servicio / Enfermería</div>
+                    </div>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        return render_template_string(html_ht, m=m, eq=eq)
     except Exception as e:
-        return f"Error generando Hoja de Trabajo Excel: {e}", 500
+        return f"Error generando Hoja de Trabajo PDF: {e}", 500
 
 @app_web.route('/equipo/<id_equipo>/mantenimiento', methods=['GET', 'POST'])
 def registrar_mantenimiento(id_equipo):
