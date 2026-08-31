@@ -23,7 +23,7 @@ app_web = Flask(__name__)
 app = app_web  # Alias para servidores WSGI de producción (Gunicorn / Render / Vercel)
 app_gui = None  # Referencia global de la GUI de Tkinter para sincronización
 
-# Pantalla de éxito responsiva con enlaces de descarga
+# Pantalla de éxito responsiva con enlace de descarga Excel
 HTML_EXITO = """
 <!DOCTYPE html><html lang="es"><head><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Éxito</title>
 <style>
@@ -33,8 +33,6 @@ HTML_EXITO = """
     .btn { display: block; color: white; text-decoration: none; padding: 14px 25px; border-radius: 10px; font-weight: bold; margin-top: 12px; font-size: 15px; text-align: center; }
     .btn-download-xlsx { background: #2563EB; }
     .btn-download-xlsx:active { background: #1D4ED8; }
-    .btn-download-pdf { background: #FF9500; }
-    .btn-download-pdf:active { background: #e08200; }
     .btn-back { background: #8E8E93; }
     .btn-back:active { background: #7a7a7d; }
 </style>
@@ -56,9 +54,6 @@ HTML_EXITO = """
         
         {% if xlsx_file %}
         <a id="btn-auto-dl" href="/descargar/{{ xlsx_file }}" class="btn btn-download-xlsx">📥 Descargar Hoja de Trabajo (.xlsx)</a>
-        {% endif %}
-        {% if pdf_file %}
-        <a href="/descargar/{{ pdf_file }}" class="btn btn-download-pdf">⬇ Descargar Hoja de Trabajo (PDF)</a>
         {% endif %}
         <a href="/equipo/{{ id_equipo }}" class="btn btn-back">Volver al Equipo</a>
     </div>
