@@ -27,22 +27,36 @@ app_gui = None  # Referencia global de la GUI de Tkinter para sincronización
 HTML_EXITO = """
 <!DOCTYPE html><html lang="es"><head><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Éxito</title>
 <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #F2F2F7; margin: 0; padding: 20px; display: flex; align-items: center; justify-content: center; height: 100vh; text-align: center; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #F2F2F7; margin: 0; padding: 20px; display: flex; align-items: center; justify-content: center; min-height: 100vh; text-align: center; }
     .tarjeta { background: white; padding: 30px; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.06); max-width: 450px; width: 100%; box-sizing: border-box; }
     .icono { font-size: 50px; color: #34C759; margin-bottom: 15px; }
-    .btn { display: block; background: #007AFF; color: white; text-decoration: none; padding: 14px 25px; border-radius: 10px; font-weight: bold; margin-top: 12px; font-size: 15px; text-align: center; }
-    .btn-download-xlsx { background: #34C759; }
-    .btn-download-xlsx:active { background: #2eaf4e; }
+    .btn { display: block; color: white; text-decoration: none; padding: 14px 25px; border-radius: 10px; font-weight: bold; margin-top: 12px; font-size: 15px; text-align: center; }
+    .btn-download-xlsx { background: #2563EB; }
+    .btn-download-xlsx:active { background: #1D4ED8; }
     .btn-download-pdf { background: #FF9500; }
     .btn-download-pdf:active { background: #e08200; }
     .btn-back { background: #8E8E93; }
     .btn-back:active { background: #7a7a7d; }
-</style></head><body>
+</style>
+<script>
+    window.addEventListener('DOMContentLoaded', () => {
+        var dlBtn = document.getElementById('btn-auto-dl');
+        if (dlBtn) {
+            setTimeout(() => {
+                dlBtn.click();
+            }, 600);
+        }
+    });
+</script>
+</head><body>
     <div class="tarjeta">
         <div class="icono">✓</div>
-        <h2 style="margin-top:0;">¡Registro Guardado!</h2>
-        <p style="color: #666; font-size: 14px; margin-bottom: 25px;">El mantenimiento se ha registrado correctamente en la base de datos y se sincronizó con el software del hospital.</p>
+        <h2 style="margin-top:0;">¡Mantenimiento Guardado!</h2>
+        <p style="color: #666; font-size: 14px; margin-bottom: 25px;">La intervención se registró correctamente y la Hoja de Trabajo se generó en la planilla oficial de Excel.</p>
         
+        {% if xlsx_file %}
+        <a id="btn-auto-dl" href="/descargar/{{ xlsx_file }}" class="btn btn-download-xlsx">📥 Descargar Hoja de Trabajo (.xlsx)</a>
+        {% endif %}
         {% if pdf_file %}
         <a href="/descargar/{{ pdf_file }}" class="btn btn-download-pdf">⬇ Descargar Hoja de Trabajo (PDF)</a>
         {% endif %}
@@ -856,6 +870,7 @@ def ver_equipo(id_equipo):
                 
                 <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;">
                     <a href="/equipo/{{ eq['id'] }}/mantenimiento" class="btn-action" style="margin:0;">🛠️ Registrar Mantenimiento</a>
+                    <a href="/equipo/{{ eq['id'] }}/descargar_ficha" class="btn-action" style="background: #2563EB; margin:0;">📥 Descargar Ficha Técnica (.xlsx)</a>
                     <a href="/equipo/{{ eq['id'] }}/descargar_qr" class="btn-action" style="background: #34C759; margin:0;">📥 Descargar Código QR (Etiqueta)</a>
                 </div>
                 

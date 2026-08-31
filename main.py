@@ -3269,6 +3269,10 @@ class SistemaMantenimiento(ctk.CTk):
                 wb.save(ruta_salida)
                 ruta_ht_excel_act.set(os.path.abspath(ruta_salida))
                 f_acciones.pack(fill="x", pady=10, padx=20)
+                try:
+                    os.startfile(os.path.abspath(ruta_salida))
+                except:
+                    pass
                 
             except Exception as e:
                 messagebox.showerror("Error Excel", f"Fallo al generar hoja:\n{e}")
