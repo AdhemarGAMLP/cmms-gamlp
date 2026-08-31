@@ -654,14 +654,16 @@ def descargar_archivo(filename):
     # Fallback
     return send_from_directory(CARPETAS["areas"], filename, as_attachment=attachment_flag)
 
-@app_web.route('/equipo/<id_equipo>/descargar_qr')
+@app_web.route('/equipo/<path:id_equipo>/descargar_qr')
 def descargar_qr_web(id_equipo):
+    import urllib.parse
+    id_equipo = urllib.parse.unquote(str(id_equipo)).strip()
     try:
         conn = obtener_conexion()
         if not conn:
             return "Error de conexión", 500
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        cur.execute("SELECT * FROM equipos WHERE id = %s", (id_equipo,))
+        cur.execute("SELECT * FROM equipos WHERE id = %s OR id = %s OR id = %s", (id_equipo, id_equipo.replace('S/N ', 'SN-'), id_equipo.replace('SN-', 'S/N ')))
         eq = cur.fetchone()
         cur.close()
         conn.close()
@@ -675,7 +677,7 @@ def descargar_qr_web(id_equipo):
         from flask import send_file
         
         url_base = os.environ.get("RENDER_EXTERNAL_URL") or CONFIG.get("url_base_web", "https://cmms-gamlp.onrender.com")
-        enl = f"{url_base}/equipo/{id_equipo}"
+        enl = f"{url_base}/equipo/{urllib.parse.quote(str(eq['id']))}"
         
         qr_base = qrcode.QRCode(version=1, box_size=12, border=1)
         qr_base.add_data(enl)
@@ -729,15 +731,17 @@ def descargar_qr_web(id_equipo):
     except Exception as e:
         return f"Error al generar QR: {e}", 500
 
-@app_web.route('/equipo/<id_equipo>')
+@app_web.route('/equipo/<path:id_equipo>')
 def ver_equipo(id_equipo):
+    import urllib.parse
+    id_equipo = urllib.parse.unquote(str(id_equipo)).strip()
     try:
         conn = obtener_conexion()
         if not conn:
             return "<h1>❌ Error de conexión a Base de Datos</h1>", 500
             
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        cur.execute("SELECT * FROM equipos WHERE id = %s", (id_equipo,))
+        cur.execute("SELECT * FROM equipos WHERE id = %s OR id = %s OR id = %s", (id_equipo, id_equipo.replace('S/N ', 'SN-'), id_equipo.replace('SN-', 'S/N ')))
         eq = cur.fetchone()
         
         if not eq:
@@ -745,7 +749,7 @@ def ver_equipo(id_equipo):
             conn.close()
             return "<h1>❌ Equipo no encontrado</h1>", 404
             
-        cur.execute("SELECT * FROM historial_intervenciones WHERE equipo_id = %s ORDER BY fecha DESC", (id_equipo,))
+        cur.execute("SELECT * FROM historial_intervenciones WHERE equipo_id = %s OR equipo_id = %s ORDER BY fecha DESC", (eq['id'], id_equipo))
         historial = cur.fetchall()
 
         cat_str = f"{eq['nombre']} - {eq.get('marca') or ''} - {eq.get('modelo') or ''}"
@@ -979,15 +983,17 @@ def ver_equipo(id_equipo):
     except Exception as e:
         return f"Error en el servidor web: {e}"
 
-@app_web.route('/equipo/<id_equipo>/descargar_ficha')
-@app_web.route('/equipo/<id_equipo>/ficha_excel')
+@app_web.route('/equipo/<path:id_equipo>/descargar_ficha')
+@app_web.route('/equipo/<path:id_equipo>/ficha_excel')
 def descargar_ficha_tecnica_excel(id_equipo):
+    import urllib.parse
+    id_equipo = urllib.parse.unquote(str(id_equipo)).strip()
     try:
         conn = obtener_conexion()
         if not conn:
             return "Error de conexión a base de datos", 500
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        cur.execute("SELECT * FROM equipos WHERE id = %s", (id_equipo,))
+        cur.execute("SELECT * FROM equipos WHERE id = %s OR id = %s OR id = %s", (id_equipo, id_equipo.replace('S/N ', 'SN-'), id_equipo.replace('SN-', 'S/N ')))
         eq_act = cur.fetchone()
         
         cur.execute("SELECT * FROM repuestos")
@@ -1166,7 +1172,7 @@ def descargar_ficha_tecnica_excel(id_equipo):
     except Exception as e:
         return f"Error generando Ficha Técnica Excel: {e}", 500
 
-@app_web.route('/equipo/<id_equipo>/mantenimiento/<int:m_id>/descargar_excel')
+@app_web.route('/equipo/<path:id_equipo>/mantenimiento/<int:m_id>/descargar_excel')
 @app_web.route('/mantenimiento/<int:m_id>/descargar_excel')
 def descargar_hoja_trabajo_excel(m_id, id_equipo=None):
     try:
@@ -1255,11 +1261,12 @@ def descargar_hoja_trabajo_excel(m_id, id_equipo=None):
         escribir_texto_largo(ws, 'B47', m.get('trabajo', ''))
         escribir_texto_largo(ws, 'B53', m.get('observaciones', ''))
         
+        # Guardar en memoria y enviar al cliente
         out_io = io.BytesIO()
         wb.save(out_io)
         out_io.seek(0)
         
-        id_sanitizado = str(eq_data['id']).replace("/", "_").replace("\\", "_")
+        id_sanitizado = "".join([c for c in str(eq_data['id']) if c.isalnum() or c in ('-', '_')])
         return send_file(
             out_io,
             mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -1269,8 +1276,10 @@ def descargar_hoja_trabajo_excel(m_id, id_equipo=None):
     except Exception as e:
         return f"Error generando Hoja de Trabajo Excel: {e}", 500
 
-@app_web.route('/equipo/<id_equipo>/mantenimiento', methods=['GET', 'POST'])
+@app_web.route('/equipo/<path:id_equipo>/mantenimiento', methods=['GET', 'POST'])
 def registrar_mantenimiento(id_equipo):
+    import urllib.parse
+    id_equipo = urllib.parse.unquote(str(id_equipo)).strip()
     error_msg = None
     try:
         conn = obtener_conexion()
@@ -1278,7 +1287,7 @@ def registrar_mantenimiento(id_equipo):
             return "<h1>❌ Error de conexión a Base de Datos</h1>", 500
             
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        cur.execute("SELECT * FROM equipos WHERE id = %s", (id_equipo,))
+        cur.execute("SELECT * FROM equipos WHERE id = %s OR id = %s OR id = %s", (id_equipo, id_equipo.replace('S/N ', 'SN-'), id_equipo.replace('SN-', 'S/N ')))
         eq = cur.fetchone()
         
         if not eq:
