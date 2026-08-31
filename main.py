@@ -19,7 +19,6 @@ import socket
 import qrcode
 import json
 from PIL import Image
-import fitz  # PyMuPDF
 import pythoncom
 import win32com.client
 from tkcalendar import DateEntry
@@ -582,78 +581,13 @@ class SistemaMantenimiento(ctk.CTk):
             else:
                 self.lbl_modo_offline.pack_forget()
 
-    def cargar_datos_memoria(self):
-        self.datos = {"catalogo": [], "repuestos": [], "equipos": [], "protocolos": [], "areas": []}
+    def _procesar_calendario_y_alertas(self):
         self.eventos_calendario = {}
         self.hoy = datetime.now().date()
         self.hora_actual = datetime.now().hour
         self.alertas_activas = []
-
-        conn = obtener_conexion()
-        if not conn: 
-            # Fallback a Caché Local de Lectura
-            cache_datos = cargar_cache_local_datos()
-            if cache_datos:
-                self.datos = cache_datos
-                self.modo_offline = True
-                print("[INFO] Modo Offline Activo: Datos cargados desde la caché local.")
-            else:
-                self.modo_offline = True
-                return
-        else:
-            self.modo_offline = False
-            # Sincronizar cola de intervenciones guardadas offline
-            try:
-                sinc, _ = sincronizar_mantenimientos_offline_cola()
-                if sinc > 0:
-                    print(f"[OK] Sincronizados {sinc} mantenimientos offline con PostgreSQL.")
-            except Exception as se:
-                print(f"[WARN] Error sincronizando cola: {se}")
-
-            cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-
-            cur.execute("SELECT * FROM catalogo ORDER BY nombre ASC")
-            self.datos["catalogo"] = [dict(r) for r in cur.fetchall()]
-            
-            cur.execute("SELECT * FROM repuestos")
-            self.datos["repuestos"] = [dict(r) for r in cur.fetchall()]
-
-            cur.execute("SELECT * FROM areas ORDER BY piso DESC, nombre ASC")
-            self.datos["areas"] = [dict(r) for r in cur.fetchall()]
-
-            try:
-                cur.execute("SELECT * FROM protocolos ORDER BY fecha DESC, turno ASC")
-                self.datos["protocolos"] = [dict(r) for r in cur.fetchall()]
-            except:
-                conn.rollback()
-
-            try:
-                cur.execute("SELECT * FROM historial_intervenciones ORDER BY COALESCE(fecha_entrega, fecha) DESC, COALESCE(hora_entrega, '00:00') DESC, id DESC")
-                todas_inter = [dict(h) for h in cur.fetchall()]
-                hist_por_equipo = {}
-                for h in todas_inter:
-                    hist_por_equipo.setdefault(h['equipo_id'], []).append(h)
-
-                cur.execute("SELECT * FROM equipos")
-                eqs_db = [dict(r) for r in cur.fetchall()]
-
-                for eq in eqs_db:
-                    eq['historial_intervenciones'] = hist_por_equipo.get(eq['id'], [])
-                    self.datos["equipos"].append(eq)
-            except Exception as e:
-                print("[WARN] Error cargando equipos/historial:", e)
-
-            cur.close()
-            conn.close()
-
-            # Guardar copia fresca en caché local
-            guardar_cache_local_datos(self.datos)
-
         try:
             for eq in self.datos.get("equipos", []):
-
-
-                
                 # Alertas de vencimiento de garantía (1 mes antes)
                 f_venc = eq.get("fecha_vencimiento_garantia")
                 dias_gar = -9999
@@ -727,7 +661,7 @@ class SistemaMantenimiento(ctk.CTk):
                     if msg not in self.alertas_ignoradas:
                         self.alertas_activas.append(msg)
 
-                # 2. Generar y evaluar todos los slots para eventos_calendario (años 2026 y 2027)
+                # 2. Generar y evaluar slots para eventos_calendario (años 2026 y 2027)
                 if eq.get("estado") != "Baja":
                     f_iter = f_reg
                     while True:
@@ -735,7 +669,6 @@ class SistemaMantenimiento(ctk.CTk):
                         if f_iter.year > 2027:
                             break
                         
-                        # Si está en período de garantía, no se muestran mantenimientos internos en el calendario
                         if f_venc_g_date and f_iter <= f_venc_g_date:
                             continue
                     
@@ -778,47 +711,99 @@ class SistemaMantenimiento(ctk.CTk):
                             if f_real and f_real <= lim_date:
                                 est_slot = "Realizado a Tiempo"
                             else:
-                                est_slot = "Realizado Fuera de Fecha"
-                        elif eq.get("estado") == "Baja":
-                            est_slot = "Dado de Baja"
+                                est_slot = "Realizado Fuera de Tiempo"
                         else:
                             lim_date = date(f_iter.year, f_iter.month, 1) + relativedelta(months=+1, day=5)
                             if self.hoy > lim_date:
                                 est_slot = "Vencido"
-                            elif f_iter.year == self.hoy.year and f_iter.month == self.hoy.month:
-                                est_slot = "Pendiente Este Mes"
+                            elif (f_iter - self.hoy).days <= 30:
+                                est_slot = "Por Vencer"
                             else:
-                                est_slot = "Futuro"
-                            
-                        self.eventos_calendario.setdefault(f_iter, []).append({'eq': eq['nombre'], 'estado': est_slot, 'id': eq['id'], 'f_prox': f_iter})
+                                est_slot = "Programado"
+
+                        clv = f"{f_iter.year}-{f_iter.month:02d}"
+                        self.eventos_calendario.setdefault(clv, []).append({
+                            "equipo_id": eq["id"],
+                            "equipo_nombre": eq["nombre"],
+                            "area": eq.get("area", "Sin Área"),
+                            "fecha": f_iter,
+                            "tipo": "Preventivo",
+                            "estado": est_slot
+                        })
         except Exception as e:
-            print("Error parsing equipos/alertas:", e)
-
-        # Alertas de protocolos de Gases y Resonador desactivadas a solicitud
-        # prot_hoy = [p for p in self.datos["protocolos"] if p['fecha'] == self.hoy]
-        # tipos = ['Gases Medicinales', 'Resonador Magnético']
-        # turnos_req = []
-        # if self.hora_actual >= 8: turnos_req.append('Mañana')
-        # if self.hora_actual >= 14: turnos_req.append('Tarde')
-        # if self.hora_actual >= 23: turnos_req.append('Noche')
-        # for t_req in turnos_req:
-        #     for tipo in tipos:
-        #         if not any(p['tipo_protocolo'] == tipo and p['turno'] == t_req for p in prot_hoy):
-        #             msg = f"🚨 FALTA PROTOCOLO: {tipo} (Turno: {t_req})"
-        #             if msg not in self.alertas_ignoradas:
-        #                 self.alertas_activas.append(msg)
-
-        for area in self.datos["areas"]:
-            area_name = area.get("nombre", "General")
-            # Sanitizar el nombre del área para usarlo como carpeta de forma segura
-            area_folder = "".join([c for c in area_name if c.isalnum() or c==' ']).strip()
-            if area_folder:
-                os.makedirs(os.path.join(CARPETAS["areas"], area_folder, "equipos"), exist_ok=True)
-                os.makedirs(os.path.join(CARPETAS["areas"], area_folder, "mantenimientos"), exist_ok=True)
+            print("[WARN] Error procesando alertas/calendario:", e)
 
         # Actualizar botón de alertas en el sidebar si ya fue creado
         if hasattr(self, 'btn_alertas'):
             self.actualizar_boton_alertas()
+
+    def cargar_datos_memoria(self, usar_cache_primero=True):
+        if usar_cache_primero:
+            cache_datos = cargar_cache_local_datos()
+            if cache_datos and cache_datos.get("equipos"):
+                self.datos = cache_datos
+                self.modo_offline = False
+                self._procesar_calendario_y_alertas()
+                return
+
+        self.datos = {"catalogo": [], "repuestos": [], "equipos": [], "protocolos": [], "areas": []}
+        conn = obtener_conexion()
+        if not conn: 
+            cache_datos = cargar_cache_local_datos()
+            if cache_datos:
+                self.datos = cache_datos
+                self.modo_offline = True
+                print("[INFO] Modo Offline Activo: Datos cargados desde la caché local.")
+            else:
+                self.modo_offline = True
+                return
+        else:
+            self.modo_offline = False
+            try:
+                sinc, _ = sincronizar_mantenimientos_offline_cola()
+                if sinc > 0:
+                    print(f"[OK] Sincronizados {sinc} mantenimientos offline con PostgreSQL.")
+            except Exception as se:
+                print(f"[WARN] Error sincronizando cola: {se}")
+
+            cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+            cur.execute("SELECT * FROM catalogo ORDER BY nombre ASC")
+            self.datos["catalogo"] = [dict(r) for r in cur.fetchall()]
+            
+            cur.execute("SELECT * FROM repuestos")
+            self.datos["repuestos"] = [dict(r) for r in cur.fetchall()]
+
+            cur.execute("SELECT * FROM areas ORDER BY piso DESC, nombre ASC")
+            self.datos["areas"] = [dict(r) for r in cur.fetchall()]
+
+            try:
+                cur.execute("SELECT * FROM protocolos ORDER BY fecha DESC, turno ASC")
+                self.datos["protocolos"] = [dict(r) for r in cur.fetchall()]
+            except:
+                conn.rollback()
+
+            try:
+                cur.execute("SELECT * FROM historial_intervenciones ORDER BY COALESCE(fecha_entrega, fecha) DESC, COALESCE(hora_entrega, '00:00') DESC, id DESC")
+                todas_inter = [dict(h) for h in cur.fetchall()]
+                hist_por_equipo = {}
+                for h in todas_inter:
+                    hist_por_equipo.setdefault(h['equipo_id'], []).append(h)
+
+                cur.execute("SELECT * FROM equipos")
+                eqs_db = [dict(r) for r in cur.fetchall()]
+
+                for eq in eqs_db:
+                    eq['historial_intervenciones'] = hist_por_equipo.get(eq['id'], [])
+                    self.datos["equipos"].append(eq)
+            except Exception as e:
+                print("[WARN] Error cargando equipos/historial:", e)
+
+            cur.close()
+            conn.close()
+
+            guardar_cache_local_datos(self.datos)
+
+        self._procesar_calendario_y_alertas()
 
     def crear_interfaz_base(self):
         self.sidebar = ctk.CTkFrame(self, width=240, corner_radius=0, fg_color=C_CARD, border_width=1, border_color=C_BORDER)

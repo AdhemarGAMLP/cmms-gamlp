@@ -569,10 +569,18 @@ def sembrar_datos_sedes_gamlp(cur, conn):
     conn.commit()
 
 
-def obtener_jerarquia_sedes_db():
-    """Obtiene la jerarquía completa de Departamentos, Municipios, Redes y Centros de Salud."""
+_CACHE_JERARQUIA_SEDES = None
+
+def obtener_jerarquia_sedes_db(forzar_recarga=False):
+    """Obtiene la jerarquía completa de Departamentos, Municipios, Redes y Centros de Salud (con caché en memoria ultrarrápida)."""
+    global _CACHE_JERARQUIA_SEDES
+    if _CACHE_JERARQUIA_SEDES and not forzar_recarga:
+        return _CACHE_JERARQUIA_SEDES
+
     conn = obtener_conexion()
     if not conn:
+        if _CACHE_JERARQUIA_SEDES:
+            return _CACHE_JERARQUIA_SEDES
         return {
             "departamentos": [{"id": 1, "nombre": "La Paz", "codigo": "LPZ"}],
             "municipios": [{"id": 1, "departamento_id": 1, "nombre": "GAMLP", "codigo": "GAMLP"}],
@@ -612,16 +620,19 @@ def obtener_jerarquia_sedes_db():
         
         cur.close()
         conn.close()
-        return {
+        _CACHE_JERARQUIA_SEDES = {
             "departamentos": deptos,
             "municipios": muns,
             "redes": redes,
             "centros": centros
         }
+        return _CACHE_JERARQUIA_SEDES
     except Exception as e:
         print("[WARN] Error obteniendo jerarquía de sedes:", e)
         if conn:
             conn.close()
+        if _CACHE_JERARQUIA_SEDES:
+            return _CACHE_JERARQUIA_SEDES
         return {
             "departamentos": [{"id": 1, "nombre": "La Paz"}],
             "municipios": [{"id": 1, "nombre": "GAMLP"}],
