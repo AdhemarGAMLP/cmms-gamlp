@@ -76,9 +76,10 @@ def generar_excel_ht_web(eq_data, form_data, realizado_por, sello_firma_path=Non
         ws = wb.active
         
         # Escribir campos de cabecera y equipo
+        escribir_en_celda_segura(ws, 'P5', eq_data.get('red_salud_nombre', ''))
+        escribir_en_celda_segura(ws, 'P6', eq_data.get('centro_salud_nombre', ''))
         escribir_en_celda_segura(ws, 'F11', eq_data.get('area', ''))
         escribir_en_celda_segura(ws, 'AA11', eq_data.get('servicio', ''))
-        escribir_en_celda_segura(ws, 'S21', form_data.get('tipo_ht', '1'))
         escribir_en_celda_segura(ws, 'J15', eq_data.get('nombre', ''))
         escribir_en_celda_segura(ws, 'AE15', str(eq_data.get('id', '')))
         escribir_en_celda_segura(ws, 'E17', eq_data.get('procedencia', ''))
@@ -1198,9 +1199,10 @@ def descargar_hoja_trabajo_excel(m_id, id_equipo=None):
         ws = wb.active
         
         # Escribir campos de cabecera y equipo
+        escribir_en_celda_segura(ws, 'P5', eq_data.get('red_salud_nombre', ''))
+        escribir_en_celda_segura(ws, 'P6', eq_data.get('centro_salud_nombre', ''))
         escribir_en_celda_segura(ws, 'F11', eq_data.get('area', ''))
         escribir_en_celda_segura(ws, 'AA11', eq_data.get('servicio', ''))
-        escribir_en_celda_segura(ws, 'S21', m.get('tipo_ht', '1'))
         escribir_en_celda_segura(ws, 'J15', eq_data.get('nombre', ''))
         escribir_en_celda_segura(ws, 'AE15', str(eq_data.get('id', '')))
         escribir_en_celda_segura(ws, 'E17', eq_data.get('procedencia', ''))
@@ -1609,14 +1611,6 @@ def registrar_mantenimiento(id_equipo):
                         <select name="tipo">
                             <option value="Preventivo">🔧 Preventivo</option>
                             <option value="Correctivo">🚨 Correctivo</option>
-                        </select>
-                    </div>
-                    <div class="campo">
-                        <label>Turno / Tipo</label>
-                        <select name="tipo_ht">
-                            <option value="1">1</option>
-                            <option value="2">2</option>
-                            <option value="3">3</option>
                         </select>
                     </div>
                     <div class="campo">

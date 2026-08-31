@@ -2766,13 +2766,6 @@ class SistemaMantenimiento(ctk.CTk):
                 
         c_pendiente.configure(command=al_seleccionar_pendiente)
         
-        f_extra = ctk.CTkFrame(sf, fg_color="transparent")
-        f_extra.pack(fill="x", pady=5)
-        
-        ctk.CTkLabel(f_extra, text="Tipo:", font=ctk.CTkFont(weight="bold")).pack(side="left", padx=10)
-        e_tipo_eq = ctk.CTkComboBox(f_extra, values=["1", "2", "3"], width=150)
-        e_tipo_eq.pack(side="left", padx=5)
-        
         f_repuestos = ctk.CTkFrame(sf, fg_color="transparent")
         f_repuestos.pack(fill="x", pady=5)
         
@@ -3082,7 +3075,7 @@ class SistemaMantenimiento(ctk.CTk):
                 'observaciones': txt_obs,
                 'fecha_entrega': f_entrega_iso,
                 'servicio_ht': eq_data.get('servicio', ''),
-                'tipo_ht': e_tipo_eq.get(),
+                'tipo_ht': '',
                 'repuesto_usado': r_usado,
                 'repuesto_nombre': r_nombre,
                 'repuesto_cantidad': r_cant,
@@ -3210,9 +3203,10 @@ class SistemaMantenimiento(ctk.CTk):
                     except: 
                         pass
                         
+                w('P5', eq_data.get('red_salud_nombre', ''))
+                w('P6', eq_data.get('centro_salud_nombre', ''))
                 w('F11', eq_data.get('area', ''))
                 w('AA11', eq_data.get('servicio', ''))
-                w('S21', e_tipo_eq.get())
                 w('J15', eq_data.get('nombre', ''))
                 w('AE15', eq_data.get('id', ''))
                 w('E17', eq_data.get('procedencia', ''))
