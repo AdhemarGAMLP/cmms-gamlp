@@ -1077,6 +1077,20 @@ def descargar_ficha_tecnica_excel(id_equipo):
         escribir('Y37', eq_act.get('te_por', ''))
 
         # 6. Categorización
+        cat_data = eq_act.get("categorizacion_detalle") or []
+        if isinstance(cat_data, str):
+            try: cat_data = json.loads(cat_data)
+            except: cat_data = []
+            
+        for i in range(13):
+            valor = str(cat_data[i]) if i < len(cat_data) else ""
+            if valor in ("1", "I"): 
+                escribir(f'AK{24+i}', 'X')
+            elif valor in ("2", "II"): 
+                escribir(f'AM{24+i}', 'X')
+            elif valor in ("3", "III"): 
+                escribir(f'AO{24+i}', 'X')
+
         try:
             puntajes_int = []
             for x in cat_data:
