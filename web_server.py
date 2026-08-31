@@ -87,7 +87,7 @@ def generar_excel_ht_web(eq_data, form_data, realizado_por, sello_firma_path=Non
         escribir_en_celda_segura(ws, 'E19', eq_data.get('marca', ''))
         escribir_en_celda_segura(ws, 'AB19', eq_data.get('fabricante', ''))
         escribir_en_celda_segura(ws, 'F21', eq_data.get('modelo', ''))
-        escribir_en_celda_segura(ws, 'AG21', eq_data.get('numero_serie', ''))
+        escribir_en_celda_segura(ws, 'AB21', eq_data.get('numero_serie', ''))
         
         # Fechas
         f_rec_raw = form_data.get('fecha_recepcion', date.today().strftime('%Y-%m-%d'))
@@ -1210,7 +1210,7 @@ def descargar_hoja_trabajo_excel(m_id, id_equipo=None):
         escribir_en_celda_segura(ws, 'E19', eq_data.get('marca', ''))
         escribir_en_celda_segura(ws, 'AB19', eq_data.get('fabricante', ''))
         escribir_en_celda_segura(ws, 'F21', eq_data.get('modelo', ''))
-        escribir_en_celda_segura(ws, 'AG21', eq_data.get('numero_serie', ''))
+        escribir_en_celda_segura(ws, 'AB21', eq_data.get('numero_serie', ''))
         
         # Fechas
         f_rec_raw = str(m.get('fecha') or date.today())

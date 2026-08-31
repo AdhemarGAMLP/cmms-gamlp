@@ -358,9 +358,10 @@ class VistaHistorial(ctk.CTkFrame):
             ws = wb.active
             
             # Escribir campos de cabecera y equipo
+            escribir_en_celda_segura(ws, 'P5', eq_data.get('red_salud_nombre', ''))
+            escribir_en_celda_segura(ws, 'P6', eq_data.get('centro_salud_nombre', ''))
             escribir_en_celda_segura(ws, 'F11', eq_data.get('area', ''))
             escribir_en_celda_segura(ws, 'AA11', serv_ht or eq_data.get('servicio', ''))
-            escribir_en_celda_segura(ws, 'S21', tipo_ht or '1')
             escribir_en_celda_segura(ws, 'J15', eq_data.get('nombre', ''))
             escribir_en_celda_segura(ws, 'AE15', str(eq_data.get('id', '')))
             escribir_en_celda_segura(ws, 'E17', eq_data.get('procedencia', ''))
@@ -368,7 +369,7 @@ class VistaHistorial(ctk.CTkFrame):
             escribir_en_celda_segura(ws, 'E19', eq_data.get('marca', ''))
             escribir_en_celda_segura(ws, 'AB19', eq_data.get('fabricante', ''))
             escribir_en_celda_segura(ws, 'F21', eq_data.get('modelo', ''))
-            escribir_en_celda_segura(ws, 'AG21', eq_data.get('numero_serie', ''))
+            escribir_en_celda_segura(ws, 'AB21', eq_data.get('numero_serie', ''))
             
             # Fechas
             f_rec_raw = inter.get('fecha')

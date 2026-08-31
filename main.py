@@ -3214,7 +3214,7 @@ class SistemaMantenimiento(ctk.CTk):
                 w('E19', eq_data.get('marca', ''))
                 w('AB19', eq_data.get('fabricante', ''))
                 w('F21', eq_data.get('modelo', ''))
-                w('AG21', eq_data.get('numero_serie', ''))
+                w('AB21', eq_data.get('numero_serie', ''))
                 w('M23', e_fecha_rec.get())
                 w('I62', f"{e_fecha_ent.get()}  {datetime.now().strftime('%H:%M')}")
                 
