@@ -346,6 +346,27 @@ HTML_INVENTARIO = """
             font-weight: 600;
             display: none;
         }
+        .nav-tabs {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .nav-tab {
+            color: white;
+            text-decoration: none;
+            padding: 7px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            background: rgba(255, 255, 255, 0.12);
+            transition: all 0.2s;
+        }
+        .nav-tab.active {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4);
+        }
     </style>
 </head>
 <body>
@@ -353,6 +374,10 @@ HTML_INVENTARIO = """
         <span class="badge-gamlp">GAMLP • SGEM v1.0</span>
         <h1>Sistema de Gestión de Equipamiento Médico</h1>
         <p>Inventario Descentralizado por Redes y Centros de Salud</p>
+        <div class="nav-tabs">
+            <a href="/inventario" class="nav-tab active">📦 Inventario</a>
+            <a href="/analisis" class="nav-tab">📊 Análisis y Censo</a>
+        </div>
     </div>
 
     <div class="container">
@@ -642,6 +667,703 @@ def vista_inventario_web():
         )
     except Exception as e:
         return f"Error cargando inventario: {e}", 500
+
+HTML_ANALISIS = """
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SGEM GAMLP - Análisis y Censo de Equipamiento</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2563EB;
+            --primary-dark: #1D4ED8;
+            --bg: #F8FAFC;
+            --card-bg: #FFFFFF;
+            --text: #0F172A;
+            --muted: #64748B;
+            --border: #E2E8F0;
+            --green: #10B981;
+            --orange: #F59E0B;
+            --purple: #8B5CF6;
+            --red: #EF4444;
+        }
+
+        body {
+            font-family: 'Segoe UI', -apple-system, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
+            color: white;
+            padding: 24px 20px 20px;
+            text-align: center;
+            border-bottom: 1px solid #334155;
+        }
+
+        .badge-gamlp {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.1);
+            color: #93C5FD;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 20px;
+            margin-bottom: 8px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .header h1 {
+            font-size: 22px;
+            font-weight: 800;
+            margin: 0 0 4px;
+            letter-spacing: -0.5px;
+        }
+
+        .header p {
+            font-size: 13px;
+            color: #94A3B8;
+            margin: 0;
+        }
+
+        .nav-tabs {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .nav-tab {
+            color: white;
+            text-decoration: none;
+            padding: 7px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            background: rgba(255, 255, 255, 0.12);
+            transition: all 0.2s;
+        }
+
+        .nav-tab.active {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px 16px 60px;
+        }
+
+        .filter-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+        }
+
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 12px;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .filter-label {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--muted);
+            text-transform: uppercase;
+        }
+
+        .select-input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            font-size: 14px;
+            font-family: inherit;
+            background: white;
+            color: var(--text);
+            box-sizing: border-box;
+            outline: none;
+            font-weight: 600;
+        }
+
+        .stats-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .stat-box {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 16px;
+            text-align: center;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+        }
+
+        .stat-box .val {
+            font-size: 26px;
+            font-weight: 800;
+            color: var(--primary);
+        }
+
+        .stat-box .lbl {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--muted);
+            margin-top: 4px;
+            text-transform: uppercase;
+        }
+
+        .section-header {
+            margin-bottom: 14px;
+        }
+
+        .section-header h2 {
+            font-size: 18px;
+            font-weight: 800;
+            margin: 0;
+            color: var(--text);
+        }
+
+        .section-header p {
+            font-size: 13px;
+            color: var(--muted);
+            margin: 4px 0 0;
+        }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 14px;
+            margin-bottom: 30px;
+        }
+
+        .censo-card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 16px;
+            cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .censo-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+            border-color: var(--primary);
+        }
+
+        .censo-card .top-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--primary);
+        }
+
+        .censo-card .card-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 8px;
+        }
+
+        .censo-card .card-count {
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--primary);
+            margin-bottom: 12px;
+        }
+
+        .censo-card .btn-inspect {
+            font-size: 12px;
+            font-weight: 700;
+            color: white;
+            background: var(--primary);
+            padding: 8px 12px;
+            border-radius: 8px;
+            text-align: center;
+            text-decoration: none;
+            display: block;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(15, 23, 42, 0.6);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            backdrop-filter: blur(4px);
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            max-width: 900px;
+            width: 100%;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .modal-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #F8FAFC;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            font-size: 17px;
+            font-weight: 800;
+        }
+
+        .modal-body {
+            padding: 16px 20px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .modal-search {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            font-size: 14px;
+            margin-bottom: 14px;
+            box-sizing: border-box;
+            outline: none;
+        }
+
+        .table-responsive {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .table-responsive th {
+            background: #F1F5F9;
+            padding: 10px 12px;
+            text-align: left;
+            font-weight: 700;
+            color: var(--muted);
+            border-bottom: 1.5px solid var(--border);
+        }
+
+        .table-responsive td {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text);
+        }
+
+        .table-responsive tr:hover {
+            background: #F8FAFC;
+        }
+
+        .btn-view-link {
+            display: inline-block;
+            background: #EFF6FF;
+            color: var(--primary);
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .btn-close-modal {
+            background: #E2E8F0;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 14px;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <span class="badge-gamlp">GAMLP • SGEM v1.0</span>
+        <h1>Sistema de Gestión de Equipamiento Médico</h1>
+        <p>Análisis Estadístico y Censo Territorial</p>
+        <div class="nav-tabs">
+            <a href="/inventario" class="nav-tab">📦 Inventario</a>
+            <a href="/analisis" class="nav-tab active">📊 Análisis y Censo</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Filtros Territoriales -->
+        <div class="filter-card">
+            <div class="filter-grid">
+                <div class="filter-group">
+                    <label class="filter-label">🌐 Red de Salud</label>
+                    <select id="filtro-red" class="select-input" onchange="alCambiarRedWeb()">
+                        <option value="">Todas las Redes (GAMLP)</option>
+                        {% for r in redes %}
+                        <option value="{{ r['nombre'] }}" data-id="{{ r['id'] }}" {% if red_sel == r['nombre'] %}selected{% endif %}>{{ r['nombre'] }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">🏥 Centro de Salud</label>
+                    <select id="filtro-centro" class="select-input" onchange="alCambiarCentroWeb()">
+                        <option value="">Todos los Centros</option>
+                        {% for c in centros %}
+                        <option value="{{ c['nombre'] }}" data-red-id="{{ c['red_salud_id'] }}" data-red-name="{{ c['red_nombre'] }}" {% if centro_sel == c['nombre'] %}selected{% endif %}>{{ c['nombre'] }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Resumen de Estadísticas -->
+        <div class="stats-summary">
+            <div class="stat-box">
+                <div class="val" id="stat-total">{{ total }}</div>
+                <div class="lbl">Total Equipos</div>
+            </div>
+            <div class="stat-box">
+                <div class="val" style="color: var(--green);" id="stat-op">{{ operativos }}</div>
+                <div class="lbl">Operativos</div>
+            </div>
+            <div class="stat-box">
+                <div class="val" style="color: var(--purple);" id="stat-gar">{{ garantia }}</div>
+                <div class="lbl">En Garantía</div>
+            </div>
+            <div class="stat-box">
+                <div class="val" style="color: var(--red);" id="stat-baj">{{ bajas }}</div>
+                <div class="lbl">Bajas / Fuera de Servicio</div>
+            </div>
+        </div>
+
+        <!-- Sección de Censo Jerárquico Dinámico -->
+        <div class="section-header">
+            <h2 id="censo-titulo">{{ censo_titulo }}</h2>
+            <p id="censo-subtitulo">{{ censo_subtitulo }}</p>
+        </div>
+
+        <div class="cards-grid" id="censo-grid">
+            {% for item in censo_items %}
+            <div class="censo-card" onclick="inspeccionarGrupo('{{ item.nombre | escape }}')">
+                <div class="top-bar"></div>
+                <div class="card-title">{{ item.nombre_display }}</div>
+                <div class="card-count">{{ item.cantidad }} <span style="font-size: 13px; font-weight: 600; color: var(--muted);">equipos</span></div>
+                <a class="btn-inspect" href="javascript:void(0)">🔍 Ver {{ item.tipo_label }}</a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Modal de Detalle de Equipos -->
+    <div class="modal-overlay" id="modal-detalle">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-titulo">Equipos en: </h3>
+                <button class="btn-close-modal" onclick="cerrarModal()">✕ Cerrar</button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="modal-buscar" class="modal-search" placeholder="🔍 Buscar por nombre, marca, modelo, Cod. AF..." oninput="filtrarModal()">
+                <div style="overflow-x: auto;">
+                    <table class="table-responsive">
+                        <thead>
+                            <tr>
+                                <th>Cod. AF</th>
+                                <th>Equipo Médico</th>
+                                <th>Marca</th>
+                                <th>Modelo</th>
+                                <th>Centro de Salud</th>
+                                <th>Área/Servicio</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modal-tbody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const todosEquipos = {{ equipos_json | safe }};
+        let equiposModalActual = [];
+
+        function alCambiarRedWeb() {
+            const redSel = document.getElementById('filtro-red').value;
+            const centroSelect = document.getElementById('filtro-centro');
+            
+            const redOption = document.getElementById('filtro-red').selectedOptions[0];
+            const redId = redOption ? redOption.getAttribute('data-id') : '';
+
+            Array.from(centroSelect.options).forEach(opt => {
+                if (opt.value === '') return;
+                const optRedId = opt.getAttribute('data-red-id');
+                if (!redId || optRedId === redId) {
+                    opt.style.display = 'block';
+                } else {
+                    opt.style.display = 'none';
+                }
+            });
+
+            const selectedCentroOpt = centroSelect.selectedOptions[0];
+            if (selectedCentroOpt && selectedCentroOpt.style.display === 'none') {
+                centroSelect.value = '';
+            }
+
+            const centroVal = centroSelect.value;
+            window.location.href = `/analisis?red=${encodeURIComponent(redSel)}&centro=${encodeURIComponent(centroVal)}`;
+        }
+
+        function alCambiarCentroWeb() {
+            const redSel = document.getElementById('filtro-red').value;
+            const centroSel = document.getElementById('filtro-centro').value;
+            window.location.href = `/analisis?red=${encodeURIComponent(redSel)}&centro=${encodeURIComponent(centroSel)}`;
+        }
+
+        function inspeccionarGrupo(nombreGrupo) {
+            const redSel = document.getElementById('filtro-red').value;
+            const centroSel = document.getElementById('filtro-centro').value;
+
+            if (!redSel && !centroSel) {
+                document.getElementById('filtro-red').value = nombreGrupo;
+                alCambiarRedWeb();
+            } else if (redSel && !centroSel) {
+                document.getElementById('filtro-centro').value = nombreGrupo;
+                alCambiarCentroWeb();
+            } else {
+                abrirModalArea(nombreGrupo);
+            }
+        }
+
+        function abrirModalArea(nombreArea) {
+            const centroSel = document.getElementById('filtro-centro').value;
+
+            equiposModalActual = todosEquipos.filter(eq => {
+                const matchCen = !centroSel || (eq.centro_salud_nombre && eq.centro_salud_nombre.toLowerCase() === centroSel.toLowerCase());
+                const a = eq.area || eq.servicio || 'General';
+                const matchArea = a.toLowerCase() === nombreArea.toLowerCase();
+                return matchCen && matchArea;
+            });
+
+            document.getElementById('modal-titulo').textContent = `Equipos en Área: ${nombreArea} (${equiposModalActual.length} equipos)`;
+            document.getElementById('modal-buscar').value = '';
+            renderizarTablaModal(equiposModalActual);
+            document.getElementById('modal-detalle').style.display = 'flex';
+        }
+
+        function renderizarTablaModal(lista) {
+            const tbody = document.getElementById('modal-tbody');
+            tbody.innerHTML = '';
+            if (lista.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--muted); padding: 20px;">No se encontraron equipos</td></tr>';
+                return;
+            }
+            lista.forEach(eq => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${eq.id || '-'}</strong></td>
+                    <td>${eq.nombre || '-'}</td>
+                    <td>${eq.marca || '-'}</td>
+                    <td>${eq.modelo || '-'}</td>
+                    <td>${eq.centro_salud_nombre || '-'}</td>
+                    <td>${eq.area || eq.servicio || 'General'}</td>
+                    <td><a href="/equipo/${encodeURIComponent(eq.id)}" class="btn-view-link" target="_blank">📄 Ver Ficha</a></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function filtrarModal() {
+            const query = document.getElementById('modal-buscar').value.toLowerCase().trim();
+            if (!query) {
+                renderizarTablaModal(equiposModalActual);
+                return;
+            }
+            const filtrados = equiposModalActual.filter(eq => {
+                return (
+                    (eq.id && String(eq.id).toLowerCase().includes(query)) ||
+                    (eq.nombre && eq.nombre.toLowerCase().includes(query)) ||
+                    (eq.marca && eq.marca.toLowerCase().includes(query)) ||
+                    (eq.modelo && eq.modelo.toLowerCase().includes(query))
+                );
+            });
+            renderizarTablaModal(filtrados);
+        }
+
+        function cerrarModal() {
+            document.getElementById('modal-detalle').style.display = 'none';
+        }
+
+        window.onclick = function(event) {
+            const modal = document.getElementById('modal-detalle');
+            if (event.target === modal) {
+                cerrarModal();
+            }
+        };
+    </script>
+</body>
+</html>
+"""
+
+def simplificar_red_web(red_str):
+    import re
+    if not red_str:
+        return "Sin Red"
+    s = str(red_str).strip()
+    m = re.search(r'RED\s*([0-9]+)', s, re.IGNORECASE)
+    if m:
+        return f"Red {m.group(1)}"
+    if "(" in s:
+        s = s.split("(")[0].strip()
+    return s.title() if s.isupper() else s
+
+@app_web.route('/analisis')
+def vista_analisis_web():
+    red_param = request.args.get('red', '').strip()
+    centro_param = request.args.get('centro', '').strip()
+
+    try:
+        conn = obtener_conexion()
+        if not conn:
+            return "Error al conectar con la base de datos", 500
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute("SELECT id, nombre, red_salud_nombre, centro_salud_nombre, area, servicio, marca, modelo, estado, garantia FROM equipos ORDER BY nombre ASC")
+        equipos_db = [dict(r) for r in cur.fetchall()]
+        
+        cur.execute("SELECT id, nombre, codigo FROM redes_salud ORDER BY id ASC")
+        redes_db = [dict(r) for r in cur.fetchall()]
+        
+        cur.execute("""
+            SELECT c.id, c.nombre, c.red_salud_id, r.nombre as red_nombre 
+            FROM centros_salud c
+            LEFT JOIN redes_salud r ON c.red_salud_id = r.id
+            ORDER BY c.nombre ASC
+        """)
+        centros_db = [dict(r) for r in cur.fetchall()]
+        cur.close()
+        conn.close()
+
+        # Filtrar equipos según los parámetros
+        eqs_contexto = list(equipos_db)
+        if red_param:
+            eqs_contexto = [e for e in eqs_contexto if str(e.get('red_salud_nombre', '')).strip().lower() == red_param.lower()]
+        if centro_param:
+            eqs_contexto = [e for e in eqs_contexto if str(e.get('centro_salud_nombre', '')).strip().lower() == centro_param.lower()]
+
+        total = len(eqs_contexto)
+        operativos = sum(1 for e in eqs_contexto if e.get('estado') != 'Baja')
+        garantia = sum(1 for e in eqs_contexto if e.get('garantia') == 'Con Garantía')
+        bajas = sum(1 for e in eqs_contexto if e.get('estado') == 'Baja')
+
+        # Determinar Censo Jerárquico
+        censo_items = []
+        if not red_param and not centro_param:
+            # Nivel 1: Todas las redes
+            censo_titulo = "🌐 Censo de Equipamiento Médico por Red de Salud"
+            censo_subtitulo = f"Total en GAMLP: {total:,} equipos | Haz clic en una Red para explorar sus Centros de Salud"
+            grupos = {}
+            for eq in equipos_db:
+                r_nom = eq.get('red_salud_nombre') or 'Sin Red'
+                grupos.setdefault(r_nom, []).append(eq)
+            for r_nom, lista in sorted(grupos.items(), key=lambda x: str(x[0])):
+                censo_items.append({
+                    "nombre": r_nom,
+                    "nombre_display": simplificar_red_web(r_nom),
+                    "cantidad": len(lista),
+                    "tipo_label": "Centros"
+                })
+        elif red_param and not centro_param:
+            # Nivel 2: Red específica -> Centros de Salud
+            r_corta = simplificar_red_web(red_param)
+            censo_titulo = f"🏥 Distribución de Equipos por Centro de Salud — {r_corta}"
+            censo_subtitulo = f"Total en esta Red: {total:,} equipos | Haz clic en un Centro para ver sus Áreas"
+            grupos = {}
+            for eq in eqs_contexto:
+                c_nom = eq.get('centro_salud_nombre') or 'Sin Centro'
+                grupos.setdefault(c_nom, []).append(eq)
+            for c_nom, lista in sorted(grupos.items(), key=lambda x: len(x[1]), reverse=True):
+                censo_items.append({
+                    "nombre": c_nom,
+                    "nombre_display": c_nom,
+                    "cantidad": len(lista),
+                    "tipo_label": "Áreas"
+                })
+        else:
+            # Nivel 3: Centro de Salud específico -> Áreas
+            censo_titulo = f"📍 Distribución de Equipos por Área / Servicio — {centro_param}"
+            censo_subtitulo = f"Total en este Centro: {total:,} equipos | Haz clic en un Área para listar sus equipos"
+            grupos = {}
+            for eq in eqs_contexto:
+                a_nom = eq.get('area') or eq.get('servicio') or 'General'
+                grupos.setdefault(a_nom, []).append(eq)
+            for a_nom, lista in sorted(grupos.items(), key=lambda x: len(x[1]), reverse=True):
+                censo_items.append({
+                    "nombre": a_nom,
+                    "nombre_display": a_nom,
+                    "cantidad": len(lista),
+                    "tipo_label": "Lista de Equipos"
+                })
+
+        import json
+        equipos_json = json.dumps(equipos_db)
+
+        return render_template_string(
+            HTML_ANALISIS,
+            redes=redes_db,
+            centros=centros_db,
+            red_sel=red_param,
+            centro_sel=centro_param,
+            total=total,
+            operativos=operativos,
+            garantia=garantia,
+            bajas=bajas,
+            censo_titulo=censo_titulo,
+            censo_subtitulo=censo_subtitulo,
+            censo_items=censo_items,
+            equipos_json=equipos_json
+        )
+    except Exception as e:
+        return f"Error en análisis: {e}", 500
 
 @app_web.route('/descargar/<filename>')
 def descargar_archivo(filename):

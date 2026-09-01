@@ -2,7 +2,8 @@
 import os
 import customtkinter as ctk
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import ttk, messagebox
+import re
 from datetime import date, datetime
 from dateutil.relativedelta import relativedelta
 from estilos import *
@@ -12,14 +13,26 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from collections import Counter
 
+def simplificar_nombre_red(red_str):
+    if not red_str:
+        return "Sin Red"
+    s = str(red_str).strip()
+    m = re.search(r'RED\s*([0-9]+)', s, re.IGNORECASE)
+    if m:
+        return f"Red {m.group(1)}"
+    if "(" in s:
+        s = s.split("(")[0].strip()
+    return s.title() if s.isupper() else s
+
 class VistaAnalisis(ctk.CTkFrame):
     def __init__(self, master, app):
         super().__init__(master, fg_color=C_BG)
         self.app = app
-        self.hoy = self.app.hoy
+        self.hoy = getattr(self.app, "hoy", date.today())
         self.anio_actual = self.hoy.year
         self.canvas_widgets = [] # Guardar referencias para limpiar en cada refresco
         self.figuras = [] # Guardar referencias de figuras matplotlib
+        self.modal_equipos = None
         self.construir_ui()
 
     def construir_ui(self):
@@ -58,22 +71,38 @@ class VistaAnalisis(ctk.CTkFrame):
         return None
 
     def limpiar_graficos(self):
-        # Destruir widgets de tkinter
         for widget in self.canvas_widgets:
-            widget.destroy()
+            try:
+                widget.destroy()
+            except:
+                pass
         self.canvas_widgets.clear()
         
-        # Cerrar figuras matplotlib para liberar memoria
         for fig in self.figuras:
-            plt.close(fig)
+            try:
+                plt.close(fig)
+            except:
+                pass
         self.figuras.clear()
 
     def refrescar_datos(self):
         self.limpiar_graficos()
         
-        # Extraer todas las intervenciones completadas desde memoria
+        todos_equipos = list(self.app.datos.get("equipos", []))
+        contexto = getattr(self.app, "contexto_sede", None)
+        
+        # ----------------------------------------------------
+        # CARD 0: DISTRIBUCIÓN Y CENSO JERÁRQUICO DE EQUIPOS
+        # (Por Red, Por Centro de Salud o Por Área según el contexto)
+        # ----------------------------------------------------
+        f_card_dist = ctk.CTkFrame(self.scroll_frame, fg_color=C_CARD, corner_radius=16, border_width=1, border_color=C_BORDER)
+        f_card_dist.grid(row=0, column=0, columnspan=2, padx=12, pady=12, sticky="nsew")
+        self.canvas_widgets.append(f_card_dist)
+        self.dibujar_distribucion_censo(f_card_dist, todos_equipos, contexto)
+
+        # Extraer intervenciones
         intervenciones = []
-        for eq in self.app.datos.get("equipos", []):
+        for eq in todos_equipos:
             for m in eq.get("historial_intervenciones", []):
                 f_parsed = self.parsear_fecha(m.get("fecha"))
                 if f_parsed:
@@ -96,7 +125,7 @@ class VistaAnalisis(ctk.CTkFrame):
         # CARD 1: MANTENIMIENTOS POR MES (PREVENTIVOS VS CORRECTIVOS)
         # ----------------------------------------------------
         f_card1 = ctk.CTkFrame(self.scroll_frame, fg_color=C_CARD, corner_radius=16, border_width=1, border_color=C_BORDER)
-        f_card1.grid(row=0, column=0, columnspan=2, padx=12, pady=12, sticky="nsew")
+        f_card1.grid(row=1, column=0, columnspan=2, padx=12, pady=12, sticky="nsew")
         self.canvas_widgets.append(f_card1)
         self.dibujar_mensuales(f_card1, inter_anio, anio_sel)
 
@@ -104,7 +133,7 @@ class VistaAnalisis(ctk.CTkFrame):
         # CARD 2: TIPO DE MANTENIMIENTO (PIE CHART)
         # ----------------------------------------------------
         f_card2 = ctk.CTkFrame(self.scroll_frame, fg_color=C_CARD, corner_radius=16, border_width=1, border_color=C_BORDER)
-        f_card2.grid(row=1, column=0, padx=12, pady=12, sticky="nsew")
+        f_card2.grid(row=2, column=0, padx=12, pady=12, sticky="nsew")
         self.canvas_widgets.append(f_card2)
         self.dibujar_proporcion_tipo(f_card2, inter_anio, anio_sel)
 
@@ -112,7 +141,7 @@ class VistaAnalisis(ctk.CTkFrame):
         # CARD 3: TOP 5 EQUIPOS CON MÁS MANTENIMIENTOS
         # ----------------------------------------------------
         f_card3 = ctk.CTkFrame(self.scroll_frame, fg_color=C_CARD, corner_radius=16, border_width=1, border_color=C_BORDER)
-        f_card3.grid(row=1, column=1, padx=12, pady=12, sticky="nsew")
+        f_card3.grid(row=2, column=1, padx=12, pady=12, sticky="nsew")
         self.canvas_widgets.append(f_card3)
         self.dibujar_top_equipos(f_card3, inter_anio)
 
@@ -120,7 +149,7 @@ class VistaAnalisis(ctk.CTkFrame):
         # CARD 4: TOP 5 ÁREAS CON MÁS MANTENIMIENTOS
         # ----------------------------------------------------
         f_card4 = ctk.CTkFrame(self.scroll_frame, fg_color=C_CARD, corner_radius=16, border_width=1, border_color=C_BORDER)
-        f_card4.grid(row=2, column=0, padx=12, pady=12, sticky="nsew")
+        f_card4.grid(row=3, column=0, padx=12, pady=12, sticky="nsew")
         self.canvas_widgets.append(f_card4)
         self.dibujar_top_areas(f_card4, inter_anio)
 
@@ -128,10 +157,227 @@ class VistaAnalisis(ctk.CTkFrame):
         # CARD 5: REPUESTOS MÁS UTILIZADOS (TOP 5)
         # ----------------------------------------------------
         f_card5 = ctk.CTkFrame(self.scroll_frame, fg_color=C_CARD, corner_radius=16, border_width=1, border_color=C_BORDER)
-        f_card5.grid(row=2, column=1, padx=12, pady=12, sticky="nsew")
+        f_card5.grid(row=3, column=1, padx=12, pady=12, sticky="nsew")
         self.canvas_widgets.append(f_card5)
         self.dibujar_top_repuestos(f_card5, inter_anio)
 
+    # ========================================================
+    # CENSO Y DISTRIBUCIÓN JERÁRQUICA INTERACTIVA
+    # ========================================================
+    def dibujar_distribucion_censo(self, parent, todos_equipos, contexto):
+        es_global = True
+        red_sel = None
+        cen_sel = None
+
+        if contexto and not contexto.get("es_global", True):
+            cen_nom = contexto.get("centro_salud")
+            red_nom = contexto.get("red_salud")
+            if cen_nom and not str(cen_nom).startswith("[ Todos"):
+                cen_sel = cen_nom
+                es_global = False
+            elif red_nom and not str(red_nom).startswith("[ Todas"):
+                red_sel = red_nom
+                es_global = False
+
+        # Cabecera del Card
+        f_header = ctk.CTkFrame(parent, fg_color="transparent")
+        f_header.pack(fill="x", padx=16, pady=(14, 6))
+
+        if es_global or (not red_sel and not cen_sel):
+            # NIVEL 1: Todas las redes -> Equipos por Red
+            titulo_seccion = "🌐 Censo y Distribución de Equipos Médicos por Red de Salud"
+            sub_seccion = f"Total en GAMLP: {len(todos_equipos):,} equipos | Haz clic en una Red para consultar sus centros y equipos"
+            
+            # Agrupar por Red
+            grupos = {}
+            for eq in todos_equipos:
+                r_nom = eq.get("red_salud_nombre") or "Sin Red Asignada"
+                grupos.setdefault(r_nom, []).append(eq)
+                
+            items_ordenados = sorted(grupos.items(), key=lambda x: str(x[0]))
+            modo = "red"
+
+        elif red_sel and not cen_sel:
+            # NIVEL 2: Red específica seleccionada -> Equipos por Centro de Salud
+            eqs_en_red = [e for e in todos_equipos if str(e.get("red_salud_nombre", "")).strip().lower() == str(red_sel).strip().lower()]
+            r_corta = simplificar_nombre_red(red_sel)
+            titulo_seccion = f"🏥 Distribución de Equipos por Centro de Salud — {r_corta}"
+            sub_seccion = f"Total en esta Red: {len(eqs_en_red):,} equipos en {len(set(e.get('centro_salud_nombre') for e in eqs_en_red)):,} centros | Haz clic en un Centro para ver sus equipos"
+            
+            grupos = {}
+            for eq in eqs_en_red:
+                c_nom = eq.get("centro_salud_nombre") or "Centro No Asignado"
+                grupos.setdefault(c_nom, []).append(eq)
+                
+            items_ordenados = sorted(grupos.items(), key=lambda x: len(x[1]), reverse=True)
+            modo = "centro"
+
+        else:
+            # NIVEL 3: Centro de Salud específico -> Equipos por Área / Servicio
+            eqs_en_centro = [e for e in todos_equipos if str(e.get("centro_salud_nombre", "")).strip().lower() == str(cen_sel).strip().lower()]
+            titulo_seccion = f"📍 Distribución de Equipos por Área / Servicio — {cen_sel}"
+            sub_seccion = f"Total en este Centro: {len(eqs_en_centro):,} equipos | Haz clic en un Área para listar los equipos médicos"
+            
+            grupos = {}
+            for eq in eqs_en_centro:
+                a_nom = eq.get("area") or eq.get("servicio") or "General"
+                grupos.setdefault(a_nom, []).append(eq)
+                
+            items_ordenados = sorted(grupos.items(), key=lambda x: len(x[1]), reverse=True)
+            modo = "area"
+
+        ctk.CTkLabel(f_header, text=titulo_seccion, font=ctk.CTkFont(size=17, weight="bold"), text_color=C_TEXT).pack(anchor="w")
+        ctk.CTkLabel(f_header, text=sub_seccion, font=ctk.CTkFont(size=12), text_color=C_SUBTEXT).pack(anchor="w", pady=(2, 0))
+
+        # Contenedor de Tarjetas Interactivas
+        f_cards_grid = ctk.CTkFrame(parent, fg_color="transparent")
+        f_cards_grid.pack(fill="x", padx=16, pady=(10, 16))
+
+        # Colores temáticos para las tarjetas
+        palette = ["#2563EB", "#059669", "#D97706", "#7C3AED", "#DC2626", "#0891B2", "#4F46E5", "#EA580C"]
+
+        if not items_ordenados:
+            ctk.CTkLabel(f_cards_grid, text="No hay equipos registrados para este filtro.", font=ctk.CTkFont(size=13), text_color=C_SUBTEXT).pack(pady=20)
+            return
+
+        # Renderizar cuadrícula fluida de tarjetas interactivas
+        max_cols = 3 if modo == "centro" or modo == "area" else 5
+        for idx, (nombre_item, eqs_grupo) in enumerate(items_ordenados):
+            row_i = idx // max_cols
+            col_i = idx % max_cols
+            
+            color_accent = palette[idx % len(palette)]
+            cant_eqs = len(eqs_grupo)
+            
+            # Nombre a mostrar
+            display_title = simplificar_nombre_red(nombre_item) if modo == "red" else nombre_item
+            if len(display_title) > 28:
+                display_title = display_title[:26] + "..."
+
+            card_btn = ctk.CTkFrame(f_cards_grid, fg_color="#F8FAFC", corner_radius=12, border_width=1, border_color="#E2E8F0")
+            card_btn.grid(row=row_i, column=col_i, padx=6, pady=6, sticky="nsew")
+            f_cards_grid.columnconfigure(col_i, weight=1)
+
+            # Barra de acento de color superior
+            bar_acc = ctk.CTkFrame(card_btn, fg_color=color_accent, height=4, corner_radius=2)
+            bar_acc.pack(fill="x", side="top")
+
+            # Contenido de la tarjeta
+            f_in = ctk.CTkFrame(card_btn, fg_color="transparent")
+            f_in.pack(fill="both", expand=True, padx=12, pady=10)
+
+            ctk.CTkLabel(f_in, text=display_title, font=ctk.CTkFont(size=13, weight="bold"), text_color=C_TEXT, wraplength=180).pack(anchor="w")
+            
+            f_num = ctk.CTkFrame(f_in, fg_color="transparent")
+            f_num.pack(fill="x", pady=(6, 8))
+            ctk.CTkLabel(f_num, text=f"{cant_eqs}", font=ctk.CTkFont(size=22, weight="bold"), text_color=color_accent).pack(side="left")
+            ctk.CTkLabel(f_num, text=" equipos", font=ctk.CTkFont(size=12), text_color=C_SUBTEXT).pack(side="left", padx=4, pady=(6, 0))
+
+            # Botón de inspección rápida
+            btn_ver = ctk.CTkButton(
+                f_in, 
+                text="🔍 Ver Equipos", 
+                font=ctk.CTkFont(size=11, weight="bold"), 
+                height=28, 
+                fg_color=color_accent, 
+                hover_color="#1E293B",
+                corner_radius=8,
+                command=lambda n=nombre_item, eq_list=eqs_grupo, m=modo: self.abrir_modal_detalle_equipos(n, eq_list, m)
+            )
+            btn_ver.pack(fill="x", pady=(2, 0))
+
+    # ========================================================
+    # MODAL INTERACTIVO DE DETALLE DE EQUIPOS
+    # ========================================================
+    def abrir_modal_detalle_equipos(self, nombre_grupo, lista_equipos, modo):
+        if self.modal_equipos and self.modal_equipos.winfo_exists():
+            self.modal_equipos.destroy()
+
+        self.modal_equipos = ctk.CTkToplevel(self)
+        self.modal_equipos.title(f"Detalle de Equipos: {nombre_grupo}")
+        self.modal_equipos.geometry("980x620")
+        self.modal_equipos.minsize(800, 500)
+        self.modal_equipos.configure(fg_color=C_BG)
+        self.modal_equipos.transient(self.app)
+        self.modal_equipos.focus_force()
+
+        # Cabecera del modal
+        f_top = ctk.CTkFrame(self.modal_equipos, fg_color=C_CARD, corner_radius=0, height=70)
+        f_top.pack(fill="x", side="top")
+        
+        f_title = ctk.CTkFrame(f_top, fg_color="transparent")
+        f_title.pack(side="left", padx=20, pady=12)
+        
+        titulo_modal = f"Equipos en: {simplificar_nombre_red(nombre_grupo) if modo == 'red' else nombre_grupo}"
+        ctk.CTkLabel(f_title, text=titulo_modal, font=ctk.CTkFont(size=18, weight="bold"), text_color=C_TEXT).pack(anchor="w")
+        ctk.CTkLabel(f_title, text=f"Total: {len(lista_equipos)} equipos médicos registrados | Doble clic en cualquier fila para ver Ficha Técnica", font=ctk.CTkFont(size=12), text_color=C_SUBTEXT).pack(anchor="w")
+
+        # Buscador en vivo dentro del modal
+        busq_modal_var = ctk.StringVar()
+        f_search = ctk.CTkFrame(f_top, fg_color="transparent")
+        f_search.pack(side="right", padx=20, pady=12)
+        ctk.CTkLabel(f_search, text="🔍", font=ctk.CTkFont(size=14)).pack(side="left", padx=4)
+        e_busq = ctk.CTkEntry(f_search, textvariable=busq_modal_var, placeholder_text="Buscar en esta lista...", width=220, fg_color=C_BG, border_color=C_BORDER, corner_radius=8)
+        e_busq.pack(side="left")
+
+        # Tabla Treeview
+        f_tabla = ctk.CTkFrame(self.modal_equipos, fg_color="transparent")
+        f_tabla.pack(fill="both", expand=True, padx=20, pady=15)
+
+        cols = ("Red", "Centro de Salud", "Área/Servicio", "Equipo Médico", "Marca", "Modelo", "Cod. AF", "Estado")
+        tree = ttk.Treeview(f_tabla, columns=cols, show="headings", selectmode="browse")
+        sb = ttk.Scrollbar(f_tabla, orient="vertical", command=tree.yview, style="Vertical.TScrollbar")
+        tree.configure(yscrollcommand=sb.set)
+
+        col_w = {"Red": 75, "Centro de Salud": 170, "Área/Servicio": 130, "Equipo Médico": 200, "Marca": 100, "Modelo": 100, "Cod. AF": 100, "Estado": 90}
+        for c in cols:
+            tree.heading(c, text=c)
+            tree.column(c, anchor="center", width=col_w.get(c, 100))
+
+        tree.pack(side="left", fill="both", expand=True)
+        sb.pack(side="right", fill="y")
+
+        def _poblar_tabla():
+            for i in tree.get_children():
+                tree.delete(i)
+            filtro = busq_modal_var.get().lower().strip()
+            for eq in lista_equipos:
+                eq_nom = str(eq.get("nombre", ""))
+                eq_id = str(eq.get("id", ""))
+                eq_mar = str(eq.get("marca") or "-")
+                eq_mod = str(eq.get("modelo") or "-")
+                eq_cen = str(eq.get("centro_salud_nombre") or "-")
+                eq_ser = str(eq.get("servicio") or eq.get("area") or "-")
+                eq_red = simplificar_nombre_red(eq.get("red_salud_nombre"))
+                eq_est = str(eq.get("estado") or "Operativo")
+
+                if filtro:
+                    if not (filtro in eq_nom.lower() or filtro in eq_id.lower() or filtro in eq_mar.lower() or filtro in eq_mod.lower() or filtro in eq_cen.lower() or filtro in eq_ser.lower()):
+                        continue
+
+                tree.insert("", "end", values=(eq_red, eq_cen, eq_ser, eq_nom, eq_mar, eq_mod, eq_id, eq_est))
+
+        busq_modal_var.trace_add("write", lambda *args: _poblar_tabla())
+        _poblar_tabla()
+
+        def _abrir_hv_desde_modal(event=None):
+            sel = tree.selection() or ([tree.focus()] if tree.focus() else [])
+            if sel:
+                v = tree.item(sel[0], "values")
+                eq_id = v[6] if len(v) > 6 else v[0]
+                self.app.abrir_hoja_vida_click(equipo_id=eq_id)
+
+        tree.bind("<Double-1>", _abrir_hv_desde_modal)
+
+        # Botones inferiores del modal
+        f_bot = ctk.CTkFrame(self.modal_equipos, fg_color=C_CARD, corner_radius=0, height=50)
+        f_bot.pack(fill="x", side="bottom")
+
+        btn_abrir = ctk.CTkButton(f_bot, text="📄 Ver Ficha Técnica / Hoja de Vida", font=ctk.CTkFont(weight="bold", size=12), fg_color=C_BLUE, hover_color=C_BLUE_HOVER, height=36, corner_radius=8, command=_abrir_hv_desde_modal)
+        btn_abrir.pack(side="left", padx=20, pady=10)
+
+        btn_cerrar = ctk.CTkButton(f_bot, text="Cerrar", font=ctk.CTkFont(weight="bold", size=12), fg_color=C_CARD, text_color=C_TEXT, hover_color=C_BORDER, height=36, corner_radius=8, command=self.modal_equipos.destroy)
+        btn_cerrar.pack(side="right", padx=20, pady=10)
 
     # ========================================================
     # FUNCIONES AUXILIARES DE DIBUJO DE GRÁFICOS
@@ -213,7 +459,6 @@ class VistaAnalisis(ctk.CTkFrame):
                                           textprops=dict(color=C_TEXT, weight="bold", size=9),
                                           wedgeprops=dict(width=0.4, edgecolor='none'))
 
-        # Centrar leyenda y mejorar aspecto circular
         ax.legend(wedges, labels, title="Tipo", loc="center left", bbox_to_anchor=(0.85, 0.5), facecolor=C_CARD, edgecolor="none", labelcolor=C_TEXT)
         ax.axis('equal')  
 
@@ -237,17 +482,15 @@ class VistaAnalisis(ctk.CTkFrame):
             return
 
         nombres, counts = zip(*c)
-        nombres = [n[:18] + '..' if len(n) > 20 else n for n in nombres] # truncar etiquetas largas
+        nombres = [n[:18] + '..' if len(n) > 20 else n for n in nombres]
 
         fig, ax = plt.subplots(figsize=(4.5, 3))
         self.figuras.append(fig)
         self.configurar_estilo_figura(fig, ax, "Top 5 Equipos Más Intervenidos")
 
         bars = ax.barh(nombres, counts, color=C_BLUE, height=0.55)
-        ax.invert_yaxis()  # Mostrar mayor arriba
+        ax.invert_yaxis()
         ax.grid(axis='x', linestyle='--', alpha=0.3, color=C_SUBTEXT)
-        
-        # Agregar etiquetas de valor a las barras
         ax.bar_label(bars, color=C_TEXT, padding=3, weight="bold")
 
         fig.tight_layout()
@@ -289,7 +532,6 @@ class VistaAnalisis(ctk.CTkFrame):
     def dibujar_top_repuestos(self, parent, inter):
         ctk.CTkLabel(parent, text="Repuestos Más Utilizados (Top 5 Cantidades)", font=ctk.CTkFont(size=15, weight="bold"), text_color=C_TEXT).pack(pady=(10, 5))
         
-        # Consolidar cantidades por repuesto
         rep_counts = {}
         for i in inter:
             if i["repuesto_usado"] and i["repuesto_nombre"]:
