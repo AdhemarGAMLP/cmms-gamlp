@@ -32,14 +32,13 @@ class VistaAreas(ctk.CTkFrame):
         f_bot = ctk.CTkFrame(self, fg_color="transparent")
         f_bot.pack(pady=(10, 25), padx=30, fill="x")
         
-        ctk.CTkButton(f_bot, text="✚ Añadir Área", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_BLUE, hover_color=C_BLUE_HOVER, corner_radius=10, height=42, command=self.abrir_formulario_area).pack(side="left", expand=True, padx=8)
-        ctk.CTkButton(f_bot, text="✎ Modificar", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_PURPLE, hover_color=C_PURPLE_HOVER, corner_radius=10, height=42, command=self.modificar_area).pack(side="left", expand=True, padx=8)
+        self.btn_anadir = ctk.CTkButton(f_bot, text="✚ Añadir Área", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_BLUE, hover_color=C_BLUE_HOVER, corner_radius=10, height=42, command=self.abrir_formulario_area)
+        self.btn_anadir.pack(side="left", expand=True, padx=8)
+        self.btn_modificar = ctk.CTkButton(f_bot, text="✎ Modificar", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_PURPLE, hover_color=C_PURPLE_HOVER, corner_radius=10, height=42, command=self.modificar_area)
+        self.btn_modificar.pack(side="left", expand=True, padx=8)
         
         self.btn_eliminar = ctk.CTkButton(f_bot, text="🗑 Eliminar", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_RED, hover_color=C_RED_HOVER, corner_radius=10, height=42, command=self.eliminar_area)
         self.btn_eliminar.pack(side="left", expand=True, padx=8)
-        if not self.app.es_jefe:
-            self.btn_eliminar.configure(state="disabled", fg_color=C_BORDER, text_color=C_SUBTEXT)
-
 
     def refrescar_datos(self):
         for i in self.tabla_areas.get_children():
@@ -49,11 +48,27 @@ class VistaAreas(ctk.CTkFrame):
         for r in filas:
             self.tabla_areas.insert("", "end", values=(r.get("nombre", ""), r.get("piso", "") or "-", r.get("contacto", "") or "-", r.get("encargado", "") or "-"))
 
+        can_add = self.app.tiene_permiso("Areas", "agregar")
+        can_edit = self.app.tiene_permiso("Areas", "cambiar")
+        can_del = self.app.tiene_permiso("Areas", "eliminar")
+        self.btn_anadir.configure(state="normal" if can_add else "disabled", fg_color=C_BLUE if can_add else C_BORDER, text_color="white" if can_add else C_SUBTEXT)
+        self.btn_modificar.configure(state="normal" if can_edit else "disabled", fg_color=C_PURPLE if can_edit else C_BORDER, text_color="white" if can_edit else C_SUBTEXT)
+        self.btn_eliminar.configure(state="normal" if can_del else "disabled", fg_color=C_RED if can_del else C_BORDER, text_color="white" if can_del else C_SUBTEXT)
+
     def obtener_seleccion(self):
         sel = self.tabla_areas.focus()
         return self.tabla_areas.item(sel, "values") if sel else None
 
     def abrir_formulario_area(self, area_editar=None):
+        if area_editar:
+            if not self.app.tiene_permiso("Areas", "cambiar"):
+                messagebox.showwarning("Permiso Denegado", "No tiene permisos para modificar áreas.")
+                return
+        else:
+            if not self.app.tiene_permiso("Areas", "agregar"):
+                messagebox.showwarning("Permiso Denegado", "No tiene permisos para añadir áreas.")
+                return
+
         vent = ctk.CTkToplevel(self)
         vent.title("Área / Unidad")
         vent.geometry("500x450")
@@ -157,7 +172,8 @@ class VistaAreas(ctk.CTkFrame):
                 messagebox.showerror("Error", str(e))
 
     def eliminar_area(self):
-        if not self.app.es_jefe:
+        if not self.app.tiene_permiso("Areas", "eliminar"):
+            messagebox.showwarning("Permiso Denegado", "No tiene permisos para eliminar áreas.")
             return
         v = self.obtener_seleccion()
         if v and messagebox.askyesno("Confirmar", f"¿Eliminar la unidad/área '{v[0]}'?"):

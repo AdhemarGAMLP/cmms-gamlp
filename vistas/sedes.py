@@ -372,8 +372,10 @@ class VistaSedes(ctk.CTkFrame):
     # FORMULARIO MODAL: CENTRO DE SALUD
     # ========================================================
     def abrir_formulario_centro(self, editar=False):
-        c_sel = None
         if editar:
+            if not self.app.tiene_permiso("Sedes", "cambiar"):
+                messagebox.showwarning("Permiso Denegado", "No tiene permisos para modificar centros de salud.")
+                return
             sel = self.tabla_centros.selection() or ([self.tabla_centros.focus()] if self.tabla_centros.focus() else [])
             if not sel:
                 messagebox.showwarning("Selección Requerida", "Por favor seleccione un Centro de Salud de la tabla para modificar.")
@@ -381,6 +383,11 @@ class VistaSedes(ctk.CTkFrame):
             vals = self.tabla_centros.item(sel[0], "values")
             c_id = int(vals[0])
             c_sel = next((c for c in self.jerarquia.get("centros", []) if c["id"] == c_id), None)
+        else:
+            if not self.app.tiene_permiso("Sedes", "agregar"):
+                messagebox.showwarning("Permiso Denegado", "No tiene permisos para registrar nuevos centros de salud.")
+                return
+            c_sel = None
 
         vent = ctk.CTkToplevel(self)
         vent.title("Modificar Centro de Salud" if editar else "Añadir Nuevo Centro de Salud")
@@ -506,6 +513,9 @@ class VistaSedes(ctk.CTkFrame):
         ).pack(side="right", expand=True, padx=(6, 0))
 
     def eliminar_centro_click(self):
+        if not self.app.tiene_permiso("Sedes", "eliminar"):
+            messagebox.showwarning("Permiso Denegado", "No tiene permisos para eliminar o desactivar centros de salud.")
+            return
         sel = self.tabla_centros.selection() or ([self.tabla_centros.focus()] if self.tabla_centros.focus() else [])
         if not sel:
             messagebox.showwarning("Selección Requerida", "Por favor seleccione un Centro de Salud para eliminar o desactivar.")
@@ -527,8 +537,10 @@ class VistaSedes(ctk.CTkFrame):
     # FORMULARIO MODAL: RED DE SALUD
     # ========================================================
     def abrir_formulario_red(self, editar=False):
-        r_sel = None
         if editar:
+            if not self.app.tiene_permiso("Sedes", "cambiar"):
+                messagebox.showwarning("Permiso Denegado", "No tiene permisos para modificar redes de salud.")
+                return
             sel = self.tabla_redes.selection() or ([self.tabla_redes.focus()] if self.tabla_redes.focus() else [])
             if not sel:
                 messagebox.showwarning("Selección Requerida", "Por favor seleccione una Red de Salud de la tabla para modificar.")
@@ -536,6 +548,11 @@ class VistaSedes(ctk.CTkFrame):
             vals = self.tabla_redes.item(sel[0], "values")
             r_id = int(vals[0])
             r_sel = next((r for r in self.jerarquia.get("redes", []) if r["id"] == r_id), None)
+        else:
+            if not self.app.tiene_permiso("Sedes", "agregar"):
+                messagebox.showwarning("Permiso Denegado", "No tiene permisos para crear nuevas redes de salud.")
+                return
+            r_sel = None
 
         vent = ctk.CTkToplevel(self)
         vent.title("Modificar Red de Salud" if editar else "Añadir Nueva Red de Salud")
@@ -641,6 +658,9 @@ class VistaSedes(ctk.CTkFrame):
         ).pack(side="right", expand=True, padx=(6, 0))
 
     def eliminar_red_click(self):
+        if not self.app.tiene_permiso("Sedes", "eliminar"):
+            messagebox.showwarning("Permiso Denegado", "No tiene permisos para desactivar redes de salud.")
+            return
         sel = self.tabla_redes.selection() or ([self.tabla_redes.focus()] if self.tabla_redes.focus() else [])
         if not sel:
             messagebox.showwarning("Selección Requerida", "Por favor seleccione una Red de Salud para desactivar.")
@@ -662,8 +682,10 @@ class VistaSedes(ctk.CTkFrame):
     # FORMULARIO MODAL: MUNICIPIO
     # ========================================================
     def abrir_formulario_municipio(self, editar=False):
-        m_sel = None
         if editar:
+            if not self.app.tiene_permiso("Sedes", "cambiar"):
+                messagebox.showwarning("Permiso Denegado", "No tiene permisos para modificar municipios.")
+                return
             sel = self.tabla_mun.selection() or ([self.tabla_mun.focus()] if self.tabla_mun.focus() else [])
             if not sel:
                 messagebox.showwarning("Selección Requerida", "Por favor seleccione un Municipio de la tabla para modificar.")
@@ -671,6 +693,11 @@ class VistaSedes(ctk.CTkFrame):
             vals = self.tabla_mun.item(sel[0], "values")
             m_id = int(vals[0])
             m_sel = next((m for m in self.jerarquia.get("municipios", []) if m["id"] == m_id), None)
+        else:
+            if not self.app.tiene_permiso("Sedes", "agregar"):
+                messagebox.showwarning("Permiso Denegado", "No tiene permisos para registrar municipios.")
+                return
+            m_sel = None
 
         vent = ctk.CTkToplevel(self)
         vent.title("Modificar Municipio" if editar else "Añadir Nuevo Municipio")
@@ -730,8 +757,10 @@ class VistaSedes(ctk.CTkFrame):
     # FORMULARIO MODAL: DEPARTAMENTO
     # ========================================================
     def abrir_formulario_departamento(self, editar=False):
-        d_sel = None
         if editar:
+            if not self.app.tiene_permiso("Sedes", "cambiar"):
+                messagebox.showwarning("Permiso Denegado", "No tiene permisos para modificar departamentos.")
+                return
             sel = self.tabla_dep.selection() or ([self.tabla_dep.focus()] if self.tabla_dep.focus() else [])
             if not sel:
                 messagebox.showwarning("Selección Requerida", "Por favor seleccione un Departamento para modificar.")
@@ -739,6 +768,11 @@ class VistaSedes(ctk.CTkFrame):
             vals = self.tabla_dep.item(sel[0], "values")
             d_id = int(vals[0])
             d_sel = next((d for d in self.jerarquia.get("departamentos", []) if d["id"] == d_id), None)
+        else:
+            if not self.app.tiene_permiso("Sedes", "agregar"):
+                messagebox.showwarning("Permiso Denegado", "No tiene permisos para registrar departamentos.")
+                return
+            d_sel = None
 
         vent = ctk.CTkToplevel(self)
         vent.title("Modificar Departamento" if editar else "Añadir Nuevo Departamento")

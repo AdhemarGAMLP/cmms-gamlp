@@ -395,7 +395,7 @@ class SistemaMantenimiento(ctk.CTk):
         except Exception as e:
             print(f"[WARN] Error cargando jerarquia de sedes: {e}")
             self.sedes_data = {}
-        self.es_jefe = usuario.get("rol") == "jefe"
+        self.es_jefe = str(usuario.get("rol", "")).lower() in ["jefe", "admin", "administrador"] or usuario.get("id") == 0
         self.modo_offline = False
         
         self.title(f"SGEM GAMLP {VERSION_APP} - Sistema de Gestión de Equipamiento Médico | GAMLP (Rol: {usuario['rol'].upper()})")
@@ -426,12 +426,59 @@ class SistemaMantenimiento(ctk.CTk):
         self._ejecutando = True
         self.chequear_datos_sucios()
         self.iniciar_sincronizacion_background()
-        self.mostrar_vista("Inventario")
+        
+        # Determinar vista inicial permitida
+        vista_inicial = "Inventario"
+        for v_cand in ["Inventario", "Catalogo", "Cronograma", "Analisis", "Areas", "Sedes"]:
+            if self.tiene_permiso(v_cand, "ver"):
+                vista_inicial = v_cand
+                break
+        self.mostrar_vista(vista_inicial)
         self.actualizar_boton_alertas()
         self.verificar_y_ejecutar_backup_auto()
         self.protocol("WM_DELETE_WINDOW", self.al_cerrar_aplicacion)
         self.sidebar_mode = None
         self.bind("<Configure>", self.al_redimensionar)
+
+    def tiene_permiso(self, modulo, accion="ver"):
+        """
+        Verifica si el usuario actual tiene permiso para realizar una acción en un módulo.
+        modulo: 'Inventario', 'Catalogo', 'Repuestos', 'Cronograma', 'Historial', 'Analisis', 'Areas', 'Sedes', 'Respaldos', 'Usuarios'
+        accion: 'ver', 'agregar', 'cambiar', 'eliminar'
+        """
+        if getattr(self, "es_jefe", False) or self.usuario_actual.get("id") == 0:
+            return True
+        rol = str(self.usuario_actual.get("rol", "")).lower()
+        if rol in ["jefe", "admin", "administrador"]:
+            return True
+            
+        permisos = self.usuario_actual.get("permisos") or {}
+        if isinstance(permisos, str):
+            import json
+            try:
+                permisos = json.loads(permisos)
+            except:
+                permisos = {}
+
+        # 1. Permiso granular por módulo
+        if modulo in permisos and isinstance(permisos[modulo], dict):
+            return bool(permisos[modulo].get(accion, False))
+
+        # 2. Fallbacks por defecto según rol
+        if accion == "ver":
+            if modulo in ["Respaldos", "Usuarios"] and rol not in ["jefe", "admin", "administrador"]:
+                return False
+            if rol == "relevamiento" and modulo in ["Repuestos", "Historial"]:
+                return False
+            return True
+        elif accion == "eliminar":
+            return bool(permisos.get("can_delete", False))
+        elif accion in ["cambiar", "agregar"]:
+            if rol == "visita":
+                return False
+            return bool(permisos.get("can_edit", True))
+            
+        return False
 
     def obtener_ip_local(self):
         try:
@@ -858,56 +905,68 @@ class SistemaMantenimiento(ctk.CTk):
         self.bottom_sidebar.pack(side="bottom", fill="x", pady=(5, 10))
         
         self.btn_bottom_mantenimiento = ctk.CTkButton(self.bottom_sidebar, text="✚ Mantenimiento", height=38, corner_radius=8, font=ctk.CTkFont(size=13, weight="bold"), fg_color=C_BLUE, hover_color=C_BLUE_HOVER, command=self.modulo_mantenimiento)
-        self.btn_bottom_mantenimiento.pack(pady=2, padx=12, fill="x")
+        if self.tiene_permiso("Historial", "agregar"):
+            self.btn_bottom_mantenimiento.pack(pady=2, padx=12, fill="x")
 
         # 3. Área Central (Scrollable Frame para que quepan todos los botones en cualquier pantalla)
         self.scroll_sidebar = ctk.CTkScrollableFrame(self.sidebar, fg_color="transparent", scrollbar_button_color=C_CARD, scrollbar_button_hover_color=C_BORDER)
         self.scroll_sidebar.pack(side="top", fill="both", expand=True, padx=2, pady=2)
 
         btn_estilo = {"fg_color": "transparent", "text_color": C_TEXT, "hover_color": C_BG, "anchor": "center", "height": 34, "font": ctk.CTkFont(size=13, weight="bold")}
+        self.botones_nav = []
         
         self.btn_nav_inv = ctk.CTkButton(self.scroll_sidebar, text="📦 Inventario", command=lambda: self.mostrar_vista("Inventario"), **btn_estilo)
-        self.btn_nav_inv.pack(pady=1, padx=8, fill="x")
+        if self.tiene_permiso("Inventario", "ver"):
+            self.btn_nav_inv.pack(pady=1, padx=8, fill="x")
+            self.botones_nav.append(self.btn_nav_inv)
         
         self.btn_nav_cat = ctk.CTkButton(self.scroll_sidebar, text="🩺 Equipos Médicos", command=lambda: self.mostrar_vista("Catalogo"), **btn_estilo)
-        self.btn_nav_cat.pack(pady=1, padx=8, fill="x")
+        if self.tiene_permiso("Catalogo", "ver"):
+            self.btn_nav_cat.pack(pady=1, padx=8, fill="x")
+            self.botones_nav.append(self.btn_nav_cat)
         
         self.btn_nav_rep = ctk.CTkButton(self.scroll_sidebar, text="🔧 Repuestos", command=lambda: self.mostrar_vista("Repuestos"), **btn_estilo)
-        self.btn_nav_rep.pack(pady=1, padx=8, fill="x")
+        if self.tiene_permiso("Repuestos", "ver"):
+            self.btn_nav_rep.pack(pady=1, padx=8, fill="x")
+            self.botones_nav.append(self.btn_nav_rep)
         
         self.btn_nav_cro = ctk.CTkButton(self.scroll_sidebar, text="📅 Cronograma", command=lambda: self.mostrar_vista("Cronograma"), **btn_estilo)
-        self.btn_nav_cro.pack(pady=1, padx=8, fill="x")
+        if self.tiene_permiso("Cronograma", "ver"):
+            self.btn_nav_cro.pack(pady=1, padx=8, fill="x")
+            self.botones_nav.append(self.btn_nav_cro)
         
         self.btn_nav_hist = ctk.CTkButton(self.scroll_sidebar, text="📋 Mantenimientos", command=lambda: self.mostrar_vista("Historial"), **btn_estilo)
-        self.btn_nav_hist.pack(pady=1, padx=8, fill="x")
+        if self.tiene_permiso("Historial", "ver"):
+            self.btn_nav_hist.pack(pady=1, padx=8, fill="x")
+            self.botones_nav.append(self.btn_nav_hist)
         
         self.btn_nav_analisis = ctk.CTkButton(self.scroll_sidebar, text="📊 Análisis", command=lambda: self.mostrar_vista("Analisis"), **btn_estilo)
-        self.btn_nav_analisis.pack(pady=1, padx=8, fill="x")
+        if self.tiene_permiso("Analisis", "ver"):
+            self.btn_nav_analisis.pack(pady=1, padx=8, fill="x")
+            self.botones_nav.append(self.btn_nav_analisis)
         
         # Módulo de Protocolos: Oculto del menú operativo pero conservado
         self.btn_nav_prot = ctk.CTkButton(self.scroll_sidebar, text="📝 Protocolos", command=lambda: self.mostrar_vista("Protocolos"), **btn_estilo)
         # self.btn_nav_prot.pack(pady=1, padx=8, fill="x")
         
         self.btn_nav_areas = ctk.CTkButton(self.scroll_sidebar, text="📍 Áreas", command=lambda: self.mostrar_vista("Areas"), **btn_estilo)
-        self.btn_nav_areas.pack(pady=1, padx=8, fill="x")
+        if self.tiene_permiso("Areas", "ver"):
+            self.btn_nav_areas.pack(pady=1, padx=8, fill="x")
+            self.botones_nav.append(self.btn_nav_areas)
         
         self.btn_nav_sedes = ctk.CTkButton(self.scroll_sidebar, text="🏥 Sedes y Centros", command=lambda: self.mostrar_vista("Sedes"), **btn_estilo)
-        self.btn_nav_sedes.pack(pady=1, padx=8, fill="x")
+        if self.tiene_permiso("Sedes", "ver"):
+            self.btn_nav_sedes.pack(pady=1, padx=8, fill="x")
+            self.botones_nav.append(self.btn_nav_sedes)
         
         self.btn_nav_respaldos = ctk.CTkButton(self.scroll_sidebar, text="💾 Respaldos", command=lambda: self.mostrar_vista("Respaldos"), **btn_estilo)
-        self.btn_nav_respaldos.pack(pady=1, padx=8, fill="x")
+        if self.tiene_permiso("Respaldos", "ver"):
+            self.btn_nav_respaldos.pack(pady=1, padx=8, fill="x")
+            self.botones_nav.append(self.btn_nav_respaldos)
 
-        self.btn_nav_usuarios = None
-        if self.es_jefe:
-            self.btn_nav_usuarios = ctk.CTkButton(self.scroll_sidebar, text="👥 Usuarios", command=lambda: self.mostrar_vista("Usuarios"), **btn_estilo)
+        self.btn_nav_usuarios = ctk.CTkButton(self.scroll_sidebar, text="👥 Usuarios", command=lambda: self.mostrar_vista("Usuarios"), **btn_estilo)
+        if self.tiene_permiso("Usuarios", "ver"):
             self.btn_nav_usuarios.pack(pady=1, padx=8, fill="x")
-
-        self.botones_nav = [
-            self.btn_nav_inv, self.btn_nav_cat, self.btn_nav_rep, self.btn_nav_cro, 
-            self.btn_nav_hist, self.btn_nav_analisis, self.btn_nav_areas, 
-            self.btn_nav_sedes, self.btn_nav_respaldos
-        ]
-        if self.btn_nav_usuarios:
             self.botones_nav.append(self.btn_nav_usuarios)
 
         self.contenedor_principal = ctk.CTkFrame(self, fg_color=C_BG)

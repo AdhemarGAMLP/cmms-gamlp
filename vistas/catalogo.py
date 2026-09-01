@@ -50,10 +50,12 @@ class VistaCatalogo(ctk.CTkFrame):
         
         f_bot_cat = ctk.CTkFrame(self, fg_color="transparent")
         f_bot_cat.pack(pady=(10, 25), padx=30, fill="x")
-        ctk.CTkButton(f_bot_cat, text="✚ Añadir Modelo", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_BLUE, hover_color=C_BLUE_HOVER, corner_radius=10, height=42, command=self.abrir_formulario_catalogo).pack(side="left", expand=True, padx=8)
-        ctk.CTkButton(f_bot_cat, text="✎ Modificar", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_PURPLE, hover_color=C_PURPLE_HOVER, corner_radius=10, height=42, command=self.modificar_catalogo).pack(side="left", expand=True, padx=8)
-        ctk.CTkButton(f_bot_cat, text="🗑 Eliminar", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_RED, hover_color=C_RED_HOVER, corner_radius=10, height=42, command=self.eliminar_catalogo).pack(side="left", expand=True, padx=8)
-
+        self.btn_anadir = ctk.CTkButton(f_bot_cat, text="✚ Añadir Modelo", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_BLUE, hover_color=C_BLUE_HOVER, corner_radius=10, height=42, command=self.abrir_formulario_catalogo)
+        self.btn_anadir.pack(side="left", expand=True, padx=8)
+        self.btn_modificar = ctk.CTkButton(f_bot_cat, text="✎ Modificar", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_PURPLE, hover_color=C_PURPLE_HOVER, corner_radius=10, height=42, command=self.modificar_catalogo)
+        self.btn_modificar.pack(side="left", expand=True, padx=8)
+        self.btn_eliminar = ctk.CTkButton(f_bot_cat, text="🗑 Eliminar", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_RED, hover_color=C_RED_HOVER, corner_radius=10, height=42, command=self.eliminar_catalogo)
+        self.btn_eliminar.pack(side="left", expand=True, padx=8)
 
     def refrescar_datos(self):
         for i in self.tabla_cat.get_children(): 
@@ -73,10 +75,10 @@ class VistaCatalogo(ctk.CTkFrame):
             )]
             
         # Ordenación
-        criterio = self.combo_ordenar.get() if hasattr(self, "combo_ordenar") else "Nombre (A-Z)"
-        if criterio == "Nombre (A-Z)":
+        criterio = self.combo_ordenar.get()
+        if criterio == "Equipo (A-Z)":
             catalogo.sort(key=lambda x: str(x.get("nombre", "")).lower())
-        elif criterio == "Nombre (Z-A)":
+        elif criterio == "Equipo (Z-A)":
             catalogo.sort(key=lambda x: str(x.get("nombre", "")).lower(), reverse=True)
         elif criterio == "Marca":
             catalogo.sort(key=lambda x: str(x.get("marca", "")).lower())
@@ -90,11 +92,27 @@ class VistaCatalogo(ctk.CTkFrame):
         for c in catalogo: 
             self.tabla_cat.insert("", "end", values=(c["nombre"], c.get("marca", ""), c.get("modelo", ""), c.get("area", ""), c.get("piso", "")))
 
+        can_add = self.app.tiene_permiso("Catalogo", "agregar")
+        can_edit = self.app.tiene_permiso("Catalogo", "cambiar")
+        can_del = self.app.tiene_permiso("Catalogo", "eliminar")
+        self.btn_anadir.configure(state="normal" if can_add else "disabled", fg_color=C_BLUE if can_add else C_BORDER, text_color="white" if can_add else C_SUBTEXT)
+        self.btn_modificar.configure(state="normal" if can_edit else "disabled", fg_color=C_PURPLE if can_edit else C_BORDER, text_color="white" if can_edit else C_SUBTEXT)
+        self.btn_eliminar.configure(state="normal" if can_del else "disabled", fg_color=C_RED if can_del else C_BORDER, text_color="white" if can_del else C_SUBTEXT)
+
     def obtener_seleccion(self):
         sel = self.tabla_cat.focus()
         return self.tabla_cat.item(sel, "values") if sel else None
 
     def abrir_formulario_catalogo(self, edit_data=None):
+        if edit_data:
+            if not self.app.tiene_permiso("Catalogo", "cambiar"):
+                messagebox.showwarning("Permiso Denegado", "No tiene permisos para modificar modelos del catálogo.")
+                return
+        else:
+            if not self.app.tiene_permiso("Catalogo", "agregar"):
+                messagebox.showwarning("Permiso Denegado", "No tiene permisos para añadir modelos al catálogo.")
+                return
+
         v = ctk.CTkToplevel(self)
         v.title("Modelo Estandarizado")
         v.geometry("500x520")
@@ -244,8 +262,8 @@ class VistaCatalogo(ctk.CTkFrame):
                 self.abrir_formulario_catalogo(edit_data=model_obj)
 
     def eliminar_catalogo(self):
-        if not self.app.es_jefe:
-            messagebox.showerror("Permiso Denegado", "Solo el Jefe puede eliminar modelos.")
+        if not self.app.tiene_permiso("Catalogo", "eliminar"):
+            messagebox.showwarning("Permiso Denegado", "No tiene permisos para eliminar modelos del catálogo.")
             return
         v = self.obtener_seleccion()
         if v and messagebox.askyesno("Confirmar", f"¿Eliminar el modelo {v[0]}?"):

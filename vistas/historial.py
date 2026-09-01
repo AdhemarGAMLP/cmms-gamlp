@@ -290,7 +290,8 @@ class VistaHistorial(ctk.CTkFrame):
             return self.tabla_hist_mes.item(sel, "values") if sel else None
 
     def eliminar_historial(self):
-        if not self.app.es_jefe:
+        if not self.app.tiene_permiso("Historial", "eliminar"):
+            messagebox.showwarning("Permiso Denegado", "No tiene permisos para eliminar registros del historial de intervenciones.")
             return
             
         valores = self.obtener_seleccion()

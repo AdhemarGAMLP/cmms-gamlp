@@ -935,7 +935,9 @@ class VistaRepuestos(ctk.CTkFrame):
             messagebox.showinfo("Selección Requerida", "Seleccione un repuesto de la tabla para modificar.")
 
     def eliminar_repuesto(self, tabla_origen="stock"):
-        if not self.app.es_jefe: return
+        if not self.app.tiene_permiso("Repuestos", "eliminar"):
+            messagebox.showwarning("Permiso Denegado", "No tiene permisos para eliminar registros de repuestos.")
+            return
         v = self.obtener_seleccion(tabla_origen=tabla_origen)
         if not v:
             messagebox.showinfo("Selección Requerida", "Seleccione un repuesto de la tabla para eliminar.")

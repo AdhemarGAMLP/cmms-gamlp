@@ -90,14 +90,12 @@ class VistaInventario(ctk.CTkFrame):
 
         f_bot = ctk.CTkFrame(self, fg_color="transparent")
         f_bot.pack(pady=(10, 25), padx=30, fill="x")
-        ctk.CTkButton(f_bot, text="✚ Registrar Equipo", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_BLUE, hover_color=C_BLUE_HOVER, corner_radius=10, height=42, command=self.registrar_equipo).pack(side="left", expand=True, padx=8)
+        self.btn_registrar = ctk.CTkButton(f_bot, text="✚ Registrar Equipo", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_BLUE, hover_color=C_BLUE_HOVER, corner_radius=10, height=42, command=self.registrar_equipo)
+        self.btn_registrar.pack(side="left", expand=True, padx=8)
         self.btn_modificar = ctk.CTkButton(f_bot, text="✎ Modificar Ficha", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_PURPLE, hover_color=C_PURPLE_HOVER, corner_radius=10, height=42, command=self.modificar_equipo)
         self.btn_modificar.pack(side="left", expand=True, padx=8)
         self.btn_eliminar = ctk.CTkButton(f_bot, text="🗑 Eliminar Activo", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_RED, hover_color=C_RED_HOVER, corner_radius=10, height=42, command=self.eliminar_equipo)
         self.btn_eliminar.pack(side="left", expand=True, padx=8)
-        if not self.app.es_jefe:
-            self.btn_eliminar.configure(state="disabled", fg_color=C_BORDER, text_color=C_SUBTEXT)
-            self.btn_modificar.configure(state="disabled", fg_color=C_BORDER, text_color=C_SUBTEXT)
 
     def obtener_id_seleccionado(self):
         sel = self.tabla_inv.selection()
@@ -230,6 +228,15 @@ class VistaInventario(ctk.CTkFrame):
                 eq.get("id", "")
             ), tags=(tag_gar,))
 
+        # Control dinámico de botones según permisos
+        can_add = self.app.tiene_permiso("Inventario", "agregar")
+        can_edit = self.app.tiene_permiso("Inventario", "cambiar")
+        can_del = self.app.tiene_permiso("Inventario", "eliminar")
+
+        self.btn_registrar.configure(state="normal" if can_add else "disabled", fg_color=C_BLUE if can_add else C_BORDER, text_color="white" if can_add else C_SUBTEXT)
+        self.btn_modificar.configure(state="normal" if can_edit else "disabled", fg_color=C_PURPLE if can_edit else C_BORDER, text_color="white" if can_edit else C_SUBTEXT)
+        self.btn_eliminar.configure(state="normal" if can_del else "disabled", fg_color=C_RED if can_del else C_BORDER, text_color="white" if can_del else C_SUBTEXT)
+
     def ordenar_columna(self, col, reverse):
         datos = [(self.tabla_inv.set(k, col), k) for k in self.tabla_inv.get_children("")]
         datos.sort(reverse=reverse)
@@ -237,6 +244,9 @@ class VistaInventario(ctk.CTkFrame):
         self.tabla_inv.heading(col, command=lambda: self.ordenar_columna(col, not reverse))
 
     def registrar_equipo(self):
+        if not self.app.tiene_permiso("Inventario", "agregar"):
+            messagebox.showwarning("Permiso Denegado", "No tiene permisos para registrar nuevos equipos.")
+            return
         if getattr(self.app, "modo_offline", False):
             from tkinter import messagebox
             messagebox.showwarning("Modo Sin Conexión", "La creación de nuevos equipos está deshabilitada en Modo Fuera de Línea.\n\nDebes conectarte a la red del Servidor Central para registrar nuevos activos.")
@@ -245,11 +255,11 @@ class VistaInventario(ctk.CTkFrame):
 
     def modificar_equipo(self):
         from tkinter import messagebox
+        if not self.app.tiene_permiso("Inventario", "cambiar"):
+            messagebox.showwarning("Permiso Denegado", "No tiene permisos para modificar fichas técnicas de equipos.")
+            return
         if getattr(self.app, "modo_offline", False):
             messagebox.showwarning("Modo Sin Conexión", "La modificación de fichas técnicas está deshabilitada en Modo Fuera de Línea (Solo Lectura).\n\nConéctate a la red del Servidor Central para guardar cambios.")
-            return
-        if not self.app.es_jefe:
-            messagebox.showerror("Permiso denegado", "Solo el Jefe de servicio puede modificar fichas técnicas.")
             return
         eq_id = self.obtener_id_seleccionado()
         if not eq_id: return
@@ -258,11 +268,11 @@ class VistaInventario(ctk.CTkFrame):
 
     def eliminar_equipo(self):
         from tkinter import messagebox
+        if not self.app.tiene_permiso("Inventario", "eliminar"):
+            messagebox.showwarning("Permiso Denegado", "No tiene permisos para eliminar o dar de baja equipos.")
+            return
         if getattr(self.app, "modo_offline", False):
             messagebox.showwarning("Modo Sin Conexión", "La eliminación de equipos está deshabilitada en Modo Fuera de Línea.\n\nDebes estar conectado al Servidor Central.")
-            return
-        if not self.app.es_jefe:
-            messagebox.showerror("Permiso denegado", "Solo el Jefe puede dar de baja activos.")
             return
         eq_id = self.obtener_id_seleccionado()
         if not eq_id: return
