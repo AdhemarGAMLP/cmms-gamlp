@@ -3,6 +3,7 @@ import openpyxl
 from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
 from openpyxl.drawing.image import Image as OpenpyxlImage
 from PIL import Image as PILImage
+from copy import copy
 import io, base64, os, tempfile
 from datetime import datetime
 
@@ -19,15 +20,15 @@ def obtener_ruta_plantilla_repuestos():
 
 def generar_excel_repuestos_wb(lista_repuestos, tipo="Stock"):
     """
-    Genera el workbook de openpyxl con la plantilla plantilla_repuestos.xlsx llena.
-    tipo: 'Stock' / 'Inventario' o 'Requerido' / 'Necesario'
-    Retorna: (wb, temp_img_files)
+    Genera el reporte de repuestos respetando 100% el diseño original de la plantilla.
+    Escribe directamente sobre las filas de la plantilla y, si hay más filas que las
+    pre-formateadas (fila 8 en adelante), clona el formato exacto de la fila 8.
     """
     ruta_plantilla = obtener_ruta_plantilla_repuestos()
     wb = openpyxl.load_workbook(ruta_plantilla)
     ws = wb.active
 
-    # 1. Título y Año en E4 (E4:J5 combinado)
+    # 1. Título dinámico en E4 (E4:J5 combinado)
     anio_act = datetime.now().year
     tipo_str = str(tipo).strip().lower()
     if tipo_str in ["stock", "inventario", "en stock"]:
@@ -37,69 +38,56 @@ def generar_excel_repuestos_wb(lista_repuestos, tipo="Stock"):
         
     ws["E4"].value = titulo
 
-    # Eliminar filas predeterminadas (8 a 11) si existen
-    if ws.max_row >= 8:
-        cant_a_borrar = ws.max_row - 7
-        ws.delete_rows(8, cant_a_borrar)
-
-    # Estilos
-    font_datos = Font(name="Segoe UI", size=9)
-    align_center = Alignment(horizontal="center", vertical="center", wrap_text=True)
-    align_left = Alignment(horizontal="left", vertical="center", wrap_text=True)
-    align_right = Alignment(horizontal="right", vertical="center")
-    
-    thin = Side(border_style="thin", color="000000")
-    borde_datos = Border(top=thin, left=thin, right=thin, bottom=thin)
-
-    fill_par = PatternFill(start_color="FFFFFF", end_color="FFFFFF", fill_type="solid")
-    fill_impar = PatternFill(start_color="F8FAFC", end_color="F8FAFC", fill_type="solid")
-
     temp_img_files = []
+    start_row = 8
 
-    # 2. Llenar filas dinámicamente
-    for idx, r in enumerate(lista_repuestos, start=1):
-        fila_idx = 7 + idx
-        
-        # Combinar K{r}:N{r} (Costo Total) y O{r}:V{r} (Fotografía)
-        ws.merge_cells(start_row=fila_idx, start_column=11, end_row=fila_idx, end_column=14)
-        ws.merge_cells(start_row=fila_idx, start_column=15, end_row=fila_idx, end_column=22)
+    # 2. Escribir datos sobre las filas de la plantilla
+    for idx, r in enumerate(lista_repuestos):
+        fila_idx = start_row + idx
 
-        # Valores
+        # Si la fila es mayor a las pre-existentes en la plantilla (fila 8),
+        # clonamos el formato exacto de la fila 8 (estilos, bordes, fuentes, alineaciones)
+        if fila_idx > 8:
+            if 8 in ws.row_dimensions and ws.row_dimensions[8].height is not None:
+                ws.row_dimensions[fila_idx].height = ws.row_dimensions[8].height
+                
+            # Combinar K{r}:N{r} (Costo Total) y O{r}:V{r} (Fotografía) si no están ya combinadas
+            ws.merge_cells(start_row=fila_idx, start_column=11, end_row=fila_idx, end_column=14)
+            ws.merge_cells(start_row=fila_idx, start_column=15, end_row=fila_idx, end_column=22)
+
+            for c in range(2, 23):
+                src_cell = ws.cell(row=8, column=c)
+                dst_cell = ws.cell(row=fila_idx, column=c)
+                if src_cell.has_style:
+                    dst_cell.font = copy(src_cell.font)
+                    dst_cell.border = copy(src_cell.border)
+                    dst_cell.fill = copy(src_cell.fill)
+                    dst_cell.number_format = copy(src_cell.number_format)
+                    dst_cell.protection = copy(src_cell.protection)
+                    dst_cell.alignment = copy(src_cell.alignment)
+
+        # Valores a escribir
         cant = int(r.get("cantidad", 0) or 0)
         costo_u = float(r.get("costo", 0) or 0)
         costo_tot = cant * costo_u
 
-        # Datos
-        ws.cell(row=fila_idx, column=2, value=idx)                                          # B: N°
-        ws.cell(row=fila_idx, column=3, value=r.get("red_salud_nombre") or "")              # C: RED
-        ws.cell(row=fila_idx, column=4, value=r.get("centro_salud_nombre") or "")           # D: CENTRO DE SALUD
-        ws.cell(row=fila_idx, column=5, value=r.get("area") or "")                          # E: AREA
-        ws.cell(row=fila_idx, column=6, value=r.get("nombre_repuesto") or "")               # F: NOMBRE DEL REPUESTO
-        ws.cell(row=fila_idx, column=7, value=cant)                                         # G: CANTIDAD
-        ws.cell(row=fila_idx, column=8, value=r.get("marca") or "")                         # H: MARCA
+        # Escribir solo los valores manteniendo el formato intacto de la plantilla
+        ws.cell(row=fila_idx, column=2, value=idx + 1)                                          # B: N°
+        ws.cell(row=fila_idx, column=3, value=r.get("red_salud_nombre") or "")                 # C: RED
+        ws.cell(row=fila_idx, column=4, value=r.get("centro_salud_nombre") or "")              # D: CENTRO DE SALUD
+        ws.cell(row=fila_idx, column=5, value=r.get("area") or "")                             # E: AREA
+        ws.cell(row=fila_idx, column=6, value=r.get("nombre_repuesto") or "")                  # F: NOMBRE DEL REPUESTO
+        ws.cell(row=fila_idx, column=7, value=cant)                                            # G: CANTIDAD
+        ws.cell(row=fila_idx, column=8, value=r.get("marca") or "")                            # H: MARCA
         ws.cell(row=fila_idx, column=9, value=r.get("modelo") or r.get("modelo_parte") or "") # I: MODELO
-        ws.cell(row=fila_idx, column=10, value=costo_u)                                     # J: COSTO UNITARIO
-        ws.cell(row=fila_idx, column=11, value=costo_tot)                                   # K (K:N): COSTO TOTAL
+        ws.cell(row=fila_idx, column=10, value=costo_u)                                        # J: COSTO UNITARIO
+        ws.cell(row=fila_idx, column=11, value=costo_tot)                                      # K (K:N): COSTO TOTAL
 
-        # Formatos de moneda
+        # Formatos numéricos para costos
         ws.cell(row=fila_idx, column=10).number_format = '#,##0.00'
         ws.cell(row=fila_idx, column=11).number_format = '#,##0.00'
 
-        # Bordes, fuentes y alineaciones
-        fill_row = fill_impar if idx % 2 == 1 else fill_par
-        for c in range(2, 23):
-            cell = ws.cell(row=fila_idx, column=c)
-            cell.border = borde_datos
-            cell.fill = fill_row
-            cell.font = font_datos
-            if c in [2, 3, 4, 5, 7, 8, 9]:
-                cell.alignment = align_center
-            elif c == 6:
-                cell.alignment = align_left
-            elif c in [10, 11]:
-                cell.alignment = align_right
-
-        # 3. Procesamiento de Fotografía en O{r}
+        # 3. Procesamiento de Fotografía en O{fila_idx}
         foto_data = r.get("foto")
         img_insertada = False
 
@@ -118,8 +106,8 @@ def generar_excel_repuestos_wb(lista_repuestos, tipo="Stock"):
                     if pil_img.mode != "RGB":
                         pil_img = pil_img.convert("RGB")
                     
-                    # Escalar manteniendo proporción: max 130x65 px
-                    max_w, max_h = 130, 65
+                    # Escalar manteniendo proporción: max 130x55 px
+                    max_w, max_h = 130, 55
                     orig_w, orig_h = pil_img.size
                     ratio = min(max_w / orig_w, max_h / orig_h)
                     new_w, new_h = max(1, int(orig_w * ratio)), max(1, int(orig_h * ratio))
@@ -135,16 +123,15 @@ def generar_excel_repuestos_wb(lista_repuestos, tipo="Stock"):
                     openpyxl_img.anchor = f"O{fila_idx}"
                     ws.add_image(openpyxl_img)
                     
-                    # Ajustar altura de la fila según la imagen
-                    ws.row_dimensions[fila_idx].height = 58
+                    ws.row_dimensions[fila_idx].height = 55
                     img_insertada = True
             except Exception as ex:
                 print(f"[WARN] Error insertando foto en fila {fila_idx}: {ex}")
 
         if not img_insertada:
-            ws.cell(row=fila_idx, column=15, value="-")
-            ws.cell(row=fila_idx, column=15).alignment = align_center
-            ws.row_dimensions[fila_idx].height = 24
+            # Si no hay imagen, conservar la altura de la plantilla
+            if fila_idx not in ws.row_dimensions or ws.row_dimensions[fila_idx].height is None or ws.row_dimensions[fila_idx].height < 20:
+                ws.row_dimensions[fila_idx].height = 20
 
     return wb, temp_img_files
 
