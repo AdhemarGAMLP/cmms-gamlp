@@ -58,6 +58,7 @@ from vistas.historial import VistaHistorial
 from vistas.protocolos import VistaProtocolos
 from vistas.areas import VistaAreas
 from vistas.analisis import VistaAnalisis
+from vistas.sedes import VistaSedes
 from vistas.respaldos import VistaRespaldos
 from vistas.usuarios import VistaUsuarios
 
@@ -890,6 +891,9 @@ class SistemaMantenimiento(ctk.CTk):
         self.btn_nav_areas = ctk.CTkButton(self.scroll_sidebar, text="📍 Áreas", command=lambda: self.mostrar_vista("Areas"), **btn_estilo)
         self.btn_nav_areas.pack(pady=1, padx=8, fill="x")
         
+        self.btn_nav_sedes = ctk.CTkButton(self.scroll_sidebar, text="🏥 Sedes y Centros", command=lambda: self.mostrar_vista("Sedes"), **btn_estilo)
+        self.btn_nav_sedes.pack(pady=1, padx=8, fill="x")
+        
         self.btn_nav_respaldos = ctk.CTkButton(self.scroll_sidebar, text="💾 Respaldos", command=lambda: self.mostrar_vista("Respaldos"), **btn_estilo)
         self.btn_nav_respaldos.pack(pady=1, padx=8, fill="x")
 
@@ -901,7 +905,7 @@ class SistemaMantenimiento(ctk.CTk):
         self.botones_nav = [
             self.btn_nav_inv, self.btn_nav_cat, self.btn_nav_rep, self.btn_nav_cro, 
             self.btn_nav_hist, self.btn_nav_analisis, self.btn_nav_areas, 
-            self.btn_nav_respaldos
+            self.btn_nav_sedes, self.btn_nav_respaldos
         ]
         if self.btn_nav_usuarios:
             self.botones_nav.append(self.btn_nav_usuarios)
@@ -961,6 +965,7 @@ class SistemaMantenimiento(ctk.CTk):
         self.vistas["Analisis"] = VistaAnalisis(self.contenedor_principal, self)
         self.vistas["Protocolos"] = VistaProtocolos(self.contenedor_principal, self)
         self.vistas["Areas"] = VistaAreas(self.contenedor_principal, self)
+        self.vistas["Sedes"] = VistaSedes(self.contenedor_principal, self)
         self.vistas["Respaldos"] = VistaRespaldos(self.contenedor_principal, self)
         if self.es_jefe:
             self.vistas["Usuarios"] = VistaUsuarios(self.contenedor_principal, self)
@@ -988,6 +993,7 @@ class SistemaMantenimiento(ctk.CTk):
             "Analisis": self.btn_nav_analisis,
             "Protocolos": self.btn_nav_prot,
             "Areas": self.btn_nav_areas,
+            "Sedes": self.btn_nav_sedes,
             "Respaldos": self.btn_nav_respaldos
         }
         if self.btn_nav_usuarios:

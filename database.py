@@ -604,18 +604,18 @@ def obtener_jerarquia_sedes_db(forzar_recarga=False):
     try:
         import psycopg2.extras
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        cur.execute("SELECT id, nombre, codigo FROM departamentos WHERE estado = 'Activo' ORDER BY CASE WHEN nombre='La Paz' THEN 0 ELSE 1 END, nombre ASC;")
+        cur.execute("SELECT id, nombre, codigo, estado FROM departamentos WHERE estado = 'Activo' ORDER BY CASE WHEN nombre='La Paz' THEN 0 ELSE 1 END, nombre ASC;")
         deptos = [dict(r) for r in cur.fetchall()]
         
-        cur.execute("SELECT id, departamento_id, nombre, codigo FROM municipios WHERE estado = 'Activo' AND (nombre = 'GAMLP' OR nombre = 'La Paz (GAMLP)') ORDER BY id ASC;")
+        cur.execute("SELECT id, departamento_id, nombre, codigo, estado FROM municipios WHERE estado = 'Activo' ORDER BY id ASC;")
         muns = [dict(r) for r in cur.fetchall()]
         if not muns:
-            muns = [{"id": 1, "departamento_id": 1, "nombre": "GAMLP", "codigo": "GAMLP"}]
+            muns = [{"id": 1, "departamento_id": 1, "nombre": "GAMLP", "codigo": "GAMLP", "estado": "Activo"}]
         
-        cur.execute("SELECT id, municipio_id, departamento_id, nombre, codigo, macrodistrito FROM redes_salud WHERE estado = 'Activo' ORDER BY codigo ASC;")
+        cur.execute("SELECT id, municipio_id, departamento_id, nombre, codigo, macrodistrito, responsable, telefono, estado FROM redes_salud WHERE estado = 'Activo' ORDER BY codigo ASC;")
         redes = [dict(r) for r in cur.fetchall()]
         
-        cur.execute("SELECT id, red_salud_id, nombre, nivel, direccion FROM centros_salud WHERE estado = 'Activo' ORDER BY nombre ASC;")
+        cur.execute("SELECT id, red_salud_id, nombre, nivel, direccion, telefono, responsable, estado FROM centros_salud WHERE estado = 'Activo' ORDER BY nombre ASC;")
         centros = [dict(r) for r in cur.fetchall()]
         
         cur.close()
@@ -634,11 +634,210 @@ def obtener_jerarquia_sedes_db(forzar_recarga=False):
         if _CACHE_JERARQUIA_SEDES:
             return _CACHE_JERARQUIA_SEDES
         return {
-            "departamentos": [{"id": 1, "nombre": "La Paz"}],
-            "municipios": [{"id": 1, "nombre": "GAMLP"}],
+            "departamentos": [{"id": 1, "nombre": "La Paz", "codigo": "LPZ", "estado": "Activo"}],
+            "municipios": [{"id": 1, "departamento_id": 1, "nombre": "GAMLP", "codigo": "GAMLP", "estado": "Activo"}],
             "redes": [],
             "centros": []
         }
+
+def invalidar_cache_jerarquia():
+    global _CACHE_JERARQUIA_SEDES
+    _CACHE_JERARQUIA_SEDES = None
+
+def guardar_centro_salud_db(datos):
+    """Inserta o actualiza un Centro de Salud / Hospital en la base de datos."""
+    invalidar_cache_jerarquia()
+    conn = obtener_conexion()
+    if not conn:
+        return False, "Error al conectar con la base de datos"
+    try:
+        cur = conn.cursor()
+        c_id = datos.get("id")
+        red_id = datos.get("red_salud_id")
+        nombre = datos.get("nombre", "").strip()
+        nivel = datos.get("nivel", "Primer Nivel").strip()
+        direccion = datos.get("direccion", "").strip()
+        telefono = datos.get("telefono", "").strip()
+        responsable = datos.get("responsable", "").strip()
+        estado = datos.get("estado", "Activo").strip()
+
+        if not nombre:
+            conn.close()
+            return False, "El nombre del centro de salud es obligatorio."
+
+        if c_id:
+            cur.execute("""
+                UPDATE centros_salud 
+                SET red_salud_id = %s, nombre = %s, nivel = %s, direccion = %s, telefono = %s, responsable = %s, estado = %s
+                WHERE id = %s;
+            """, (red_id, nombre, nivel, direccion, telefono, responsable, estado, c_id))
+            ret_id = c_id
+        else:
+            cur.execute("""
+                INSERT INTO centros_salud (red_salud_id, nombre, nivel, direccion, telefono, responsable, estado)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                RETURNING id;
+            """, (red_id, nombre, nivel, direccion, telefono, responsable, estado))
+            ret_id = cur.fetchone()[0]
+
+        conn.commit()
+        cur.close()
+        conn.close()
+        return True, ret_id
+    except Exception as e:
+        if conn:
+            conn.rollback()
+            conn.close()
+        return False, str(e)
+
+def eliminar_centro_salud_db(centro_id, eliminacion_fisica=False):
+    """Elimina o desactiva un Centro de Salud."""
+    invalidar_cache_jerarquia()
+    conn = obtener_conexion()
+    if not conn:
+        return False, "Error al conectar con la base de datos"
+    try:
+        cur = conn.cursor()
+        if eliminacion_fisica:
+            cur.execute("DELETE FROM centros_salud WHERE id = %s;", (centro_id,))
+        else:
+            cur.execute("UPDATE centros_salud SET estado = 'Inactivo' WHERE id = %s;", (centro_id,))
+        conn.commit()
+        cur.close()
+        conn.close()
+        return True, "Centro de Salud eliminado correctamente"
+    except Exception as e:
+        if conn:
+            conn.rollback()
+            conn.close()
+        return False, str(e)
+
+def guardar_red_salud_db(datos):
+    """Inserta o actualiza una Red de Salud en la base de datos."""
+    invalidar_cache_jerarquia()
+    conn = obtener_conexion()
+    if not conn:
+        return False, "Error al conectar con la base de datos"
+    try:
+        cur = conn.cursor()
+        r_id = datos.get("id")
+        mun_id = datos.get("municipio_id", 1)
+        dep_id = datos.get("departamento_id", 1)
+        nombre = datos.get("nombre", "").strip()
+        codigo = datos.get("codigo", "").strip()
+        macrodistrito = datos.get("macrodistrito", "").strip()
+        responsable = datos.get("responsable", "").strip()
+        telefono = datos.get("telefono", "").strip()
+        estado = datos.get("estado", "Activo").strip()
+
+        if not nombre or not codigo:
+            conn.close()
+            return False, "El nombre y código de la Red son obligatorios."
+
+        if r_id:
+            cur.execute("""
+                UPDATE redes_salud 
+                SET municipio_id = %s, departamento_id = %s, nombre = %s, codigo = %s, macrodistrito = %s, responsable = %s, telefono = %s, estado = %s
+                WHERE id = %s;
+            """, (mun_id, dep_id, nombre, codigo, macrodistrito, responsable, telefono, estado, r_id))
+            ret_id = r_id
+        else:
+            cur.execute("""
+                INSERT INTO redes_salud (municipio_id, departamento_id, nombre, codigo, macrodistrito, responsable, telefono, estado)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                RETURNING id;
+            """, (mun_id, dep_id, nombre, codigo, macrodistrito, responsable, telefono, estado))
+            ret_id = cur.fetchone()[0]
+
+        conn.commit()
+        cur.close()
+        conn.close()
+        return True, ret_id
+    except Exception as e:
+        if conn:
+            conn.rollback()
+            conn.close()
+        return False, str(e)
+
+def eliminar_red_salud_db(red_id):
+    """Desactiva una Red de Salud."""
+    invalidar_cache_jerarquia()
+    conn = obtener_conexion()
+    if not conn:
+        return False, "Error al conectar con la base de datos"
+    try:
+        cur = conn.cursor()
+        cur.execute("UPDATE redes_salud SET estado = 'Inactivo' WHERE id = %s;", (red_id,))
+        conn.commit()
+        cur.close()
+        conn.close()
+        return True, "Red de Salud desactivada correctamente"
+    except Exception as e:
+        if conn:
+            conn.rollback()
+            conn.close()
+        return False, str(e)
+
+def guardar_municipio_db(datos):
+    """Inserta o actualiza un Municipio."""
+    invalidar_cache_jerarquia()
+    conn = obtener_conexion()
+    if not conn:
+        return False, "Error de conexión"
+    try:
+        cur = conn.cursor()
+        m_id = datos.get("id")
+        dep_id = datos.get("departamento_id", 1)
+        nombre = datos.get("nombre", "").strip()
+        codigo = datos.get("codigo", "").strip()
+        estado = datos.get("estado", "Activo").strip()
+
+        if m_id:
+            cur.execute("UPDATE municipios SET departamento_id = %s, nombre = %s, codigo = %s, estado = %s WHERE id = %s;", (dep_id, nombre, codigo, estado, m_id))
+            ret_id = m_id
+        else:
+            cur.execute("INSERT INTO municipios (departamento_id, nombre, codigo, estado) VALUES (%s, %s, %s, %s) RETURNING id;", (dep_id, nombre, codigo, estado))
+            ret_id = cur.fetchone()[0]
+
+        conn.commit()
+        cur.close()
+        conn.close()
+        return True, ret_id
+    except Exception as e:
+        if conn:
+            conn.rollback()
+            conn.close()
+        return False, str(e)
+
+def guardar_departamento_db(datos):
+    """Inserta o actualiza un Departamento."""
+    invalidar_cache_jerarquia()
+    conn = obtener_conexion()
+    if not conn:
+        return False, "Error de conexión"
+    try:
+        cur = conn.cursor()
+        d_id = datos.get("id")
+        nombre = datos.get("nombre", "").strip()
+        codigo = datos.get("codigo", "").strip()
+        estado = datos.get("estado", "Activo").strip()
+
+        if d_id:
+            cur.execute("UPDATE departamentos SET nombre = %s, codigo = %s, estado = %s WHERE id = %s;", (nombre, codigo, estado, d_id))
+            ret_id = d_id
+        else:
+            cur.execute("INSERT INTO departamentos (nombre, codigo, estado) VALUES (%s, %s, %s) RETURNING id;", (nombre, codigo, estado))
+            ret_id = cur.fetchone()[0]
+
+        conn.commit()
+        cur.close()
+        conn.close()
+        return True, ret_id
+    except Exception as e:
+        if conn:
+            conn.rollback()
+            conn.close()
+        return False, str(e)
 
 def mover_a_papelera(cur, tabla_origen, id_original, datos_dict, usuario="desconocido"):
     """
