@@ -134,7 +134,7 @@ class VistaCatalogo(ctk.CTkFrame):
         emo = ctk.CTkEntry(v, placeholder_text="Modelo", width=300)
         emo.pack(pady=5)
         
-        ctk.CTkLabel(v, text="Área / Unidad:", font=ctk.CTkFont(weight="bold")).pack(anchor="w", padx=100, pady=(5, 0))
+        ctk.CTkLabel(v, text="Área:", font=ctk.CTkFont(weight="bold")).pack(anchor="w", padx=100, pady=(5, 0))
         val_areas = [a["nombre"] for a in self.app.datos["areas"]]
         combo_area = ctk.CTkComboBox(v, values=val_areas if val_areas else ["No hay áreas"], width=300)
         combo_area.pack(pady=5)

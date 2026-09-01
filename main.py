@@ -1206,15 +1206,15 @@ class SistemaMantenimiento(ctk.CTk):
         combo_tipo.pack(pady=(0, 5))
         habilitar_autocompletado(combo_tipo, val_cat)
         
-        ctk.CTkLabel(sf, text="Unidad:", font=ctk.CTkFont(size=11, weight="bold"), text_color=C_TEXT).pack(anchor="w", padx=150, pady=(5, 0))
+        ctk.CTkLabel(sf, text="Área:", font=ctk.CTkFont(size=11, weight="bold"), text_color=C_TEXT).pack(anchor="w", padx=150, pady=(5, 0))
         val_areas = [a["nombre"] for a in self.datos["areas"]]
         combo_area = ctk.CTkComboBox(sf, width=500, values=val_areas if val_areas else ["No hay áreas"])
         combo_area.pack(pady=(0, 5))
         combo_area.configure(state="disabled")
         habilitar_autocompletado(combo_area, val_areas)
 
-        ctk.CTkLabel(sf, text="Servicio (Ej. Rayos X):", font=ctk.CTkFont(size=11, weight="bold"), text_color=C_TEXT).pack(anchor="w", padx=150, pady=(5, 0))
-        e_servicio = ctk.CTkEntry(sf, placeholder_text="Servicio (Ej. Rayos X)", width=500)
+        ctk.CTkLabel(sf, text="Servicio:", font=ctk.CTkFont(size=11, weight="bold"), text_color=C_TEXT).pack(anchor="w", padx=150, pady=(5, 0))
+        e_servicio = ctk.CTkEntry(sf, placeholder_text="Servicio", width=500)
         e_servicio.pack(pady=(0, 5))
 
         ctk.CTkLabel(sf, text="Código de Activos Fijos:", font=ctk.CTkFont(size=11, weight="bold"), text_color=C_TEXT).pack(anchor="w", padx=150, pady=(5, 0))

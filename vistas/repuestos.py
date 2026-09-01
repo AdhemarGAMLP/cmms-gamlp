@@ -457,7 +457,7 @@ class VistaRepuestos(ctk.CTkFrame):
         actualizar_botones_estado()
 
         # 2. Red de Salud
-        ctk.CTkLabel(sf, text="Red de Salud *:", font=ctk.CTkFont(weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(5, 2))
+        ctk.CTkLabel(sf, text="Red de Salud:", font=ctk.CTkFont(weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(5, 2))
         
         sedes_data = getattr(self.app, "sedes_data", None)
         if not sedes_data:
@@ -488,12 +488,12 @@ class VistaRepuestos(ctk.CTkFrame):
             combo_red.set(red_inicial)
 
         # 3. Centro de Salud (Dinámico)
-        ctk.CTkLabel(sf, text="Centro de Salud *:", font=ctk.CTkFont(weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(5, 2))
+        ctk.CTkLabel(sf, text="Centro de Salud:", font=ctk.CTkFont(weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(5, 2))
         combo_centro = ctk.CTkComboBox(sf, values=["Cargando centros..."], height=36)
         combo_centro.pack(fill="x", pady=(0, 10))
 
         # 4. Área (Dinámico)
-        ctk.CTkLabel(sf, text="Área Hospitalaria / Servicio *:", font=ctk.CTkFont(weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(5, 2))
+        ctk.CTkLabel(sf, text="Área:", font=ctk.CTkFont(weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(5, 2))
         combo_area = ctk.CTkComboBox(sf, values=["General"], height=36)
         combo_area.pack(fill="x", pady=(0, 10))
 
@@ -531,7 +531,7 @@ class VistaRepuestos(ctk.CTkFrame):
         actualizar_centros_y_areas(combo_red.get())
 
         # 5. Nombre del Repuesto con Sugerencias
-        ctk.CTkLabel(sf, text="Nombre del Repuesto / Accesorio *:", font=ctk.CTkFont(weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(5, 2))
+        ctk.CTkLabel(sf, text="Nombre del Repuesto / Accesorio:", font=ctk.CTkFont(weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(5, 2))
         
         f_rep_box = ctk.CTkFrame(sf, fg_color="transparent")
         f_rep_box.pack(fill="x", pady=(0, 10))
@@ -592,13 +592,13 @@ class VistaRepuestos(ctk.CTkFrame):
         
         f_col_marca = ctk.CTkFrame(f_row_mm, fg_color="transparent")
         f_col_marca.pack(side="left", fill="both", expand=True, padx=(0, 5))
-        ctk.CTkLabel(f_col_marca, text="Marca del Repuesto / Equipo:", font=ctk.CTkFont(weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(0, 2))
+        ctk.CTkLabel(f_col_marca, text="Marca del Accesorio / Repuesto:", font=ctk.CTkFont(weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(0, 2))
         e_marca = ctk.CTkEntry(f_col_marca, placeholder_text="Ej: Mindray, NSK, Philips...", height=36)
         e_marca.pack(fill="x")
         
         f_col_mod = ctk.CTkFrame(f_row_mm, fg_color="transparent")
         f_col_mod.pack(side="left", fill="both", expand=True, padx=(5, 0))
-        ctk.CTkLabel(f_col_mod, text="Modelo / N° Parte (P/N):", font=ctk.CTkFont(weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(0, 2))
+        ctk.CTkLabel(f_col_mod, text="Modelo del Accesorio / Repuesto:", font=ctk.CTkFont(weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(0, 2))
         e_modelo = ctk.CTkEntry(f_col_mod, placeholder_text="Ej: P/N 115-002345, Pana-Max...", height=36)
         e_modelo.pack(fill="x")
 
@@ -608,7 +608,7 @@ class VistaRepuestos(ctk.CTkFrame):
         
         f_col_cant = ctk.CTkFrame(f_row_cc, fg_color="transparent")
         f_col_cant.pack(side="left", fill="both", expand=True, padx=(0, 5))
-        ctk.CTkLabel(f_col_cant, text="Cantidad *:", font=ctk.CTkFont(weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(0, 2))
+        ctk.CTkLabel(f_col_cant, text="Cantidad:", font=ctk.CTkFont(weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(0, 2))
         e_cantidad = ctk.CTkEntry(f_col_cant, placeholder_text="1", height=36)
         e_cantidad.pack(fill="x")
         

@@ -413,7 +413,7 @@ class VistaSedes(ctk.CTkFrame):
         cb_red.pack(pady=(0, 8))
 
         # Nombre
-        ctk.CTkLabel(f_form, text="Nombre del Centro de Salud / Hospital *:", font=ctk.CTkFont(weight="bold")).pack(anchor="w", pady=(4, 2))
+        ctk.CTkLabel(f_form, text="Nombre del Centro de Salud / Hospital:", font=ctk.CTkFont(weight="bold")).pack(anchor="w", pady=(4, 2))
         e_nombre = ctk.CTkEntry(f_form, placeholder_text="ej. C.M.I. CHASQUIPAMPA", width=460)
         e_nombre.pack(pady=(0, 8))
 
@@ -567,12 +567,12 @@ class VistaSedes(ctk.CTkFrame):
         f_form.pack(fill="both", expand=True, padx=30, pady=5)
 
         # Código
-        ctk.CTkLabel(f_form, text="Código de Red (ej. RED-1, RED-6) *:", font=ctk.CTkFont(weight="bold")).pack(anchor="w", pady=(4, 2))
+        ctk.CTkLabel(f_form, text="Código de Red (ej. RED-1, RED-6):", font=ctk.CTkFont(weight="bold")).pack(anchor="w", pady=(4, 2))
         e_cod = ctk.CTkEntry(f_form, placeholder_text="ej. RED-6", width=460)
         e_cod.pack(pady=(0, 8))
 
         # Nombre
-        ctk.CTkLabel(f_form, text="Nombre Completo de la Red *:", font=ctk.CTkFont(weight="bold")).pack(anchor="w", pady=(4, 2))
+        ctk.CTkLabel(f_form, text="Nombre Completo de la Red:", font=ctk.CTkFont(weight="bold")).pack(anchor="w", pady=(4, 2))
         e_nom = ctk.CTkEntry(f_form, placeholder_text="ej. RED 6-RURAL (MACRODISTRITO ZONGO/HAMPATURI)", width=460)
         e_nom.pack(pady=(0, 8))
 
@@ -711,7 +711,7 @@ class VistaSedes(ctk.CTkFrame):
         f_form = ctk.CTkFrame(vent, fg_color="transparent")
         f_form.pack(fill="both", expand=True, padx=24, pady=5)
 
-        ctk.CTkLabel(f_form, text="Nombre del Municipio *:", font=ctk.CTkFont(weight="bold")).pack(anchor="w", pady=(4, 2))
+        ctk.CTkLabel(f_form, text="Nombre del Municipio:", font=ctk.CTkFont(weight="bold")).pack(anchor="w", pady=(4, 2))
         e_nom = ctk.CTkEntry(f_form, placeholder_text="ej. GAMLP", width=380)
         e_nom.pack(pady=(0, 8))
 
@@ -786,7 +786,7 @@ class VistaSedes(ctk.CTkFrame):
         f_form = ctk.CTkFrame(vent, fg_color="transparent")
         f_form.pack(fill="both", expand=True, padx=24, pady=5)
 
-        ctk.CTkLabel(f_form, text="Nombre del Departamento *:", font=ctk.CTkFont(weight="bold")).pack(anchor="w", pady=(4, 2))
+        ctk.CTkLabel(f_form, text="Nombre del Departamento:", font=ctk.CTkFont(weight="bold")).pack(anchor="w", pady=(4, 2))
         e_nom = ctk.CTkEntry(f_form, placeholder_text="ej. La Paz, Cochabamba, Santa Cruz", width=380)
         e_nom.pack(pady=(0, 8))
 

@@ -269,21 +269,21 @@ class VistaUsuarios(ctk.CTkFrame):
         # 1. Nombre Completo
         f_c1 = ctk.CTkFrame(f_grid, fg_color="transparent")
         f_c1.grid(row=0, column=0, padx=(0, 10), pady=4, sticky="nsew")
-        ctk.CTkLabel(f_c1, text="Nombre Completo *:", font=ctk.CTkFont(weight="bold", size=12), text_color=C_TEXT).pack(anchor="w")
+        ctk.CTkLabel(f_c1, text="Nombre Completo:", font=ctk.CTkFont(weight="bold", size=12), text_color=C_TEXT).pack(anchor="w")
         e_nombre = ctk.CTkEntry(f_c1, placeholder_text="ej. Lic. Adhemar Santos Medina", height=34)
         e_nombre.pack(fill="x", pady=(2, 0))
 
         # 2. C.I. (Cédula de Identidad / Usuario)
         f_c2 = ctk.CTkFrame(f_grid, fg_color="transparent")
         f_c2.grid(row=0, column=1, padx=(10, 0), pady=4, sticky="nsew")
-        ctk.CTkLabel(f_c2, text="C.I. (Cédula de Identidad / Usuario) *:", font=ctk.CTkFont(weight="bold", size=12), text_color=C_TEXT).pack(anchor="w")
+        ctk.CTkLabel(f_c2, text="C.I. (Cédula de Identidad / Usuario):", font=ctk.CTkFont(weight="bold", size=12), text_color=C_TEXT).pack(anchor="w")
         e_ci = ctk.CTkEntry(f_c2, placeholder_text="ej. 10955499", height=34)
         e_ci.pack(fill="x", pady=(2, 0))
 
         # 3. Contraseña
         f_c3 = ctk.CTkFrame(f_grid, fg_color="transparent")
         f_c3.grid(row=1, column=0, padx=(0, 10), pady=8, sticky="nsew")
-        pass_lbl_txt = "Contraseña (dejar en blanco para no cambiar):" if user_editar else "Contraseña *:"
+        pass_lbl_txt = "Contraseña (dejar en blanco para no cambiar):" if user_editar else "Contraseña:"
         ctk.CTkLabel(f_c3, text=pass_lbl_txt, font=ctk.CTkFont(weight="bold", size=12), text_color=C_TEXT).pack(anchor="w")
         e_pass = ctk.CTkEntry(f_c3, show="*", placeholder_text="Contraseña segura", height=34)
         e_pass.pack(fill="x", pady=(2, 0))
@@ -291,7 +291,7 @@ class VistaUsuarios(ctk.CTkFrame):
         # 4. Rol de Usuario
         f_c4 = ctk.CTkFrame(f_grid, fg_color="transparent")
         f_c4.grid(row=1, column=1, padx=(10, 0), pady=8, sticky="nsew")
-        ctk.CTkLabel(f_c4, text="Rol de Usuario *:", font=ctk.CTkFont(weight="bold", size=12), text_color=C_TEXT).pack(anchor="w")
+        ctk.CTkLabel(f_c4, text="Rol de Usuario:", font=ctk.CTkFont(weight="bold", size=12), text_color=C_TEXT).pack(anchor="w")
         combo_rol = ctk.CTkComboBox(f_c4, values=ROLES_DISPONIBLES, height=34)
         combo_rol.pack(fill="x", pady=(2, 0))
 

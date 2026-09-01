@@ -70,16 +70,16 @@ class VistaAreas(ctk.CTkFrame):
                 return
 
         vent = ctk.CTkToplevel(self)
-        vent.title("Área / Unidad")
+        vent.title("Área")
         vent.geometry("500x450")
         vent.transient(self.app)
         vent.grab_set()
         vent.configure(fg_color=C_CARD)
         
-        ctk.CTkLabel(vent, text="Detalles de la Unidad/Área", font=ctk.CTkFont(size=18, weight="bold"), text_color=C_TEXT).pack(pady=15)
+        ctk.CTkLabel(vent, text="Detalles del Área", font=ctk.CTkFont(size=18, weight="bold"), text_color=C_TEXT).pack(pady=15)
         
-        ctk.CTkLabel(vent, text="Nombre de la Unidad/Área:", font=ctk.CTkFont(weight="bold")).pack(anchor="w", padx=50, pady=(5,0))
-        e_nombre = ctk.CTkEntry(vent, placeholder_text="Nombre de la Unidad (ej: Emergencias)", width=400)
+        ctk.CTkLabel(vent, text="Nombre del Área:", font=ctk.CTkFont(weight="bold")).pack(anchor="w", padx=50, pady=(5,0))
+        e_nombre = ctk.CTkEntry(vent, placeholder_text="Nombre del Área (ej: Emergencias)", width=400)
         e_nombre.pack(pady=5)
         
         ctk.CTkLabel(vent, text="Piso / Nivel:", font=ctk.CTkFont(weight="bold")).pack(anchor="w", padx=50, pady=(5,0))
