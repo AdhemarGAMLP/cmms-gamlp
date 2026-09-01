@@ -103,11 +103,17 @@ def generar_excel_repuestos_wb(lista_repuestos, tipo="Stock"):
                     pil_img = PILImage.open(foto_str)
 
                 if pil_img:
-                    if pil_img.mode != "RGB":
+                    if pil_img.mode in ("RGBA", "LA", "P"):
+                        bg = PILImage.new("RGB", pil_img.size, (255, 255, 255))
+                        if pil_img.mode == "P":
+                            pil_img = pil_img.convert("RGBA")
+                        bg.paste(pil_img, mask=pil_img.split()[-1] if "A" in pil_img.getbands() else None)
+                        pil_img = bg
+                    elif pil_img.mode != "RGB":
                         pil_img = pil_img.convert("RGB")
                     
-                    # Escalar manteniendo proporción: max 130x55 px
-                    max_w, max_h = 130, 55
+                    # Escalar manteniendo proporción: tamaño de ~100x100 px de alta nitidez
+                    max_w, max_h = 115, 100
                     orig_w, orig_h = pil_img.size
                     ratio = min(max_w / orig_w, max_h / orig_h)
                     new_w, new_h = max(1, int(orig_w * ratio)), max(1, int(orig_h * ratio))
@@ -120,10 +126,13 @@ def generar_excel_repuestos_wb(lista_repuestos, tipo="Stock"):
                     temp_img_files.append(tf.name)
 
                     openpyxl_img = OpenpyxlImage(tf.name)
+                    openpyxl_img.width = new_w
+                    openpyxl_img.height = new_h
                     openpyxl_img.anchor = f"O{fila_idx}"
                     ws.add_image(openpyxl_img)
                     
-                    ws.row_dimensions[fila_idx].height = 55
+                    # Ajustar altura de la fila a 82 pt para que la imagen de 100px quepa perfectamente sin desbordar
+                    ws.row_dimensions[fila_idx].height = max(80, int(new_h * 0.78) + 4)
                     img_insertada = True
             except Exception as ex:
                 print(f"[WARN] Error insertando foto en fila {fila_idx}: {ex}")

@@ -1187,11 +1187,10 @@ def obtener_firma_datos_db():
 # =========================================================================
 # COMPRESIÓN Y SINCRONIZACIÓN UNIVERSAL DE IMÁGENES (BASE64 OPTIMIZADO)
 # =========================================================================
-def comprimir_imagen_base64(ruta_or_bytes, max_size=(800, 800), quality=80):
+def comprimir_imagen_base64(ruta_or_bytes, max_size=(1200, 1200), quality=90):
     """
-    Comprime una imagen a formato JPEG optimizado (max 800x800 px, 80% calidad)
-    y retorna una cadena data:image/jpeg;base64,... (peso típico: ~30 a 50 KB).
-    Permite sincronización universal entre 20 PCs y web móvil sin depender de rutas locales.
+    Comprime una imagen a formato JPEG optimizado con alta nitidez (max 1200x1200 px, 90% calidad)
+    y fondo blanco para transparencias PNG.
     """
     if not ruta_or_bytes:
         return ""
@@ -1208,8 +1207,14 @@ def comprimir_imagen_base64(ruta_or_bytes, max_size=(800, 800), quality=80):
         else:
             img = Image.open(ruta_or_bytes)
             
-        # Convertir a RGB si es PNG con transparencia (RGBA) o paleta
+        # Convertir a RGB respetando fondo blanco si tiene canal alfa / transparencia
         if img.mode in ("RGBA", "LA", "P"):
+            bg = Image.new("RGB", img.size, (255, 255, 255))
+            if img.mode == "P":
+                img = img.convert("RGBA")
+            bg.paste(img, mask=img.split()[-1] if "A" in img.getbands() else None)
+            img = bg
+        elif img.mode != "RGB":
             img = img.convert("RGB")
             
         img.thumbnail(max_size, Image.LANCZOS)
