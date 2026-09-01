@@ -2941,11 +2941,11 @@ class SistemaMantenimiento(ctk.CTk):
         e_def = ctk.CTkTextbox(sf, width=600, height=60, fg_color=C_BG, corner_radius=8)
         e_def.pack(padx=10, pady=5)
         
-        ctk.CTkLabel(sf, text="D. Trabajo Realizado:", font=ctk.CTkFont(weight="bold")).pack(anchor="w", padx=10, pady=(10,0))
+        ctk.CTkLabel(sf, text="Trabajo Realizado:", font=ctk.CTkFont(weight="bold")).pack(anchor="w", padx=10, pady=(10,0))
         e_trab = ctk.CTkTextbox(sf, width=600, height=80, fg_color=C_BG, corner_radius=8)
         e_trab.pack(padx=10, pady=5)
         
-        ctk.CTkLabel(sf, text="E. Observaciones y Recomendaciones:", font=ctk.CTkFont(weight="bold")).pack(anchor="w", padx=10, pady=(10,0))
+        ctk.CTkLabel(sf, text="Observaciones y Recomendaciones:", font=ctk.CTkFont(weight="bold")).pack(anchor="w", padx=10, pady=(10,0))
         e_obs = ctk.CTkTextbox(sf, width=600, height=80, fg_color=C_BG, corner_radius=8)
         e_obs.pack(padx=10, pady=5)
 
