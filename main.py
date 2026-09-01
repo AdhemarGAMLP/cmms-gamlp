@@ -1852,12 +1852,12 @@ class SistemaMantenimiento(ctk.CTk):
                 sel = vista_inv.tabla_inv.selection() or ([vista_inv.tabla_inv.focus()] if vista_inv.tabla_inv.focus() else [])
                 if sel:
                     vals = vista_inv.tabla_inv.item(sel[0], "values")
-                    item_id = vals[4] if len(vals) > 4 else vals[0]
+                    item_id = vals[6] if len(vals) > 6 else (vals[4] if len(vals) > 4 else vals[0])
             elif vista_inv and hasattr(vista_inv, "tabla"):
                 sel = vista_inv.tabla.selection()
                 if sel:
                     vals = vista_inv.tabla.item(sel[0], "values")
-                    item_id = vals[4] if len(vals) > 4 else vals[0]
+                    item_id = vals[6] if len(vals) > 6 else (vals[4] if len(vals) > 4 else vals[0])
                     
         if not item_id:
             return
