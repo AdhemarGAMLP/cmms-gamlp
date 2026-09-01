@@ -92,15 +92,30 @@ class VistaAnalisis(ctk.CTkFrame):
         contexto = getattr(self.app, "contexto_sede", None)
         
         # ----------------------------------------------------
-        # CARD 0: DISTRIBUCIÓN Y CENSO JERÁRQUICO DE EQUIPOS
-        # (Por Red, Por Centro de Salud o Por Área según el contexto)
+        # CARD 0: DISTRIBUCIÓN Y CENSO JERÁRQUICO DE EQUIPOS (TARJETAS INTERACTIVAS)
         # ----------------------------------------------------
         f_card_dist = ctk.CTkFrame(self.scroll_frame, fg_color=C_CARD, corner_radius=16, border_width=1, border_color=C_BORDER)
         f_card_dist.grid(row=0, column=0, columnspan=2, padx=12, pady=12, sticky="nsew")
         self.canvas_widgets.append(f_card_dist)
-        self.dibujar_distribucion_censo(f_card_dist, todos_equipos, contexto)
+        items_censo, modo_censo, eqs_contexto, tit_censo = self.dibujar_distribucion_censo(f_card_dist, todos_equipos, contexto)
 
-        # Extraer intervenciones
+        # ----------------------------------------------------
+        # CARD 0.1: GRÁFICA VISUAL DE DISTRIBUCIÓN (BARRAS)
+        # ----------------------------------------------------
+        f_card_g1 = ctk.CTkFrame(self.scroll_frame, fg_color=C_CARD, corner_radius=16, border_width=1, border_color=C_BORDER)
+        f_card_g1.grid(row=1, column=0, padx=12, pady=12, sticky="nsew")
+        self.canvas_widgets.append(f_card_g1)
+        self.dibujar_grafica_distribucion_equipos(f_card_g1, items_censo, modo_censo)
+
+        # ----------------------------------------------------
+        # CARD 0.2: GRÁFICA DE TIPOS DE EQUIPOS MÁS FRECUENTES
+        # ----------------------------------------------------
+        f_card_g2 = ctk.CTkFrame(self.scroll_frame, fg_color=C_CARD, corner_radius=16, border_width=1, border_color=C_BORDER)
+        f_card_g2.grid(row=1, column=1, padx=12, pady=12, sticky="nsew")
+        self.canvas_widgets.append(f_card_g2)
+        self.dibujar_grafica_tipos_equipos(f_card_g2, eqs_contexto, modo_censo)
+
+        # Extraer intervenciones de mantenimiento
         intervenciones = []
         for eq in todos_equipos:
             for m in eq.get("historial_intervenciones", []):
@@ -125,7 +140,7 @@ class VistaAnalisis(ctk.CTkFrame):
         # CARD 1: MANTENIMIENTOS POR MES (PREVENTIVOS VS CORRECTIVOS)
         # ----------------------------------------------------
         f_card1 = ctk.CTkFrame(self.scroll_frame, fg_color=C_CARD, corner_radius=16, border_width=1, border_color=C_BORDER)
-        f_card1.grid(row=1, column=0, columnspan=2, padx=12, pady=12, sticky="nsew")
+        f_card1.grid(row=2, column=0, columnspan=2, padx=12, pady=12, sticky="nsew")
         self.canvas_widgets.append(f_card1)
         self.dibujar_mensuales(f_card1, inter_anio, anio_sel)
 
@@ -133,7 +148,7 @@ class VistaAnalisis(ctk.CTkFrame):
         # CARD 2: TIPO DE MANTENIMIENTO (PIE CHART)
         # ----------------------------------------------------
         f_card2 = ctk.CTkFrame(self.scroll_frame, fg_color=C_CARD, corner_radius=16, border_width=1, border_color=C_BORDER)
-        f_card2.grid(row=2, column=0, padx=12, pady=12, sticky="nsew")
+        f_card2.grid(row=3, column=0, padx=12, pady=12, sticky="nsew")
         self.canvas_widgets.append(f_card2)
         self.dibujar_proporcion_tipo(f_card2, inter_anio, anio_sel)
 
@@ -141,7 +156,7 @@ class VistaAnalisis(ctk.CTkFrame):
         # CARD 3: TOP 5 EQUIPOS CON MÁS MANTENIMIENTOS
         # ----------------------------------------------------
         f_card3 = ctk.CTkFrame(self.scroll_frame, fg_color=C_CARD, corner_radius=16, border_width=1, border_color=C_BORDER)
-        f_card3.grid(row=2, column=1, padx=12, pady=12, sticky="nsew")
+        f_card3.grid(row=3, column=1, padx=12, pady=12, sticky="nsew")
         self.canvas_widgets.append(f_card3)
         self.dibujar_top_equipos(f_card3, inter_anio)
 
@@ -149,7 +164,7 @@ class VistaAnalisis(ctk.CTkFrame):
         # CARD 4: TOP 5 ÁREAS CON MÁS MANTENIMIENTOS
         # ----------------------------------------------------
         f_card4 = ctk.CTkFrame(self.scroll_frame, fg_color=C_CARD, corner_radius=16, border_width=1, border_color=C_BORDER)
-        f_card4.grid(row=3, column=0, padx=12, pady=12, sticky="nsew")
+        f_card4.grid(row=4, column=0, padx=12, pady=12, sticky="nsew")
         self.canvas_widgets.append(f_card4)
         self.dibujar_top_areas(f_card4, inter_anio)
 
@@ -157,7 +172,7 @@ class VistaAnalisis(ctk.CTkFrame):
         # CARD 5: REPUESTOS MÁS UTILIZADOS (TOP 5)
         # ----------------------------------------------------
         f_card5 = ctk.CTkFrame(self.scroll_frame, fg_color=C_CARD, corner_radius=16, border_width=1, border_color=C_BORDER)
-        f_card5.grid(row=3, column=1, padx=12, pady=12, sticky="nsew")
+        f_card5.grid(row=4, column=1, padx=12, pady=12, sticky="nsew")
         self.canvas_widgets.append(f_card5)
         self.dibujar_top_repuestos(f_card5, inter_anio)
 
@@ -184,11 +199,9 @@ class VistaAnalisis(ctk.CTkFrame):
         f_header.pack(fill="x", padx=16, pady=(14, 6))
 
         if es_global or (not red_sel and not cen_sel):
-            # NIVEL 1: Todas las redes -> Equipos por Red
             titulo_seccion = "🌐 Censo y Distribución de Equipos Médicos por Red de Salud"
             sub_seccion = f"Total en GAMLP: {len(todos_equipos):,} equipos | Haz clic en una Red para consultar sus centros y equipos"
             
-            # Agrupar por Red
             grupos = {}
             for eq in todos_equipos:
                 r_nom = eq.get("red_salud_nombre") or "Sin Red Asignada"
@@ -196,9 +209,9 @@ class VistaAnalisis(ctk.CTkFrame):
                 
             items_ordenados = sorted(grupos.items(), key=lambda x: str(x[0]))
             modo = "red"
+            eqs_contexto = todos_equipos
 
         elif red_sel and not cen_sel:
-            # NIVEL 2: Red específica seleccionada -> Equipos por Centro de Salud
             eqs_en_red = [e for e in todos_equipos if str(e.get("red_salud_nombre", "")).strip().lower() == str(red_sel).strip().lower()]
             r_corta = simplificar_nombre_red(red_sel)
             titulo_seccion = f"🏥 Distribución de Equipos por Centro de Salud — {r_corta}"
@@ -211,9 +224,9 @@ class VistaAnalisis(ctk.CTkFrame):
                 
             items_ordenados = sorted(grupos.items(), key=lambda x: len(x[1]), reverse=True)
             modo = "centro"
+            eqs_contexto = eqs_en_red
 
         else:
-            # NIVEL 3: Centro de Salud específico -> Equipos por Área / Servicio
             eqs_en_centro = [e for e in todos_equipos if str(e.get("centro_salud_nombre", "")).strip().lower() == str(cen_sel).strip().lower()]
             titulo_seccion = f"📍 Distribución de Equipos por Área / Servicio — {cen_sel}"
             sub_seccion = f"Total en este Centro: {len(eqs_en_centro):,} equipos | Haz clic en un Área para listar los equipos médicos"
@@ -225,6 +238,7 @@ class VistaAnalisis(ctk.CTkFrame):
                 
             items_ordenados = sorted(grupos.items(), key=lambda x: len(x[1]), reverse=True)
             modo = "area"
+            eqs_contexto = eqs_en_centro
 
         ctk.CTkLabel(f_header, text=titulo_seccion, font=ctk.CTkFont(size=17, weight="bold"), text_color=C_TEXT).pack(anchor="w")
         ctk.CTkLabel(f_header, text=sub_seccion, font=ctk.CTkFont(size=12), text_color=C_SUBTEXT).pack(anchor="w", pady=(2, 0))
@@ -233,14 +247,12 @@ class VistaAnalisis(ctk.CTkFrame):
         f_cards_grid = ctk.CTkFrame(parent, fg_color="transparent")
         f_cards_grid.pack(fill="x", padx=16, pady=(10, 16))
 
-        # Colores temáticos para las tarjetas
         palette = ["#2563EB", "#059669", "#D97706", "#7C3AED", "#DC2626", "#0891B2", "#4F46E5", "#EA580C"]
 
         if not items_ordenados:
             ctk.CTkLabel(f_cards_grid, text="No hay equipos registrados para este filtro.", font=ctk.CTkFont(size=13), text_color=C_SUBTEXT).pack(pady=20)
-            return
+            return items_ordenados, modo, eqs_contexto, titulo_seccion
 
-        # Renderizar cuadrícula fluida de tarjetas interactivas
         max_cols = 3 if modo == "centro" or modo == "area" else 5
         for idx, (nombre_item, eqs_grupo) in enumerate(items_ordenados):
             row_i = idx // max_cols
@@ -249,7 +261,6 @@ class VistaAnalisis(ctk.CTkFrame):
             color_accent = palette[idx % len(palette)]
             cant_eqs = len(eqs_grupo)
             
-            # Nombre a mostrar
             display_title = simplificar_nombre_red(nombre_item) if modo == "red" else nombre_item
             if len(display_title) > 28:
                 display_title = display_title[:26] + "..."
@@ -258,11 +269,9 @@ class VistaAnalisis(ctk.CTkFrame):
             card_btn.grid(row=row_i, column=col_i, padx=6, pady=6, sticky="nsew")
             f_cards_grid.columnconfigure(col_i, weight=1)
 
-            # Barra de acento de color superior
             bar_acc = ctk.CTkFrame(card_btn, fg_color=color_accent, height=4, corner_radius=2)
             bar_acc.pack(fill="x", side="top")
 
-            # Contenido de la tarjeta
             f_in = ctk.CTkFrame(card_btn, fg_color="transparent")
             f_in.pack(fill="both", expand=True, padx=12, pady=10)
 
@@ -273,7 +282,6 @@ class VistaAnalisis(ctk.CTkFrame):
             ctk.CTkLabel(f_num, text=f"{cant_eqs}", font=ctk.CTkFont(size=22, weight="bold"), text_color=color_accent).pack(side="left")
             ctk.CTkLabel(f_num, text=" equipos", font=ctk.CTkFont(size=12), text_color=C_SUBTEXT).pack(side="left", padx=4, pady=(6, 0))
 
-            # Botón de inspección rápida
             btn_ver = ctk.CTkButton(
                 f_in, 
                 text="🔍 Ver Equipos", 
@@ -285,6 +293,95 @@ class VistaAnalisis(ctk.CTkFrame):
                 command=lambda n=nombre_item, eq_list=eqs_grupo, m=modo: self.abrir_modal_detalle_equipos(n, eq_list, m)
             )
             btn_ver.pack(fill="x", pady=(2, 0))
+
+        return items_ordenados, modo, eqs_contexto, titulo_seccion
+
+    # ========================================================
+    # GRÁFICA VISUAL 1: DISTRIBUCIÓN DE EQUIPOS (BARRAS)
+    # ========================================================
+    def dibujar_grafica_distribucion_equipos(self, parent, items_ordenados, modo):
+        if modo == "red":
+            tit = "Distribución de Equipos Médicos por Red"
+        elif modo == "centro":
+            tit = "Top Centros de Salud con Más Equipamiento"
+        else:
+            tit = "Cantidad de Equipos por Área Clínica"
+
+        ctk.CTkLabel(parent, text=tit, font=ctk.CTkFont(size=15, weight="bold"), text_color=C_TEXT).pack(pady=(10, 5))
+
+        if not items_ordenados:
+            ctk.CTkLabel(parent, text="Sin datos disponibles.", font=ctk.CTkFont(size=12), text_color=C_SUBTEXT).pack(pady=40)
+            return
+
+        # Limitar a top 8 para claridad visual
+        items_plot = items_ordenados[:8]
+        if modo == "red":
+            nombres = [simplificar_nombre_red(n) for n, _ in items_plot]
+        else:
+            nombres = [n[:16] + '..' if len(n) > 18 else n for n, _ in items_plot]
+        
+        cantidades = [len(eqs) for _, eqs in items_plot]
+
+        fig, ax = plt.subplots(figsize=(4.5, 3.2))
+        self.figuras.append(fig)
+        self.configurar_estilo_figura(fig, ax, "")
+
+        if modo == "red":
+            colores = ["#2563EB", "#059669", "#D97706", "#7C3AED", "#DC2626"]
+            bars = ax.bar(nombres, cantidades, color=colores[:len(nombres)], width=0.55)
+            ax.grid(axis='y', linestyle='--', alpha=0.3, color=C_SUBTEXT)
+            ax.bar_label(bars, color=C_TEXT, padding=3, weight="bold", size=10)
+        else:
+            bars = ax.barh(nombres, cantidades, color="#2563EB", height=0.55)
+            ax.invert_yaxis()
+            ax.grid(axis='x', linestyle='--', alpha=0.3, color=C_SUBTEXT)
+            ax.bar_label(bars, color=C_TEXT, padding=3, weight="bold", size=10)
+
+        fig.tight_layout()
+        canvas = FigureCanvasTkAgg(fig, master=parent)
+        canvas.draw()
+        canvas.get_tk_widget().pack(fill="both", expand=True, padx=10, pady=10)
+
+    # ========================================================
+    # GRÁFICA VISUAL 2: TIPOS DE EQUIPOS MÁS FRECUENTES
+    # ========================================================
+    def dibujar_grafica_tipos_equipos(self, parent, eqs_contexto, modo):
+        if modo == "area":
+            tit = "Tipos de Equipos en este Hospital y Área"
+        elif modo == "centro":
+            tit = "Tipos de Equipos en este Centro de Salud"
+        else:
+            tit = "Tipos de Equipos Médicos más Frecuentes (GAMLP)"
+
+        ctk.CTkLabel(parent, text=tit, font=ctk.CTkFont(size=15, weight="bold"), text_color=C_TEXT).pack(pady=(10, 5))
+
+        if not eqs_contexto:
+            ctk.CTkLabel(parent, text="Sin datos de equipos.", font=ctk.CTkFont(size=12), text_color=C_SUBTEXT).pack(pady=40)
+            return
+
+        conteo_tipos = Counter([eq.get("nombre", "Equipo").strip() for eq in eqs_contexto if eq.get("nombre")])
+        top_tipos = conteo_tipos.most_common(7)
+
+        if not top_tipos:
+            ctk.CTkLabel(parent, text="Sin datos.", font=ctk.CTkFont(size=12), text_color=C_SUBTEXT).pack(pady=40)
+            return
+
+        nombres, counts = zip(*top_tipos)
+        nombres = [n[:16] + '..' if len(n) > 18 else n for n in nombres]
+
+        fig, ax = plt.subplots(figsize=(4.5, 3.2))
+        self.figuras.append(fig)
+        self.configurar_estilo_figura(fig, ax, "")
+
+        bars = ax.barh(nombres, counts, color="#059669", height=0.55)
+        ax.invert_yaxis()
+        ax.grid(axis='x', linestyle='--', alpha=0.3, color=C_SUBTEXT)
+        ax.bar_label(bars, color=C_TEXT, padding=3, weight="bold", size=10)
+
+        fig.tight_layout()
+        canvas = FigureCanvasTkAgg(fig, master=parent)
+        canvas.draw()
+        canvas.get_tk_widget().pack(fill="both", expand=True, padx=10, pady=10)
 
     # ========================================================
     # MODAL INTERACTIVO DE DETALLE DE EQUIPOS
@@ -385,7 +482,8 @@ class VistaAnalisis(ctk.CTkFrame):
     def configurar_estilo_figura(self, fig, ax, titulo):
         fig.patch.set_facecolor(C_BG)
         ax.set_facecolor(C_BG)
-        ax.set_title(titulo, fontsize=14, weight="bold", color=C_TEXT, pad=15, family="Segoe UI")
+        if titulo:
+            ax.set_title(titulo, fontsize=14, weight="bold", color=C_TEXT, pad=15, family="Segoe UI")
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
         ax.spines['left'].set_color(C_BORDER)
@@ -399,7 +497,6 @@ class VistaAnalisis(ctk.CTkFrame):
             ctk.CTkLabel(parent, text="No hay registros de mantenimientos en este año.", font=ctk.CTkFont(size=12), text_color=C_SUBTEXT).pack(pady=40)
             return
 
-        # Agrupar por mes y tipo
         prevs_por_mes = [0] * 12
         corrs_por_mes = [0] * 12
         for i in inter:

@@ -677,6 +677,7 @@ HTML_ANALISIS = """
     <title>SGEM GAMLP - Análisis y Censo de Equipamiento</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
             --primary: #2563EB;
@@ -858,7 +859,7 @@ HTML_ANALISIS = """
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
             gap: 14px;
-            margin-bottom: 30px;
+            margin-bottom: 24px;
         }
 
         .censo-card {
@@ -914,6 +915,28 @@ HTML_ANALISIS = """
             text-align: center;
             text-decoration: none;
             display: block;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+            gap: 16px;
+            margin-bottom: 30px;
+        }
+
+        .chart-box {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 18px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+        }
+
+        .chart-box h3 {
+            font-size: 15px;
+            font-weight: 700;
+            margin: 0 0 14px;
+            color: var(--text);
         }
 
         /* Modal */
@@ -1092,6 +1115,22 @@ HTML_ANALISIS = """
             </div>
             {% endfor %}
         </div>
+
+        <!-- Gráficas Visuales Interactivas (Chart.js) -->
+        <div class="charts-grid">
+            <div class="chart-box">
+                <h3>📊 {{ censo_titulo }}</h3>
+                <div style="position: relative; height: 260px;">
+                    <canvas id="chart-censo"></canvas>
+                </div>
+            </div>
+            <div class="chart-box">
+                <h3>🩺 Tipos de Equipos Médicos más Frecuentes</h3>
+                <div style="position: relative; height: 260px;">
+                    <canvas id="chart-tipos"></canvas>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Modal de Detalle de Equipos -->
@@ -1240,6 +1279,70 @@ HTML_ANALISIS = """
                 cerrarModal();
             }
         };
+
+        // Renderizar Gráficas Visuales con Chart.js
+        document.addEventListener('DOMContentLoaded', () => {
+            const censoLabels = {{ chart_censo_labels | safe }};
+            const censoData = {{ chart_censo_data | safe }};
+
+            const ctxCenso = document.getElementById('chart-censo');
+            if (ctxCenso && censoLabels.length > 0) {
+                new Chart(ctxCenso, {
+                    type: 'bar',
+                    data: {
+                        labels: censoLabels,
+                        datasets: [{
+                            label: 'Equipos Médicos',
+                            data: censoData,
+                            backgroundColor: ['#2563EB', '#059669', '#D97706', '#7C3AED', '#DC2626', '#0891B2', '#4F46E5', '#EA580C'],
+                            borderRadius: 8
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            y: { beginAtZero: true, grid: { color: '#F1F5F9' } },
+                            x: { grid: { display: false } }
+                        }
+                    }
+                });
+            }
+
+            const tiposLabels = {{ chart_tipos_labels | safe }};
+            const tiposData = {{ chart_tipos_data | safe }};
+
+            const ctxTipos = document.getElementById('chart-tipos');
+            if (ctxTipos && tiposLabels.length > 0) {
+                new Chart(ctxTipos, {
+                    type: 'bar',
+                    data: {
+                        labels: tiposLabels,
+                        datasets: [{
+                            label: 'Cantidad',
+                            data: tiposData,
+                            backgroundColor: '#059669',
+                            borderRadius: 8
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            x: { beginAtZero: true, grid: { color: '#F1F5F9' } },
+                            y: { grid: { display: false } }
+                        }
+                    }
+                });
+            }
+        });
     </script>
 </body>
 </html>
@@ -1259,6 +1362,8 @@ def simplificar_red_web(red_str):
 
 @app_web.route('/analisis')
 def vista_analisis_web():
+    from collections import Counter
+    import json
     red_param = request.args.get('red', '').strip()
     centro_param = request.args.get('centro', '').strip()
 
@@ -1344,7 +1449,15 @@ def vista_analisis_web():
                     "tipo_label": "Lista de Equipos"
                 })
 
-        import json
+        # Datos para gráficas Chart.js
+        conteo_tipos = Counter([eq.get("nombre", "Equipo").strip() for eq in eqs_contexto if eq.get("nombre")])
+        top_tipos = conteo_tipos.most_common(8)
+        chart_tipos_labels = json.dumps([k for k, v in top_tipos])
+        chart_tipos_data = json.dumps([v for k, v in top_tipos])
+
+        chart_censo_labels = json.dumps([item["nombre_display"] for item in censo_items[:8]])
+        chart_censo_data = json.dumps([item["cantidad"] for item in censo_items[:8]])
+
         equipos_json = json.dumps(equipos_db)
 
         return render_template_string(
@@ -1360,6 +1473,10 @@ def vista_analisis_web():
             censo_titulo=censo_titulo,
             censo_subtitulo=censo_subtitulo,
             censo_items=censo_items,
+            chart_censo_labels=chart_censo_labels,
+            chart_censo_data=chart_censo_data,
+            chart_tipos_labels=chart_tipos_labels,
+            chart_tipos_data=chart_tipos_data,
             equipos_json=equipos_json
         )
     except Exception as e:
