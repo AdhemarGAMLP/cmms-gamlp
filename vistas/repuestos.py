@@ -67,7 +67,7 @@ class VistaRepuestos(ctk.CTkFrame):
         self.combo_ordenar_stock.pack(side="left", padx=5)
         self.combo_ordenar_stock.set("Repuesto (A-Z)")
         
-        cols_stock = ("Red", "Centro de Salud", "Área", "Repuesto", "Marca", "Modelo / P/N", "Cant. Disponible", "Costo Unit. (Bs.)", "Costo Total (Bs.)", "Observaciones")
+        cols_stock = ("Centro de Salud", "Área", "Repuesto", "Marca", "Modelo / P/N", "Cantidad")
         f_tree_stock = ctk.CTkFrame(marco_stock, fg_color="transparent")
         f_tree_stock.pack(pady=5, padx=5, fill="both", expand=True)
         self.tabla_stock = ttk.Treeview(f_tree_stock, columns=cols_stock, show="headings")
@@ -112,7 +112,7 @@ class VistaRepuestos(ctk.CTkFrame):
         self.lbl_kpi_req = ctk.CTkLabel(f_top_req, text="Requerimientos: 0 | Total Est.: 0.00 Bs.", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_ORANGE)
         self.lbl_kpi_req.pack(side="right", padx=10)
         
-        cols_req = ("Red", "Centro de Salud", "Área", "Repuesto Necesario", "Marca", "Modelo / P/N", "Cant. Requerida", "Costo Est. (Bs.)", "Costo Total (Bs.)", "Observaciones / Motivo")
+        cols_req = ("Centro de Salud", "Área", "Repuesto Necesario", "Marca", "Modelo / P/N", "Cantidad")
         f_tree_req = ctk.CTkFrame(marco_req, fg_color="transparent")
         f_tree_req.pack(pady=5, padx=5, fill="both", expand=True)
         self.tabla_req = ttk.Treeview(f_tree_req, columns=cols_req, show="headings")
@@ -234,21 +234,13 @@ class VistaRepuestos(ctk.CTkFrame):
             
         for r in rep_stock:
             cant_val = int(r.get("cantidad", 0) or 0)
-            costo_val = float(r.get("costo", 0) or 0)
-            costo_tot = cant_val * costo_val
-            costo_str = f"{costo_val:,.2f}" if costo_val > 0 else "-"
-            costo_tot_str = f"{costo_tot:,.2f}" if costo_tot > 0 else "-"
             self.tabla_stock.insert("", "end", values=(
-                r.get("red_salud_nombre") or "-",
                 r.get("centro_salud_nombre") or "-",
                 r.get("area") or "-",
                 r.get("nombre_repuesto", ""),
                 r.get("marca") or "-",
                 r.get("modelo") or r.get("modelo_parte") or "-",
-                cant_val,
-                costo_str,
-                costo_tot_str,
-                r.get("observaciones") or "-"
+                cant_val
             ))
         
         # --- TAB 2: REQUERIMIENTOS ---
@@ -288,23 +280,15 @@ class VistaRepuestos(ctk.CTkFrame):
         for r in rep_req:
             cant_r = int(r.get("cantidad", 0) or 0)
             costo_u = float(r.get("costo", 0) or 0)
-            costo_tot = cant_r * costo_u
-            total_inversion_req += costo_tot
-            
-            c_u_str = f"{costo_u:,.2f}" if costo_u > 0 else "-"
-            c_tot_str = f"{costo_tot:,.2f}" if costo_tot > 0 else "-"
+            total_inversion_req += cant_r * costo_u
             
             self.tabla_req.insert("", "end", values=(
-                r.get("red_salud_nombre") or "-",
                 r.get("centro_salud_nombre") or "-",
                 r.get("area") or "-",
                 r.get("nombre_repuesto", ""),
                 r.get("marca") or "-",
                 r.get("modelo") or r.get("modelo_parte") or "-",
-                cant_r,
-                c_u_str,
-                c_tot_str,
-                r.get("observaciones") or "-"
+                cant_r
             ))
             
         if hasattr(self, "lbl_kpi_req"):
@@ -904,8 +888,8 @@ class VistaRepuestos(ctk.CTkFrame):
             messagebox.showinfo("Selección Requerida", "Seleccione un repuesto de la lista de requerimientos.")
             return
             
-        n_rep = v[3]
-        cen_rep = v[1]
+        n_rep = v[2]
+        cen_rep = v[0]
         rep = next((r for r in self.app.datos.get("repuestos", []) if r.get("nombre_repuesto") == n_rep and (not r.get("centro_salud_nombre") or r.get("centro_salud_nombre") == cen_rep or cen_rep == "-")), None)
         if not rep:
             rep = next((r for r in self.app.datos.get("repuestos", []) if r.get("nombre_repuesto") == n_rep), None)
@@ -941,8 +925,8 @@ class VistaRepuestos(ctk.CTkFrame):
             return
         v = self.obtener_seleccion(tabla_origen=tabla_origen)
         if v:
-            n_rep = v[3]
-            cen_rep = v[1]
+            n_rep = v[2]
+            cen_rep = v[0]
             rep = next((r for r in self.app.datos["repuestos"] if r.get("nombre_repuesto") == n_rep and (not r.get("centro_salud_nombre") or r.get("centro_salud_nombre") == cen_rep or cen_rep == "-")), None)
             if not rep:
                 rep = next((r for r in self.app.datos["repuestos"] if r.get("nombre_repuesto") == n_rep), None)
@@ -956,8 +940,8 @@ class VistaRepuestos(ctk.CTkFrame):
         if not v:
             messagebox.showinfo("Selección Requerida", "Seleccione un repuesto de la tabla para eliminar.")
             return
-        n_rep = v[3]
-        cen_rep = v[1]
+        n_rep = v[2]
+        cen_rep = v[0]
         if messagebox.askyesno("Confirmar", f"¿Eliminar el registro de repuesto '{n_rep}'?"):
             try:
                 rep_encontrado = next((r for r in self.app.datos.get("repuestos", []) if r.get("nombre_repuesto") == n_rep and (not r.get("centro_salud_nombre") or r.get("centro_salud_nombre") == cen_rep or cen_rep == "-")), None)
