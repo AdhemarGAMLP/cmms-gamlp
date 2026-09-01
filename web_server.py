@@ -1131,6 +1131,53 @@ HTML_ANALISIS = """
                 </div>
             </div>
         </div>
+
+        <!-- Tabla de Inventario de Equipos en la misma página -->
+        <div style="background: white; border: 1px solid var(--border); border-radius: 16px; padding: 18px; box-shadow: 0 2px 8px rgba(0,0,0,0.02); margin-bottom: 30px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px;">
+                <div>
+                    <h3 style="font-size: 16px; font-weight: 800; margin: 0; color: var(--text);">📋 Inventario y Listado de Equipos Médicos</h3>
+                    <p style="font-size: 13px; color: var(--muted); margin: 3px 0 0;">{{ total }} equipos encontrados en este filtro territorial</p>
+                </div>
+                <input type="text" id="inline-buscar" class="select-input" style="max-width: 280px; padding: 8px 12px; font-size: 13px;" placeholder="🔍 Filtrar en esta tabla..." oninput="filtrarTablaInline()">
+            </div>
+            <div style="overflow-x: auto; max-height: 440px;">
+                <table class="table-responsive">
+                    <thead>
+                        <tr>
+                            <th>Cod. AF</th>
+                            <th>Equipo Médico</th>
+                            <th>Marca</th>
+                            <th>Modelo</th>
+                            <th>Centro de Salud</th>
+                            <th>Área/Servicio</th>
+                            <th>Estado</th>
+                            <th>Ficha</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inline-tbody">
+                        {% for eq in eqs_vista %}
+                        <tr>
+                            <td><strong>{{ eq['id'] }}</strong></td>
+                            <td>{{ eq['nombre'] }}</td>
+                            <td>{{ eq['marca'] or '-' }}</td>
+                            <td>{{ eq['modelo'] or '-' }}</td>
+                            <td>{{ eq['centro_salud_nombre'] or '-' }}</td>
+                            <td>{{ eq['area'] or eq['servicio'] or 'General' }}</td>
+                            <td>
+                                {% if eq['estado'] == 'Baja' %}
+                                <span style="background: #FEE2E2; color: #991B1B; padding: 3px 8px; border-radius: 12px; font-weight: 700; font-size: 11px;">Baja</span>
+                                {% else %}
+                                <span style="background: #ECFDF5; color: #065F46; padding: 3px 8px; border-radius: 12px; font-weight: 700; font-size: 11px;">Operativo</span>
+                                {% endif %}
+                            </td>
+                            <td><a href="/equipo/{{ eq['id'] }}" class="btn-view-link" target="_blank">📄 Ver Ficha</a></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
     <!-- Modal de Detalle de Equipos -->
@@ -1166,6 +1213,15 @@ HTML_ANALISIS = """
     <script>
         const todosEquipos = {{ equipos_json | safe }};
         let equiposModalActual = [];
+
+        function filtrarTablaInline() {
+            const query = document.getElementById('inline-buscar').value.toLowerCase().trim();
+            const rows = document.querySelectorAll('#inline-tbody tr');
+            rows.forEach(tr => {
+                const text = tr.innerText.toLowerCase();
+                tr.style.display = (!query || text.includes(query)) ? '' : 'none';
+            });
+        }
 
         function alCambiarRedWeb() {
             const redSel = document.getElementById('filtro-red').value;
@@ -1477,6 +1533,7 @@ def vista_analisis_web():
             chart_censo_data=chart_censo_data,
             chart_tipos_labels=chart_tipos_labels,
             chart_tipos_data=chart_tipos_data,
+            eqs_vista=eqs_contexto,
             equipos_json=equipos_json
         )
     except Exception as e:
