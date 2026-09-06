@@ -20,6 +20,8 @@ C_GREEN_LIGHT = "#ECFDF5"
 
 C_ORANGE = "#F59E0B"         # Ámbar
 C_ORANGE_LIGHT = "#FFFBEB"
+C_AMBER = "#F59E0B"
+C_AMBER_LIGHT = "#FFFBEB"
 
 C_RED = "#EF4444"            # Carmesí
 C_RED_HOVER = "#DC2626"
