@@ -26,14 +26,19 @@ class VistaInventario(ctk.CTkFrame):
     def __init__(self, master, app):
         super().__init__(master, fg_color=C_BG)
         self.app = app
+        self._debounce_id = None
         self.construir_ui()
+
+    def _on_busqueda_cambiada(self, *args):
+        if self._debounce_id is not None:
+            self.after_cancel(self._debounce_id)
+        self._debounce_id = self.after(160, self.refrescar_datos)
 
     def construir_ui(self):
         f_top = ctk.CTkFrame(self, fg_color="transparent")
         f_top.pack(pady=(30, 10), padx=30, fill="x")
         ctk.CTkLabel(f_top, text="Inventario de Equipos", font=ctk.CTkFont(size=28, weight="bold"), text_color=C_TEXT).pack(side="left")
         
-        self._debounce_id = None
         self.busqueda_var = ctk.StringVar()
         self.busqueda_var.trace_add("write", self._on_busqueda_cambiada)
         
@@ -43,11 +48,6 @@ class VistaInventario(ctk.CTkFrame):
         ctk.CTkLabel(f_search, text="🔍 Buscar:", font=ctk.CTkFont(weight="bold"), text_color=C_TEXT).pack(side="left", padx=5)
         e_buscar = ctk.CTkEntry(f_search, textvariable=self.busqueda_var, placeholder_text="Buscar Red, Centro, Servicio, Equipo, AF...", width=280, fg_color=C_CARD, border_color=C_BORDER, corner_radius=10)
         e_buscar.pack(side="left")
-
-    def _on_busqueda_cambiada(self, *args):
-        if self._debounce_id is not None:
-            self.after_cancel(self._debounce_id)
-        self._debounce_id = self.after(160, self.refrescar_datos)
 
         # Barra de Ordenación/Filtros
         f_filtros = ctk.CTkFrame(self, fg_color="transparent")

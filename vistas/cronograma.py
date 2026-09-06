@@ -14,7 +14,13 @@ class VistaCronograma(ctk.CTkFrame):
         self.mes_actual = self.hoy.month
         self.anio_actual = self.hoy.year
         self.anio_vista = self.hoy.year
+        self._debounce_id = None
         self.construir_ui()
+
+    def _on_busqueda_cambiada(self, *args):
+        if self._debounce_id is not None:
+            self.after_cancel(self._debounce_id)
+        self._debounce_id = self.after(160, self.refrescar_datos)
 
     def construir_ui(self):
         # Cabecera con Botón de Descarga
@@ -42,18 +48,12 @@ class VistaCronograma(ctk.CTkFrame):
         f_filtros_crono = ctk.CTkFrame(tab_lista, fg_color="transparent")
         f_filtros_crono.pack(fill="x", pady=10, padx=15)
         
-        self._debounce_id = None
         self.busqueda_var = ctk.StringVar()
         self.busqueda_var.trace_add("write", self._on_busqueda_cambiada)
         ctk.CTkLabel(f_filtros_crono, text="🔍 Buscar:", font=ctk.CTkFont(weight="bold"), text_color=C_TEXT).pack(side="left", padx=5)
         e_buscar = ctk.CTkEntry(f_filtros_crono, textvariable=self.busqueda_var, placeholder_text="Buscar ID o Equipo...", width=250, fg_color=C_BG, border_color=C_BORDER, corner_radius=10)
         e_buscar.pack(side="left", padx=5)
 
-    def _on_busqueda_cambiada(self, *args):
-        if self._debounce_id is not None:
-            self.after_cancel(self._debounce_id)
-        self._debounce_id = self.after(160, self.refrescar_datos)
-        
         ctk.CTkLabel(f_filtros_crono, text="Ordenar por:", font=ctk.CTkFont(weight="bold", size=12), text_color=C_TEXT).pack(side="left", padx=(15, 5))
         self.combo_ordenar = ctk.CTkComboBox(f_filtros_crono, values=["ID", "Equipo (A-Z)", "Equipo (Z-A)", "Criticidad", "Fecha Próx", "Estado"], command=lambda e: self.refrescar_datos(), width=160, fg_color=C_BG, border_color=C_BORDER)
         self.combo_ordenar.pack(side="left", padx=5)

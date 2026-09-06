@@ -12,7 +12,14 @@ class VistaRepuestos(ctk.CTkFrame):
     def __init__(self, master, app):
         super().__init__(master, fg_color=C_BG)
         self.app = app
+        self._debounce_id = None
+        self.tab_activa = "stock" # stock, req, hist
         self.construir_ui()
+
+    def _on_busqueda_cambiada(self, *args):
+        if self._debounce_id is not None:
+            self.after_cancel(self._debounce_id)
+        self._debounce_id = self.after(160, self.refrescar_datos)
 
     def construir_ui(self):
         f_title = ctk.CTkFrame(self, fg_color="transparent")
@@ -56,7 +63,6 @@ class VistaRepuestos(ctk.CTkFrame):
         f_filtros_stock = ctk.CTkFrame(marco_stock, fg_color="transparent")
         f_filtros_stock.pack(fill="x", pady=(0, 10))
         
-        self._debounce_id = None
         self.busqueda_stock_var = ctk.StringVar()
         self.busqueda_stock_var.trace_add("write", self._on_busqueda_cambiada)
         ctk.CTkLabel(f_filtros_stock, text="🔍 Buscar:", font=ctk.CTkFont(weight="bold"), text_color=C_TEXT).pack(side="left", padx=5)
@@ -105,11 +111,6 @@ class VistaRepuestos(ctk.CTkFrame):
         e_buscar_req = ctk.CTkEntry(f_top_req, textvariable=self.busqueda_req_var, placeholder_text="Buscar Requerimiento, Red, Centro, Marca, P/N...", width=260, fg_color=C_CARD, border_color=C_BORDER, corner_radius=10)
         e_buscar_req.pack(side="left", padx=5)
 
-    def _on_busqueda_cambiada(self, *args):
-        if self._debounce_id is not None:
-            self.after_cancel(self._debounce_id)
-        self._debounce_id = self.after(160, self.refrescar_datos)
-        
         ctk.CTkLabel(f_top_req, text="Ordenar por:", font=ctk.CTkFont(weight="bold", size=12), text_color=C_TEXT).pack(side="left", padx=(15, 5))
         self.combo_ordenar_req = ctk.CTkComboBox(f_top_req, values=["Repuesto (A-Z)", "Repuesto (Z-A)", "Centro de Salud", "Red de Salud", "Cantidad (Mayor)", "Costo Estimado (Mayor)"], command=lambda e: self.refrescar_datos(), width=180, fg_color=C_CARD, border_color=C_BORDER)
         self.combo_ordenar_req.pack(side="left", padx=5)
