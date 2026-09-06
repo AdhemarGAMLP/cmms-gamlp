@@ -2677,6 +2677,30 @@ def registrar_mantenimiento(id_equipo):
     except Exception as e:
         return f"Error en el servidor web: {e}"
 
+@app_web.route('/mapa')
+def ruta_mapa_satelital():
+    try:
+        from mapa_geo_utils import consolidar_datos_geoespaciales, generar_html_mapa_gamlp
+        import database
+        equipos = database.cargar_equipos()
+        centros_geo = consolidar_datos_geoespaciales(equipos)
+        return generar_html_mapa_gamlp(centros_geo)
+    except Exception as e:
+        return f"<h3>Error al cargar el mapa satelital: {e}</h3>"
+
+@app_web.route('/api/ia-diagnostico', methods=['POST'])
+def api_ia_diagnostico():
+    try:
+        from flask import request, jsonify
+        from ia_biomedica import diagnosticar_falla_biomedica
+        data = request.get_json(force=True) or {}
+        tipo = data.get('tipo', '')
+        sintoma = data.get('sintoma', '')
+        res = diagnosticar_falla_biomedica(tipo, sintoma)
+        return jsonify(res)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 def iniciar_servidor_web():
     import logging
     logging.getLogger('werkzeug').setLevel(logging.ERROR)
