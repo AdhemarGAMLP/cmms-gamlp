@@ -9,7 +9,13 @@ class VistaCatalogo(ctk.CTkFrame):
     def __init__(self, master, app):
         super().__init__(master, fg_color=C_BG)
         self.app = app
+        self._debounce_timer = None
         self.construir_ui()
+
+    def _on_busqueda_change(self, *args):
+        if self._debounce_timer:
+            self.after_cancel(self._debounce_timer)
+        self._debounce_timer = self.after(120, self.refrescar_datos)
 
     def construir_ui(self):
         f_top = ctk.CTkFrame(self, fg_color="transparent")
@@ -17,7 +23,7 @@ class VistaCatalogo(ctk.CTkFrame):
         ctk.CTkLabel(f_top, text="Equipos Médicos", font=ctk.CTkFont(size=28, weight="bold"), text_color=C_TEXT).pack(side="left")
         
         self.busqueda_var = ctk.StringVar()
-        self.busqueda_var.trace_add("write", lambda *args: self.refrescar_datos())
+        self.busqueda_var.trace_add("write", self._on_busqueda_change)
         
         # Caja de búsqueda con etiqueta explícita "🔍 Buscar:"
         f_search = ctk.CTkFrame(f_top, fg_color="transparent")

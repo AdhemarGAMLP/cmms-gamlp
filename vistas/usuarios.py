@@ -16,6 +16,8 @@ MODULOS_SISTEMA = [
     ("Cronograma", "📅 Cronograma y Calendario"),
     ("Historial", "📋 Mantenimientos e Intervenciones"),
     ("Analisis", "📊 Análisis Estadístico y Censo"),
+    ("Mapa", "🛰️ Mapa Satelital y de Calor"),
+    ("AsistenteIA", "🧠 Asistente IA & Diagnóstico"),
     ("Areas", "📍 Áreas y Unidades Clínicas"),
     ("Sedes", "🏥 Sedes y Centros de Salud"),
     ("Respaldos", "💾 Respaldos y Base de Datos"),

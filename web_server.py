@@ -2214,6 +2214,37 @@ def descargar_repuestos_excel_web():
     except Exception as e:
         return f"Error generando Excel de Repuestos: {e}", 500
 
+@app_web.route('/mapa')
+def mapa_satelital_web():
+    try:
+        from mapa_geo_utils import consolidar_datos_geoespaciales, generar_html_mapa_gamlp
+        conn = obtener_conexion()
+        if not conn:
+            return "<h1>❌ Error de conexión con la base de datos</h1>", 500
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute("SELECT * FROM equipos WHERE estado != 'Eliminado'")
+        equipos = [dict(r) for r in cur.fetchall()]
+        cur.close()
+        conn.close()
+        
+        centros_geo = consolidar_datos_geoespaciales(equipos)
+        red_filtro = request.args.get('red')
+        return generar_html_mapa_gamlp(centros_geo, red_filtro)
+    except Exception as e:
+        return f"Error generando mapa satelital: {e}", 500
+
+@app_web.route('/api/ia-diagnostico', methods=['POST'])
+def api_ia_diagnostico():
+    try:
+        from ia_biomedica import diagnosticar_falla_ia
+        data = request.get_json() or {}
+        sintoma = data.get('sintoma', '').strip()
+        tipo = data.get('tipo', 'Todos').strip()
+        resultado = diagnosticar_falla_ia(sintoma, tipo)
+        return json.dumps(resultado, ensure_ascii=False), 200, {'Content-Type': 'application/json; charset=utf-8'}
+    except Exception as e:
+        return json.dumps({'error': str(e)}), 500, {'Content-Type': 'application/json'}
+
 @app_web.route('/equipo/<path:id_equipo>/mantenimiento', methods=['GET', 'POST'])
 def registrar_mantenimiento(id_equipo):
     import urllib.parse

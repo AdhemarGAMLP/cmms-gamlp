@@ -58,6 +58,8 @@ from vistas.historial import VistaHistorial
 from vistas.protocolos import VistaProtocolos
 from vistas.areas import VistaAreas
 from vistas.analisis import VistaAnalisis
+from vistas.mapa import VistaMapa
+from vistas.asistente_ia import VistaAsistenteIA
 from vistas.sedes import VistaSedes
 from vistas.respaldos import VistaRespaldos
 from vistas.usuarios import VistaUsuarios
@@ -944,6 +946,16 @@ class SistemaMantenimiento(ctk.CTk):
         if self.tiene_permiso("Analisis", "ver"):
             self.btn_nav_analisis.pack(pady=1, padx=8, fill="x")
             self.botones_nav.append(self.btn_nav_analisis)
+
+        self.btn_nav_mapa = ctk.CTkButton(self.scroll_sidebar, text="🛰️ Mapa Satelital", command=lambda: self.mostrar_vista("Mapa"), **btn_estilo)
+        if self.tiene_permiso("Mapa", "ver"):
+            self.btn_nav_mapa.pack(pady=1, padx=8, fill="x")
+            self.botones_nav.append(self.btn_nav_mapa)
+
+        self.btn_nav_ia = ctk.CTkButton(self.scroll_sidebar, text="🧠 Asistente IA", command=lambda: self.mostrar_vista("AsistenteIA"), **btn_estilo)
+        if self.tiene_permiso("AsistenteIA", "ver"):
+            self.btn_nav_ia.pack(pady=1, padx=8, fill="x")
+            self.botones_nav.append(self.btn_nav_ia)
         
         # Módulo de Protocolos: Oculto del menú operativo pero conservado
         self.btn_nav_prot = ctk.CTkButton(self.scroll_sidebar, text="📝 Protocolos", command=lambda: self.mostrar_vista("Protocolos"), **btn_estilo)
@@ -1022,6 +1034,8 @@ class SistemaMantenimiento(ctk.CTk):
         self.vistas["Cronograma"] = VistaCronograma(self.contenedor_principal, self)
         self.vistas["Historial"] = VistaHistorial(self.contenedor_principal, self)
         self.vistas["Analisis"] = VistaAnalisis(self.contenedor_principal, self)
+        self.vistas["Mapa"] = VistaMapa(self.contenedor_principal, self)
+        self.vistas["AsistenteIA"] = VistaAsistenteIA(self.contenedor_principal, self)
         self.vistas["Protocolos"] = VistaProtocolos(self.contenedor_principal, self)
         self.vistas["Areas"] = VistaAreas(self.contenedor_principal, self)
         self.vistas["Sedes"] = VistaSedes(self.contenedor_principal, self)
@@ -1050,12 +1064,14 @@ class SistemaMantenimiento(ctk.CTk):
             "Cronograma": self.btn_nav_cro,
             "Historial": self.btn_nav_hist,
             "Analisis": self.btn_nav_analisis,
-            "Protocolos": self.btn_nav_prot,
+            "Mapa": getattr(self, "btn_nav_mapa", None),
+            "AsistenteIA": getattr(self, "btn_nav_ia", None),
+            "Protocolos": getattr(self, "btn_nav_prot", None),
             "Areas": self.btn_nav_areas,
             "Sedes": self.btn_nav_sedes,
             "Respaldos": self.btn_nav_respaldos
         }
-        if self.btn_nav_usuarios:
+        if getattr(self, "btn_nav_usuarios", None):
             mapa_botones["Usuarios"] = self.btn_nav_usuarios
             
         btn_sel = mapa_botones.get(nombre)
