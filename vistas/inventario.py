@@ -26,21 +26,16 @@ class VistaInventario(ctk.CTkFrame):
     def __init__(self, master, app):
         super().__init__(master, fg_color=C_BG)
         self.app = app
-        self._debounce_timer = None
         self.construir_ui()
-
-    def _on_busqueda_change(self, *args):
-        if self._debounce_timer:
-            self.after_cancel(self._debounce_timer)
-        self._debounce_timer = self.after(120, self.refrescar_datos)
 
     def construir_ui(self):
         f_top = ctk.CTkFrame(self, fg_color="transparent")
         f_top.pack(pady=(30, 10), padx=30, fill="x")
         ctk.CTkLabel(f_top, text="Inventario de Equipos", font=ctk.CTkFont(size=28, weight="bold"), text_color=C_TEXT).pack(side="left")
         
+        self._debounce_id = None
         self.busqueda_var = ctk.StringVar()
-        self.busqueda_var.trace_add("write", self._on_busqueda_change)
+        self.busqueda_var.trace_add("write", self._on_busqueda_cambiada)
         
         # Caja de búsqueda con etiqueta explícita "🔍 Buscar:"
         f_search = ctk.CTkFrame(f_top, fg_color="transparent")
@@ -48,6 +43,11 @@ class VistaInventario(ctk.CTkFrame):
         ctk.CTkLabel(f_search, text="🔍 Buscar:", font=ctk.CTkFont(weight="bold"), text_color=C_TEXT).pack(side="left", padx=5)
         e_buscar = ctk.CTkEntry(f_search, textvariable=self.busqueda_var, placeholder_text="Buscar Red, Centro, Servicio, Equipo, AF...", width=280, fg_color=C_CARD, border_color=C_BORDER, corner_radius=10)
         e_buscar.pack(side="left")
+
+    def _on_busqueda_cambiada(self, *args):
+        if self._debounce_id is not None:
+            self.after_cancel(self._debounce_id)
+        self._debounce_id = self.after(160, self.refrescar_datos)
 
         # Barra de Ordenación/Filtros
         f_filtros = ctk.CTkFrame(self, fg_color="transparent")
@@ -200,6 +200,7 @@ class VistaInventario(ctk.CTkFrame):
         elif criterio == "Garantía":
             equipos.sort(key=lambda x: x.get("garantia") == "Con Garantía", reverse=True)
 
+        hoy = date.today()
         for eq in equipos:
             # 1. Determinar tag de garantía para colorear fila
             gar = eq.get("garantia", "Sin Garantía")
@@ -211,7 +212,7 @@ class VistaInventario(ctk.CTkFrame):
                     try: f_venc = datetime.strptime(f_venc, "%Y-%m-%d").date()
                     except: f_venc = None
                 if f_venc:
-                    dias = (f_venc - date.today()).days
+                    dias = (f_venc - hoy).days
                     if dias < 0:
                         tag_gar = "Sin Garantia"
                     elif dias <= 30:

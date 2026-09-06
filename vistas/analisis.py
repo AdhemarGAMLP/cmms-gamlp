@@ -570,7 +570,13 @@ class VistaAnalisis(ctk.CTkFrame):
 
                 tree.insert("", "end", values=(eq_red, eq_cen, eq_ser, eq_nom, eq_mar, eq_mod, eq_id, eq_est))
 
-        self.busqueda_tabla_var.trace_add("write", lambda *args: _poblar_tabla_inline())
+        self._deb_inline = None
+        def _on_busq_inline(*args):
+            if self._deb_inline is not None:
+                self.after_cancel(self._deb_inline)
+            self._deb_inline = self.after(160, _poblar_tabla_inline)
+
+        self.busqueda_tabla_var.trace_add("write", _on_busq_inline)
         _poblar_tabla_inline()
 
         def _abrir_hv_inline(event=None):
@@ -650,7 +656,13 @@ class VistaAnalisis(ctk.CTkFrame):
 
                 tree.insert("", "end", values=(eq_red, eq_cen, eq_ser, eq_nom, eq_mar, eq_mod, eq_id, eq_est))
 
-        busq_modal_var.trace_add("write", lambda *args: _poblar_tabla())
+        deb_modal = [None]
+        def _on_busq_modal(*args):
+            if deb_modal[0] is not None:
+                self.modal_equipos.after_cancel(deb_modal[0])
+            deb_modal[0] = self.modal_equipos.after(160, _poblar_tabla)
+
+        busq_modal_var.trace_add("write", _on_busq_modal)
         _poblar_tabla()
 
         def _abrir_hv_desde_modal(event=None):

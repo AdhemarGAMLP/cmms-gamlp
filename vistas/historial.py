@@ -44,8 +44,9 @@ class VistaHistorial(ctk.CTkFrame):
         f_filtros_todo = ctk.CTkFrame(marco_todo, fg_color="transparent")
         f_filtros_todo.pack(fill="x", pady=(0, 10))
         
+        self._debounce_id = None
         self.busqueda_todo_var = ctk.StringVar()
-        self.busqueda_todo_var.trace_add("write", lambda *args: self.refrescar_datos())
+        self.busqueda_todo_var.trace_add("write", self._on_busqueda_cambiada)
         ctk.CTkLabel(f_filtros_todo, text="🔍 Buscar:", font=ctk.CTkFont(weight="bold"), text_color=C_TEXT).pack(side="left", padx=5)
         e_buscar_todo = ctk.CTkEntry(f_filtros_todo, textvariable=self.busqueda_todo_var, placeholder_text="Buscar ID, Equipo o Detalle...", width=220, fg_color=C_CARD, border_color=C_BORDER, corner_radius=10)
         e_buscar_todo.pack(side="left", padx=5)
@@ -103,10 +104,15 @@ class VistaHistorial(ctk.CTkFrame):
         self.combo_anio.set(str(datetime.now().year))
         
         self.busqueda_mes_var = ctk.StringVar()
-        self.busqueda_mes_var.trace_add("write", lambda *args: self.refrescar_datos())
+        self.busqueda_mes_var.trace_add("write", self._on_busqueda_cambiada)
         ctk.CTkLabel(f_filtros_mes, text="🔍 Buscar:", font=ctk.CTkFont(weight="bold"), text_color=C_TEXT).pack(side="left", padx=(15, 5))
         e_buscar_mes = ctk.CTkEntry(f_filtros_mes, textvariable=self.busqueda_mes_var, placeholder_text="Buscar en este mes...", width=180, fg_color=C_CARD, border_color=C_BORDER, corner_radius=10)
         e_buscar_mes.pack(side="left", padx=5)
+
+    def _on_busqueda_cambiada(self, *args):
+        if self._debounce_id is not None:
+            self.after_cancel(self._debounce_id)
+        self._debounce_id = self.after(160, self.refrescar_datos)
         
         ctk.CTkLabel(f_filtros_mes, text="Ordenar por:", font=ctk.CTkFont(weight="bold", size=12), text_color=C_TEXT).pack(side="left", padx=(15, 5))
         self.combo_ordenar_mes = ctk.CTkComboBox(f_filtros_mes, values=["Fecha (Reciente)", "Fecha (Antiguo)", "Equipo (A-Z)", "Equipo (Z-A)", "Responsable"], command=lambda e: self.refrescar_datos(), width=140, fg_color=C_CARD, border_color=C_BORDER)

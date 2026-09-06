@@ -83,7 +83,12 @@ class VistaSedes(ctk.CTkFrame):
             corner_radius=8
         )
         e_busq.pack(side="left")
-        self.busqueda_centro_var.trace_add("write", lambda *args: self.poblar_tabla_centros())
+        self._debounce_centros = None
+        def _on_busq_centro(*args):
+            if self._debounce_centros is not None:
+                self.after_cancel(self._debounce_centros)
+            self._debounce_centros = self.after(160, self.poblar_tabla_centros)
+        self.busqueda_centro_var.trace_add("write", _on_busq_centro)
 
         # Contenedor de Tabla
         f_tab_box = ctk.CTkFrame(self.tab_centros, fg_color="transparent")
@@ -168,7 +173,12 @@ class VistaSedes(ctk.CTkFrame):
             corner_radius=8
         )
         e_busq.pack(side="left")
-        self.busqueda_red_var.trace_add("write", lambda *args: self.poblar_tabla_redes())
+        self._debounce_redes = None
+        def _on_busq_red(*args):
+            if self._debounce_redes is not None:
+                self.after_cancel(self._debounce_redes)
+            self._debounce_redes = self.after(160, self.poblar_tabla_redes)
+        self.busqueda_red_var.trace_add("write", _on_busq_red)
 
         f_tab_box = ctk.CTkFrame(self.tab_redes, fg_color="transparent")
         f_tab_box.pack(fill="both", expand=True, padx=16, pady=8)

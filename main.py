@@ -58,8 +58,6 @@ from vistas.historial import VistaHistorial
 from vistas.protocolos import VistaProtocolos
 from vistas.areas import VistaAreas
 from vistas.analisis import VistaAnalisis
-from vistas.mapa import VistaMapa
-from vistas.asistente_ia import VistaAsistenteIA
 from vistas.sedes import VistaSedes
 from vistas.respaldos import VistaRespaldos
 from vistas.usuarios import VistaUsuarios
@@ -554,12 +552,12 @@ class SistemaMantenimiento(ctk.CTk):
         def _hilo_sync():
             import time, socket
             while getattr(self, "_ejecutando", True):
-                time.sleep(5)
+                time.sleep(10)
                 # 1. Comprobar conectividad real a internet
                 online = False
                 try:
                     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                    s.settimeout(2.5)
+                    s.settimeout(1.5)
                     s.connect(("8.8.8.8", 53))
                     s.close()
                     online = True
@@ -636,8 +634,14 @@ class SistemaMantenimiento(ctk.CTk):
         self.hoy = datetime.now().date()
         self.hora_actual = datetime.now().hour
         self.alertas_activas = []
+        
+        # Índices rápidos en memoria para acceso instantáneo O(1)
+        equipos_lista = self.datos.get("equipos", [])
+        self._equipos_by_id = {str(eq.get("id")).strip(): eq for eq in equipos_lista if eq.get("id") is not None}
+        self._equipos_by_serie = {str(eq.get("numero_serie")).strip(): eq for eq in equipos_lista if eq.get("numero_serie")}
+        
         try:
-            for eq in self.datos.get("equipos", []):
+            for eq in equipos_lista:
                 # Alertas de vencimiento de garantía (1 mes antes)
                 f_venc = eq.get("fecha_vencimiento_garantia")
                 dias_gar = -9999
@@ -946,16 +950,6 @@ class SistemaMantenimiento(ctk.CTk):
         if self.tiene_permiso("Analisis", "ver"):
             self.btn_nav_analisis.pack(pady=1, padx=8, fill="x")
             self.botones_nav.append(self.btn_nav_analisis)
-
-        self.btn_nav_mapa = ctk.CTkButton(self.scroll_sidebar, text="🛰️ Mapa Satelital", command=lambda: self.mostrar_vista("Mapa"), **btn_estilo)
-        if self.tiene_permiso("Mapa", "ver"):
-            self.btn_nav_mapa.pack(pady=1, padx=8, fill="x")
-            self.botones_nav.append(self.btn_nav_mapa)
-
-        self.btn_nav_ia = ctk.CTkButton(self.scroll_sidebar, text="🧠 Asistente IA", command=lambda: self.mostrar_vista("AsistenteIA"), **btn_estilo)
-        if self.tiene_permiso("AsistenteIA", "ver"):
-            self.btn_nav_ia.pack(pady=1, padx=8, fill="x")
-            self.botones_nav.append(self.btn_nav_ia)
         
         # Módulo de Protocolos: Oculto del menú operativo pero conservado
         self.btn_nav_prot = ctk.CTkButton(self.scroll_sidebar, text="📝 Protocolos", command=lambda: self.mostrar_vista("Protocolos"), **btn_estilo)
@@ -1034,8 +1028,6 @@ class SistemaMantenimiento(ctk.CTk):
         self.vistas["Cronograma"] = VistaCronograma(self.contenedor_principal, self)
         self.vistas["Historial"] = VistaHistorial(self.contenedor_principal, self)
         self.vistas["Analisis"] = VistaAnalisis(self.contenedor_principal, self)
-        self.vistas["Mapa"] = VistaMapa(self.contenedor_principal, self)
-        self.vistas["AsistenteIA"] = VistaAsistenteIA(self.contenedor_principal, self)
         self.vistas["Protocolos"] = VistaProtocolos(self.contenedor_principal, self)
         self.vistas["Areas"] = VistaAreas(self.contenedor_principal, self)
         self.vistas["Sedes"] = VistaSedes(self.contenedor_principal, self)
@@ -1064,14 +1056,12 @@ class SistemaMantenimiento(ctk.CTk):
             "Cronograma": self.btn_nav_cro,
             "Historial": self.btn_nav_hist,
             "Analisis": self.btn_nav_analisis,
-            "Mapa": getattr(self, "btn_nav_mapa", None),
-            "AsistenteIA": getattr(self, "btn_nav_ia", None),
-            "Protocolos": getattr(self, "btn_nav_prot", None),
+            "Protocolos": self.btn_nav_prot,
             "Areas": self.btn_nav_areas,
             "Sedes": self.btn_nav_sedes,
             "Respaldos": self.btn_nav_respaldos
         }
-        if getattr(self, "btn_nav_usuarios", None):
+        if self.btn_nav_usuarios:
             mapa_botones["Usuarios"] = self.btn_nav_usuarios
             
         btn_sel = mapa_botones.get(nombre)
@@ -1943,7 +1933,7 @@ class SistemaMantenimiento(ctk.CTk):
         if not item_id:
             return
 
-        eq_act = next((e for e in self.datos["equipos"] if str(e.get("id")) == str(item_id)), None)
+        eq_act = getattr(self, "_equipos_by_id", {}).get(str(item_id).strip())
         if not eq_act:
             eq_act = next((e for e in self.datos["equipos"] if str(e.get("id", "")).strip().lower() == str(item_id).strip().lower()), None)
         if not eq_act: 
