@@ -267,7 +267,7 @@ class VentanaLogin(ctk.CTk):
     def __init__(self):
         super().__init__()
         self.title(f"SGEM GAMLP {VERSION_APP} - Iniciar Sesión")
-        self.geometry("400x420")
+        self.geometry("420x480")
         self.configure(fg_color=C_BG)
         self.resizable(False, False)
         
@@ -281,24 +281,38 @@ class VentanaLogin(ctk.CTk):
         self.usuario_autenticado = None
         self.contexto_sede = None
 
-        ctk.CTkLabel(self, text="🏛️ SGEM GAMLP", font=ctk.CTkFont(size=24, weight="bold"), text_color=C_BLUE).pack(pady=(25, 2))
-        ctk.CTkLabel(self, text=f"Sistema de Gestión de Equipamiento Médico ({VERSION_APP})", font=ctk.CTkFont(size=12), text_color=C_SUBTEXT).pack(pady=(0, 12))
+        ctk.CTkLabel(self, text="🏛️ SGEM GAMLP", font=ctk.CTkFont(size=24, weight="bold"), text_color=C_BLUE).pack(pady=(20, 2))
+        ctk.CTkLabel(self, text=f"Sistema de Gestión de Equipamiento Médico ({VERSION_APP})", font=ctk.CTkFont(size=12), text_color=C_SUBTEXT).pack(pady=(0, 10))
         
         marco = ctk.CTkFrame(self, fg_color=C_CARD, corner_radius=CORNER_CARD, border_width=1, border_color=C_BORDER)
-        marco.pack(padx=30, pady=5, fill="both", expand=True)
+        marco.pack(padx=25, pady=5, fill="both", expand=True)
 
-        ctk.CTkLabel(marco, text="Usuario:", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", padx=25, pady=(15, 2))
-        self.e_user = ctk.CTkEntry(marco, placeholder_text="Ingrese su usuario", width=300, height=38, corner_radius=CORNER_INPUT, border_color=C_BORDER, fg_color=C_BG)
+        from config import CONFIG, PERFILES_BD
+        perfil_actual = CONFIG.get("perfil_activo", "🟢 Nueva Base (Relevamiento 2026)")
+        self.lbl_perfil_bd = ctk.CTkLabel(
+            marco, 
+            text=f"Base Conectada: {perfil_actual}", 
+            font=ctk.CTkFont(size=11, weight="bold"), 
+            text_color=C_BLUE,
+            fg_color=C_BG,
+            corner_radius=6,
+            padx=10,
+            pady=4
+        )
+        self.lbl_perfil_bd.pack(pady=(12, 6))
+
+        ctk.CTkLabel(marco, text="Usuario:", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", padx=25, pady=(4, 2))
+        self.e_user = ctk.CTkEntry(marco, placeholder_text="Ingrese su usuario", width=320, height=38, corner_radius=CORNER_INPUT, border_color=C_BORDER, fg_color=C_BG)
         self.e_user.pack(padx=25, pady=(0, 8))
         
         ctk.CTkLabel(marco, text="Contraseña:", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", padx=25, pady=(0, 2))
-        self.e_pass = ctk.CTkEntry(marco, placeholder_text="••••••••", show="*", width=300, height=38, corner_radius=CORNER_INPUT, border_color=C_BORDER, fg_color=C_BG)
+        self.e_pass = ctk.CTkEntry(marco, placeholder_text="••••••••", show="*", width=320, height=38, corner_radius=CORNER_INPUT, border_color=C_BORDER, fg_color=C_BG)
         self.e_pass.pack(padx=25, pady=(0, 12))
         self.e_pass.bind("<Return>", lambda e: self.intentar_login())
         
-        ctk.CTkButton(marco, text="Ingresar al Sistema", command=self.intentar_login, height=40, corner_radius=CORNER_BTN, font=ctk.CTkFont(weight="bold", size=13), fg_color=C_BLUE, hover_color=C_BLUE_HOVER).pack(padx=25, pady=(5, 8), fill="x")
+        ctk.CTkButton(marco, text="Ingresar al Sistema", command=self.intentar_login, height=40, corner_radius=CORNER_BTN, font=ctk.CTkFont(weight="bold", size=13), fg_color=C_BLUE, hover_color=C_BLUE_HOVER).pack(padx=25, pady=(5, 6), fill="x")
         
-        ctk.CTkButton(marco, text="⚙️ Configurar Servidor (IP / Nube)", command=self.abrir_config_servidor, height=28, corner_radius=CORNER_BTN, fg_color="transparent", text_color=C_SUBTEXT, hover_color=C_CARD_HOVER, font=ctk.CTkFont(size=11)).pack(pady=(0, 10))
+        ctk.CTkButton(marco, text="⚙️ Cambiar Base de Datos / Servidor", command=self.abrir_config_servidor, height=30, corner_radius=CORNER_BTN, fg_color="transparent", text_color=C_SUBTEXT, hover_color=C_CARD_HOVER, font=ctk.CTkFont(size=11, weight="bold")).pack(pady=(0, 10))
 
 
     def intentar_login(self):
@@ -314,76 +328,144 @@ class VentanaLogin(ctk.CTk):
             v_sel = VentanaSelectorSede(self, u, al_confirmar_sede)
             v_sel.protocol("WM_DELETE_WINDOW", lambda: (v_sel.destroy(), self.deiconify()))
         else:
-            messagebox.showerror("Acceso Denegado", "Usuario o contraseña incorrectos.\n\n(Verifique las credenciales o la conexión al servidor en ⚙️ Configurar Servidor)")
+            messagebox.showerror("Acceso Denegado", "Usuario o contraseña incorrectos.\n\n(Verifique las credenciales o la conexión al servidor en ⚙️ Cambiar Base de Datos / Servidor)")
 
     def abrir_config_servidor(self):
-        from config import CONFIG, guardar_config
+        from config import CONFIG, PERFILES_BD, guardar_config
         import psycopg2
         
         v_cfg = ctk.CTkToplevel(self)
-        v_cfg.title("Configuración de Servidor de Base de Datos")
-        v_cfg.geometry("420x420")
+        v_cfg.title("Configuración de Servidor y Base de Datos")
+        v_cfg.geometry("500x640")
         v_cfg.transient(self)
         v_cfg.grab_set()
         v_cfg.configure(fg_color=C_BG)
         
-        ctk.CTkLabel(v_cfg, text="Conexión con el Servidor Central", font=ctk.CTkFont(size=16, weight="bold"), text_color=C_TEXT).pack(pady=(20, 5))
-        ctk.CTkLabel(v_cfg, text="Si esta es una PC cliente, ingresa la IP del Servidor Central:", font=ctk.CTkFont(size=11), text_color=C_SUBTEXT).pack(pady=(0, 15), padx=20)
+        ctk.CTkLabel(v_cfg, text="Conexión de Base de Datos", font=ctk.CTkFont(size=18, weight="bold"), text_color=C_TEXT).pack(pady=(16, 2))
+        ctk.CTkLabel(v_cfg, text="Seleccione una base de datos o configure los datos de conexión:", font=ctk.CTkFont(size=11), text_color=C_SUBTEXT).pack(pady=(0, 10), padx=20)
         
-        f_campos = ctk.CTkFrame(v_cfg, fg_color=C_CARD, corner_radius=10)
-        f_campos.pack(padx=25, fill="both", expand=True)
+        f_campos = ctk.CTkScrollableFrame(v_cfg, fg_color=C_CARD, corner_radius=12, border_width=1, border_color=C_BORDER, height=440)
+        f_campos.pack(padx=20, fill="both", expand=True)
+
+        # 1. Selector de Perfil Predefinido
+        ctk.CTkLabel(f_campos, text="Perfil / Base de Datos:", font=ctk.CTkFont(weight="bold", size=12), text_color=C_TEXT).pack(anchor="w", padx=15, pady=(10, 2))
+        opciones_perfil = list(PERFILES_BD.keys()) + ["⚙️ Personalizada / Servidor Local"]
+        combo_perfil = ctk.CTkComboBox(f_campos, values=opciones_perfil, width=420, height=36, corner_radius=8, fg_color=C_BG, border_color=C_BORDER)
+        combo_perfil.pack(padx=15, pady=(0, 12))
+        perfil_actual = CONFIG.get("perfil_activo", "🟢 Nueva Base (Relevamiento 2026)")
+        if perfil_actual in opciones_perfil:
+            combo_perfil.set(perfil_actual)
+        else:
+            combo_perfil.set("⚙️ Personalizada / Servidor Local")
+
+        # 2. Host
+        ctk.CTkLabel(f_campos, text="Host / Servidor PostgreSQL:", font=ctk.CTkFont(weight="bold", size=12), text_color=C_TEXT).pack(anchor="w", padx=15, pady=(0, 2))
+        e_host = ctk.CTkEntry(f_campos, width=420, height=34, corner_radius=8, fg_color=C_BG, border_color=C_BORDER)
+        e_host.insert(0, str(CONFIG.get("db_host", "")))
+        e_host.pack(padx=15, pady=(0, 8))
         
-        ctk.CTkLabel(f_campos, text="IP / Host del Servidor:", font=ctk.CTkFont(weight="bold", size=12)).pack(anchor="w", padx=20, pady=(15, 2))
-        e_host = ctk.CTkEntry(f_campos, width=320)
-        e_host.insert(0, str(CONFIG.get("db_host", "localhost")))
-        e_host.pack(padx=20, pady=(0, 10))
+        # 3. Puerto
+        ctk.CTkLabel(f_campos, text="Puerto:", font=ctk.CTkFont(weight="bold", size=12), text_color=C_TEXT).pack(anchor="w", padx=15, pady=(0, 2))
+        e_port = ctk.CTkEntry(f_campos, width=420, height=34, corner_radius=8, fg_color=C_BG, border_color=C_BORDER)
+        e_port.insert(0, str(CONFIG.get("db_port", "5432")))
+        e_port.pack(padx=15, pady=(0, 8))
         
-        ctk.CTkLabel(f_campos, text="Puerto:", font=ctk.CTkFont(weight="bold", size=12)).pack(anchor="w", padx=20, pady=(0, 2))
-        e_port = ctk.CTkEntry(f_campos, width=320)
-        e_port.insert(0, str(CONFIG.get("db_port", "5433")))
-        e_port.pack(padx=20, pady=(0, 10))
-        
-        ctk.CTkLabel(f_campos, text="Nombre de Base de Datos:", font=ctk.CTkFont(weight="bold", size=12)).pack(anchor="w", padx=20, pady=(0, 2))
-        e_name = ctk.CTkEntry(f_campos, width=320)
+        # 4. Nombre de Base de Datos
+        ctk.CTkLabel(f_campos, text="Nombre de Base de Datos:", font=ctk.CTkFont(weight="bold", size=12), text_color=C_TEXT).pack(anchor="w", padx=15, pady=(0, 2))
+        e_name = ctk.CTkEntry(f_campos, width=420, height=34, corner_radius=8, fg_color=C_BG, border_color=C_BORDER)
         e_name.insert(0, str(CONFIG.get("db_name", "postgres")))
-        e_name.pack(padx=20, pady=(0, 15))
+        e_name.pack(padx=15, pady=(0, 8))
+
+        # 5. Usuario PostgreSQL
+        ctk.CTkLabel(f_campos, text="Usuario PostgreSQL:", font=ctk.CTkFont(weight="bold", size=12), text_color=C_TEXT).pack(anchor="w", padx=15, pady=(0, 2))
+        e_db_user = ctk.CTkEntry(f_campos, width=420, height=34, corner_radius=8, fg_color=C_BG, border_color=C_BORDER)
+        e_db_user.insert(0, str(CONFIG.get("db_user", "postgres")))
+        e_db_user.pack(padx=15, pady=(0, 8))
+
+        # 6. Contraseña PostgreSQL
+        ctk.CTkLabel(f_campos, text="Contraseña PostgreSQL:", font=ctk.CTkFont(weight="bold", size=12), text_color=C_TEXT).pack(anchor="w", padx=15, pady=(0, 2))
+        e_db_pass = ctk.CTkEntry(f_campos, width=420, height=34, show="*", corner_radius=8, fg_color=C_BG, border_color=C_BORDER)
+        e_db_pass.insert(0, str(CONFIG.get("db_password", "")))
+        e_db_pass.pack(padx=15, pady=(0, 10))
+
+        def _al_cambiar_perfil(seleccion):
+            if seleccion in PERFILES_BD:
+                p = PERFILES_BD[seleccion]
+                e_host.delete(0, "end")
+                e_host.insert(0, p["db_host"])
+                e_port.delete(0, "end")
+                e_port.insert(0, p["db_port"])
+                e_name.delete(0, "end")
+                e_name.insert(0, p["db_name"])
+                e_db_user.delete(0, "end")
+                e_db_user.insert(0, p["db_user"])
+                e_db_pass.delete(0, "end")
+                e_db_pass.insert(0, p["db_password"])
+
+        combo_perfil.configure(command=_al_cambiar_perfil)
         
         lbl_status = ctk.CTkLabel(v_cfg, text="", font=ctk.CTkFont(size=12, weight="bold"))
-        lbl_status.pack(pady=5)
+        lbl_status.pack(pady=4)
         
         def probar_conexion():
+            lbl_status.configure(text="⏳ Probando conexión...", text_color=C_BLUE)
+            v_cfg.update()
             try:
-                test_conn = psycopg2.connect(
-                    dbname=e_name.get().strip(),
-                    user=CONFIG.get("db_user", "postgres"),
-                    password=CONFIG.get("db_password", "1234"),
-                    host=e_host.get().strip(),
-                    port=e_port.get().strip(),
-                    connect_timeout=4
-                )
+                host_val = e_host.get().strip()
+                kwargs = {
+                    "dbname": e_name.get().strip(),
+                    "user": e_db_user.get().strip(),
+                    "password": e_db_pass.get().strip(),
+                    "host": host_val,
+                    "port": e_port.get().strip(),
+                    "connect_timeout": 6
+                }
+                if "supabase" in host_val.lower():
+                    kwargs["sslmode"] = "require"
+                test_conn = psycopg2.connect(**kwargs)
                 test_conn.close()
                 lbl_status.configure(text="✅ Conexión con el Servidor exitosa.", text_color=C_GREEN_HOVER)
                 return True
             except Exception as ex:
-                lbl_status.configure(text=f"❌ Error al conectar: {ex}", text_color=C_RED_HOVER)
+                lbl_status.configure(text=f"❌ Error al conectar: {str(ex)[:90]}", text_color=C_RED_HOVER)
                 return False
                 
         def guardar():
+            if not probar_conexion():
+                if not messagebox.askyesno("Confirmar", "La prueba de conexión falló. ¿Deseas guardar de todos modos?"):
+                    return
+
             nueva_cfg = dict(CONFIG)
+            nueva_cfg["perfil_activo"] = combo_perfil.get()
             nueva_cfg["db_host"] = e_host.get().strip()
             nueva_cfg["db_port"] = e_port.get().strip()
             nueva_cfg["db_name"] = e_name.get().strip()
+            nueva_cfg["db_user"] = e_db_user.get().strip()
+            nueva_cfg["db_password"] = e_db_pass.get().strip()
+            if "supabase" in nueva_cfg["db_host"].lower():
+                nueva_cfg["db_sslmode"] = "require"
+                
             if guardar_config(nueva_cfg):
-                messagebox.showinfo("Guardado", "Configuración de conexión actualizada con éxito.")
+                # Auto-inicializar la BD para crear tablas si no existen
+                try:
+                    from database import inicializar_bd
+                    from auth import inicializar_usuarios
+                    inicializar_bd()
+                    inicializar_usuarios()
+                except Exception as e_init:
+                    print(f"[WARN] Error inicializando tablas en nueva BD: {e_init}")
+
+                self.lbl_perfil_bd.configure(text=f"Base Conectada: {nueva_cfg['perfil_activo']}")
+                messagebox.showinfo("Guardado", f"Conectado exitosamente a:\n{nueva_cfg['perfil_activo']}")
                 v_cfg.destroy()
             else:
                 messagebox.showerror("Error", "No se pudo guardar la configuración.")
                 
         f_btns = ctk.CTkFrame(v_cfg, fg_color="transparent")
-        f_btns.pack(pady=15, padx=25, fill="x")
+        f_btns.pack(pady=(4, 15), padx=20, fill="x")
         
-        ctk.CTkButton(f_btns, text="Probar Conexión", command=probar_conexion, fg_color=C_BG, text_color=C_BLUE, hover_color=C_BORDER, height=36, corner_radius=8).pack(side="left", expand=True, padx=5)
-        ctk.CTkButton(f_btns, text="Guardar Cambios", command=guardar, fg_color=C_BLUE, hover_color=C_BLUE_HOVER, height=36, corner_radius=8, font=ctk.CTkFont(weight="bold")).pack(side="right", expand=True, padx=5)
+        ctk.CTkButton(f_btns, text="🔍 Probar Conexión", command=probar_conexion, fg_color=C_BG, text_color=C_BLUE, hover_color=C_BORDER, height=38, corner_radius=8, font=ctk.CTkFont(weight="bold")).pack(side="left", expand=True, padx=5)
+        ctk.CTkButton(f_btns, text="💾 Guardar y Conectar", command=guardar, fg_color=C_BLUE, hover_color=C_BLUE_HOVER, height=38, corner_radius=8, font=ctk.CTkFont(weight="bold")).pack(side="right", expand=True, padx=5)
 
 
 # ========================================================
