@@ -6,7 +6,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox
 from datetime import datetime
 from estilos import *
-from config import CARPETAS
+from config import CARPETAS, PERFILES_DB, cargar_config, cambiar_perfil_activo
 from database import (
     crear_backup_json, 
     restaurar_backup_json, 
@@ -26,12 +26,45 @@ class VistaRespaldos(ctk.CTkFrame):
     def construir_ui(self):
         # Cabecera
         f_cab = ctk.CTkFrame(self, fg_color="transparent")
-        f_cab.pack(pady=(30, 20), padx=30, fill="x")
-        ctk.CTkLabel(f_cab, text="Copias de Seguridad (Backup) y Restauración", font=ctk.CTkFont(size=28, weight="bold"), text_color=C_TEXT).pack(side="left")
+        f_cab.pack(pady=(25, 12), padx=30, fill="x")
+        ctk.CTkLabel(f_cab, text="Copias de Seguridad (Backup) y Bases de Datos", font=ctk.CTkFont(size=28, weight="bold"), text_color=C_TEXT).pack(side="left")
+
+        # ----------------------------------------------------
+        # BANNER DE PERFIL DE BASE DE DATOS ACTIVA
+        # ----------------------------------------------------
+        f_db_profile = ctk.CTkFrame(self, fg_color=C_CARD, corner_radius=CORNER_CARD, border_width=1, border_color=C_BORDER)
+        f_db_profile.pack(padx=30, pady=(0, 15), fill="x")
+
+        f_db_inner = ctk.CTkFrame(f_db_profile, fg_color="transparent")
+        f_db_inner.pack(padx=20, pady=12, fill="x")
+
+        f_db_info = ctk.CTkFrame(f_db_inner, fg_color="transparent")
+        f_db_info.pack(side="left", fill="x", expand=True)
+
+        ctk.CTkLabel(f_db_info, text="🗄️ Base de Datos y Entorno Activo", font=ctk.CTkFont(size=15, weight="bold"), text_color=C_TEXT).pack(anchor="w")
+        self.lbl_perfil_desc = ctk.CTkLabel(f_db_info, text="", font=ctk.CTkFont(size=12), text_color=C_SUBTEXT)
+        self.lbl_perfil_desc.pack(anchor="w", pady=(2, 0))
+
+        f_db_action = ctk.CTkFrame(f_db_inner, fg_color="transparent")
+        f_db_action.pack(side="right")
+
+        self.combo_perfil_db = ctk.CTkComboBox(
+            f_db_action,
+            values=[p["nombre"] for p in PERFILES_DB.values()],
+            command=self._al_cambiar_perfil_db,
+            width=320,
+            height=36,
+            corner_radius=CORNER_INPUT,
+            font=ctk.CTkFont(size=12, weight="bold"),
+            fg_color=C_BG,
+            border_color=C_BORDER
+        )
+        self.combo_perfil_db.pack(side="left")
+        self._actualizar_info_perfil_db()
 
         # Contenedor Principal (Dos Columnas)
         self.main_container = ctk.CTkFrame(self, fg_color="transparent")
-        self.main_container.pack(fill="both", expand=True, padx=30, pady=(0, 30))
+        self.main_container.pack(fill="both", expand=True, padx=30, pady=(0, 25))
         self.main_container.columnconfigure(0, weight=1, uniform="col")
         self.main_container.columnconfigure(1, weight=1, uniform="col")
 
@@ -342,6 +375,51 @@ class VistaRespaldos(ctk.CTkFrame):
 
         self.aplicar_restauracion(self.seleccionado_filepath)
 
+    def _actualizar_info_perfil_db(self):
+        conf = cargar_config()
+        p_act = conf.get("perfil_activo", "relevamiento_2026")
+        p_info = PERFILES_DB.get(p_act, PERFILES_DB["relevamiento_2026"])
+        self.combo_perfil_db.set(p_info["nombre"])
+        self.lbl_perfil_desc.configure(text=f"Servidor: {p_info['db_host']} | {p_info['descripcion']}")
+
+    def _al_cambiar_perfil_db(self, seleccion):
+        perfil_encontrado = None
+        for k, v in PERFILES_DB.items():
+            if v["nombre"] == seleccion:
+                perfil_encontrado = k
+                break
+        if not perfil_encontrado:
+            return
+            
+        conf = cargar_config()
+        if conf.get("perfil_activo") == perfil_encontrado:
+            return
+            
+        confirmar = messagebox.askyesno(
+            "Cambiar Base de Datos",
+            f"¿Deseas cambiar la conexión activa a:\n\n{seleccion}?\n\nLa aplicación se conectará al instante y recargará los datos."
+        )
+        if not confirmar:
+            self._actualizar_info_perfil_db()
+            return
+            
+        cambiar_perfil_activo(perfil_encontrado)
+        self._actualizar_info_perfil_db()
+        
+        # Recargar memoria de datos en la aplicación
+        try:
+            self.app.cargar_datos_memoria()
+            for v_nom, v_obj in getattr(self.app, "vistas", {}).items():
+                if hasattr(v_obj, "refrescar_datos"):
+                    try:
+                        v_obj.refrescar_datos()
+                    except:
+                        pass
+            messagebox.showinfo("Conexión Exitosa", f"✅ Conectado exitosamente a:\n{seleccion}")
+        except Exception as e:
+            messagebox.showerror("Error al recargar", f"Se guardó la configuración pero hubo un error al refrescar: {e}")
+
     def refrescar_datos(self):
+        self._actualizar_info_perfil_db()
         self.cargar_lista_respaldos()
 
