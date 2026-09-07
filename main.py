@@ -903,7 +903,8 @@ class SistemaMantenimiento(ctk.CTk):
         )
         self.lbl_estado_conexion.pack(pady=(0, 1))
         
-        self.lbl_name = ctk.CTkLabel(self.top_sidebar, text="Rudel Adhemar Santos Medina", font=ctk.CTkFont(size=10, slant="italic"), text_color=C_SUBTEXT)
+        nombre_mostrar = self.usuario_actual.get("nombre_completo") or self.usuario_actual.get("nombre_usuario", "Usuario")
+        self.lbl_name = ctk.CTkLabel(self.top_sidebar, text=nombre_mostrar, font=ctk.CTkFont(size=10, slant="italic"), text_color=C_SUBTEXT)
         self.lbl_name.pack(pady=(0, 4))
 
         # Badge de Sede / Centro de Salud Activo
@@ -1001,10 +1002,12 @@ class SistemaMantenimiento(ctk.CTk):
         def al_cambiar_sede(nuevo_contexto):
             self.contexto_sede = nuevo_contexto
             self.lbl_sede_badge.configure(text=nuevo_contexto.get("resumen_texto", "🌐 Acceso General GAMLP"))
-            # Refrescar todas las vistas modulares
-            for nombre_v, v in self.vistas.items():
-                if hasattr(v, "refrescar_datos"):
-                    v.refrescar_datos()
+            self._calendario_sucio = True
+            # Refrescar solo la vista activa inmediatamente para evitar congelamiento de interfaz
+            vista_activa_nom = getattr(self, "vista_actual_nombre", "Inventario")
+            vista_activa = self.vistas.get(vista_activa_nom)
+            if vista_activa and hasattr(vista_activa, "refrescar_datos"):
+                vista_activa.refrescar_datos()
             messagebox.showinfo("Sede Actualizada", f"Sede activa cambiada a:\n{nuevo_contexto.get('resumen_texto')}")
 
         VentanaSelectorSede(self, self.usuario_actual, al_cambiar_sede)
@@ -1065,9 +1068,15 @@ class SistemaMantenimiento(ctk.CTk):
             
         self.vistas[nombre].pack(fill="both", expand=True)
         
-        if hasattr(self.vistas[nombre], 'refrescar_datos'):
-            self.vistas[nombre].refrescar_datos()
-
+        if nombre == "Cronograma":
+            if self._calendario_sucio: 
+                self.vistas["Cronograma"].dibujar_mes(self.vistas["Cronograma"].anio_actual, self.vistas["Cronograma"].mes_actual)
+                self.vistas["Cronograma"].dibujar_anio(self.vistas["Cronograma"].anio_vista)
+                self._calendario_sucio = False
+            self.vistas["Cronograma"].refrescar_datos()
+        else:
+            if hasattr(self.vistas[nombre], 'refrescar_datos'):
+                self.vistas[nombre].refrescar_datos()
             
         mapa_botones = {
             "Inventario": self.btn_nav_inv,
@@ -1088,14 +1097,6 @@ class SistemaMantenimiento(ctk.CTk):
         btn_sel = mapa_botones.get(nombre)
         if btn_sel:
             btn_sel.configure(fg_color=C_BLUE_LIGHT, text_color=C_BLUE)
-
-
-        if nombre == "Cronograma":
-            if self._calendario_sucio: 
-                self.vistas["Cronograma"].dibujar_mes(self.vistas["Cronograma"].anio_actual, self.vistas["Cronograma"].mes_actual)
-                self.vistas["Cronograma"].dibujar_anio(self.vistas["Cronograma"].anio_vista)
-                self.vistas["Cronograma"].refrescar_datos()
-                self._calendario_sucio = False
 
     def actualizar_boton_alertas(self):
         c = len(self.alertas_activas)

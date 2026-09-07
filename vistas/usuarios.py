@@ -559,6 +559,8 @@ class VistaUsuarios(ctk.CTkFrame):
                     self.app.usuario_actual["rol"] = rol_db
                     self.app.usuario_actual["permisos"] = permisos_dict
                     self.app.usuario_actual["sello_firma"] = destino_sello
+                    if hasattr(self.app, "lbl_name") and self.app.lbl_name:
+                        self.app.lbl_name.configure(text=nom)
 
                 vent.destroy()
                 self.refrescar_datos()

@@ -428,10 +428,7 @@ class VistaProtocolos(ctk.CTkFrame):
             usuario_actual = self.app.usuario_actual
             default_resp = ""
             if usuario_actual:
-                if usuario_actual.get("nombre_usuario") == "admin":
-                    default_resp = "Rudel Adhemar Santos Medina"
-                else:
-                    default_resp = usuario_actual.get("nombre_completo", "")
+                default_resp = usuario_actual.get("nombre_completo") or usuario_actual.get("nombre_usuario", "")
 
             # Filtrar y normalizar
             r = None
