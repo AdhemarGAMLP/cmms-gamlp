@@ -1451,10 +1451,13 @@ def ejecutar_en_segundo_plano(func, *args, **kwargs):
     return t
 
 def _obtener_ruta_cache_datos():
-    return os.path.join(os.path.expanduser("~"), ".gamlp_data_cache.json")
+    db_host_key = str(CONFIG.get("db_host", "default")).replace(":", "_").replace("/", "_").replace(".", "_")
+    db_user_key = str(CONFIG.get("db_user", "postgres")).replace(":", "_").replace("/", "_").replace(".", "_")
+    return os.path.join(os.path.expanduser("~"), f".gamlp_data_cache_{db_host_key}_{db_user_key}.json")
 
 def _obtener_ruta_cola_offline():
-    return os.path.join(os.path.expanduser("~"), ".gamlp_offline_queue.json")
+    db_host_key = str(CONFIG.get("db_host", "default")).replace(":", "_").replace("/", "_").replace(".", "_")
+    return os.path.join(os.path.expanduser("~"), f".gamlp_offline_queue_{db_host_key}.json")
 
 def guardar_cache_local_datos(datos_dict):
     """Guarda una copia de respaldo de lectura de todos los datos en el disco local."""

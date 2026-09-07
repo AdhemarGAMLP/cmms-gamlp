@@ -883,7 +883,7 @@ class SistemaMantenimiento(ctk.CTk):
         if hasattr(self, 'btn_alertas'):
             self.actualizar_boton_alertas()
 
-    def cargar_datos_memoria(self, usar_cache_primero=True):
+    def cargar_datos_memoria(self, usar_cache_primero=False):
         if usar_cache_primero:
             cache_datos = cargar_cache_local_datos()
             if cache_datos and cache_datos.get("equipos"):
