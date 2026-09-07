@@ -789,9 +789,10 @@ class VistaMuebleria(ctk.CTkFrame):
         f_trans = ctk.CTkFrame(f_r1, fg_color="transparent")
         f_trans.grid(row=0, column=1, sticky="ew")
         ctk.CTkLabel(f_trans, text="2. Detalle Transacción (Llenado libre)", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(0, 2))
-        combo_trans = ctk.CTkComboBox(f_trans, values=DETALLES_TRANSACCION, fg_color=C_CARD, border_color=C_BORDER)
-        combo_trans.pack(fill="x")
-        combo_trans.set(mueble_editar.get("detalle_transaccion", "ASIGNACION") if mueble_editar else "ASIGNACION")
+        e_trans = ctk.CTkEntry(f_trans, placeholder_text="Ej: ASIGNACION, REASIGNACION, ALTA, BAJA...", fg_color=C_CARD, border_color=C_BORDER)
+        e_trans.pack(fill="x")
+        if mueble_editar and mueble_editar.get("detalle_transaccion"):
+            e_trans.insert(0, mueble_editar["detalle_transaccion"])
 
         # Fila 2: Dirección Administrativa (Red) & Unidad Organizacional (Centro)
         f_r2 = ctk.CTkFrame(sf, fg_color="transparent")
@@ -862,8 +863,6 @@ class VistaMuebleria(ctk.CTkFrame):
         e_tipo.pack(fill="x")
         if mueble_editar and mueble_editar.get("tipo_activo"):
             e_tipo.insert(0, mueble_editar["tipo_activo"])
-        elif not mueble_editar:
-            e_tipo.insert(0, "COMPUTADORA DE ESCRITORIO")
         pop_tipo = AutocompletarEntryPopup(e_tipo, self._obtener_lista_tipos)
 
         f_mod = ctk.CTkFrame(f_r3, fg_color="transparent")
@@ -1062,7 +1061,7 @@ class VistaMuebleria(ctk.CTkFrame):
                 "descripcion": desc_val,
                 "modelo": e_modelo.get().strip(),
                 "serie": e_serie.get().strip(),
-                "detalle_transaccion": combo_trans.get().strip() or "ASIGNACION",
+                "detalle_transaccion": e_trans.get().strip() or "ASIGNACION",
                 "codigo_sispam": e_sispam.get().strip(),
                 "bertin": e_bertin.get().strip(),
                 "sapm": e_sapm.get().strip(),
