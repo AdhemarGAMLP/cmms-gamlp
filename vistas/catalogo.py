@@ -151,9 +151,9 @@ class VistaCatalogo(ctk.CTkFrame):
         e_piso.pack(pady=5)
         
         def update_piso(*args):
-            area_sel = combo_area.get()
-            area_obj = next((a for a in self.app.datos["areas"] if a["nombre"] == area_sel), None)
-            piso_val = area_obj.get("piso", "") if area_obj else ""
+            area_sel = combo_area.get().strip()
+            area_obj = next((a for a in self.app.datos.get("areas", []) if str(a.get("nombre", "")).strip().lower() == area_sel.lower()), None)
+            piso_val = str(area_obj.get("piso") or "") if area_obj else ""
             e_piso.configure(state="normal")
             e_piso.delete(0, "end")
             e_piso.insert(0, piso_val)
@@ -167,25 +167,25 @@ class VistaCatalogo(ctk.CTkFrame):
         habilitar_autocompletado(combo_area, val_areas)
         
         def al_seleccionar_nombre(val_sel):
-            match = next((c for c in self.app.datos["catalogo"] if c["nombre"] == val_sel), None)
+            match = next((c for c in self.app.datos.get("catalogo", []) if c.get("nombre") == val_sel), None)
             if match:
                 em.delete(0, "end")
-                em.insert(0, match.get("marca") or "")
+                em.insert(0, str(match.get("marca") or ""))
                 emo.delete(0, "end")
-                emo.insert(0, match.get("modelo") or "")
+                emo.insert(0, str(match.get("modelo") or ""))
                 if match.get("area"):
                     combo_area.set(match["area"])
-                    update_piso()
+                update_piso()
                     
         en.configure(command=al_seleccionar_nombre)
         
         if edit_data:
-            en.set(edit_data["nombre"])
-            em.insert(0, edit_data.get("marca") or "")
-            emo.insert(0, edit_data.get("modelo") or "")
+            en.set(str(edit_data.get("nombre") or ""))
+            em.insert(0, str(edit_data.get("marca") or ""))
+            emo.insert(0, str(edit_data.get("modelo") or ""))
             if edit_data.get("area"):
                 combo_area.set(edit_data["area"])
-                update_piso()
+            update_piso()
 
         def guardar():
             update_piso()
@@ -193,10 +193,10 @@ class VistaCatalogo(ctk.CTkFrame):
             nombre_val = en.get().strip()
             marca_val = em.get().strip()
             modelo_val = emo.get().strip()
-            area_val = combo_area.get()
+            area_val = combo_area.get().strip()
             
             e_piso.configure(state="normal")
-            piso_val = e_piso.get()
+            piso_val = e_piso.get().strip()
             e_piso.configure(state="disabled")
             
             if not nombre_val:

@@ -95,11 +95,11 @@ class VistaAreas(ctk.CTkFrame):
         e_encargado.pack(pady=5)
         
         if area_editar:
-            e_nombre.insert(0, area_editar["nombre"])
+            e_nombre.insert(0, str(area_editar.get("nombre") or ""))
             if area_editar.get("piso"):
-                e_piso.insert(0, area_editar["piso"])
-            e_contacto.insert(0, area_editar.get("contacto") or "")
-            e_encargado.insert(0, area_editar.get("encargado") or "")
+                e_piso.insert(0, str(area_editar["piso"]))
+            e_contacto.insert(0, str(area_editar.get("contacto") or ""))
+            e_encargado.insert(0, str(area_editar.get("encargado") or ""))
             
         def guardar_area():
             nom = e_nombre.get().strip()
