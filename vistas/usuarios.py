@@ -65,6 +65,7 @@ class VistaUsuarios(ctk.CTkFrame):
         super().__init__(master, fg_color=C_BG)
         self.app = app
         self.construir_ui()
+        self.refrescar_datos()
 
     def construir_ui(self):
         # Cabecera
@@ -79,7 +80,7 @@ class VistaUsuarios(ctk.CTkFrame):
         ).pack(side="left")
 
         # Tarjeta principal de la tabla
-        marco = ctk.CTkFrame(self, fg_color=C_CARD, corner_radius=16, border_width=1, border_color=C_BORDER)
+        marco = ctk.CTkFrame(self, fg_color=C_CARD, corner_radius=CORNER_CARD, border_width=1, border_color=C_BORDER)
         marco.pack(padx=25, pady=(5, 15), fill="both", expand=True)
 
         cols = ("C.I. / Usuario", "Nombre Completo", "Rol", "Pestañas Habilitadas", "Permisos Especiales", "Sello Institucional", "Estado")
@@ -105,6 +106,7 @@ class VistaUsuarios(ctk.CTkFrame):
 
         self.tabla_users.tag_configure("fila_par", background="#FFFFFF", foreground=C_TEXT)
         self.tabla_users.tag_configure("fila_impar", background="#F8FAFC", foreground=C_TEXT)
+        self.tabla_users.pack(side="left", fill="both", expand=True)
         scrollbar_users.pack(side="right", fill="y", padx=(4, 0))
         self.tabla_users.bind("<Double-1>", lambda e: self.modificar_usuario())
 
@@ -119,7 +121,7 @@ class VistaUsuarios(ctk.CTkFrame):
             fg_color=C_BLUE, 
             hover_color=C_BLUE_HOVER, 
             text_color="#FFFFFF",
-            corner_radius=8, 
+            corner_radius=CORNER_BTN, 
             height=38, 
             command=lambda: self.abrir_formulario_usuario(None)
         ).pack(side="left", padx=(0, 10))
@@ -129,9 +131,9 @@ class VistaUsuarios(ctk.CTkFrame):
             text="✎ Modificar Permisos y Datos", 
             font=ctk.CTkFont(weight="bold", size=13), 
             fg_color=C_SECONDARY_BTN, 
-            hover_color=C_SECONDARY_BTN_HOVER, 
+            hover_color=C_CARD_HOVER, 
             text_color=C_TEXT,
-            corner_radius=8, 
+            corner_radius=CORNER_BTN, 
             height=38, 
             command=self.modificar_usuario
         ).pack(side="left", padx=(0, 10))
@@ -143,7 +145,7 @@ class VistaUsuarios(ctk.CTkFrame):
             fg_color=C_RED, 
             hover_color=C_RED_HOVER, 
             text_color="#FFFFFF",
-            corner_radius=8, 
+            corner_radius=CORNER_BTN, 
             height=38, 
             command=self.eliminar_usuario
         ).pack(side="left")
@@ -259,7 +261,7 @@ class VistaUsuarios(ctk.CTkFrame):
         ).pack(anchor="w", pady=(2, 0))
 
         # Contenedor Scrollable
-        sf = ctk.CTkScrollableFrame(vent, fg_color=C_CARD, corner_radius=14, border_width=1, border_color=C_BORDER)
+        sf = ctk.CTkScrollableFrame(vent, fg_color=C_CARD, corner_radius=CORNER_CARD, border_width=1, border_color=C_BORDER)
         sf.pack(pady=4, padx=20, fill="both", expand=True)
 
         # ----------------------------------------------------
@@ -277,14 +279,14 @@ class VistaUsuarios(ctk.CTkFrame):
         f_c1 = ctk.CTkFrame(f_grid, fg_color="transparent")
         f_c1.grid(row=0, column=0, padx=(0, 10), pady=4, sticky="nsew")
         ctk.CTkLabel(f_c1, text="Nombre Completo:", font=ctk.CTkFont(weight="bold", size=12), text_color=C_TEXT).pack(anchor="w")
-        e_nombre = ctk.CTkEntry(f_c1, placeholder_text="ej. Lic. Adhemar Santos Medina", height=34)
+        e_nombre = ctk.CTkEntry(f_c1, placeholder_text="ej. Lic. Adhemar Santos Medina", height=36, corner_radius=CORNER_INPUT, border_color=C_BORDER, fg_color=C_BG)
         e_nombre.pack(fill="x", pady=(2, 0))
 
         # 2. C.I. (Cédula de Identidad / Usuario)
         f_c2 = ctk.CTkFrame(f_grid, fg_color="transparent")
         f_c2.grid(row=0, column=1, padx=(10, 0), pady=4, sticky="nsew")
         ctk.CTkLabel(f_c2, text="C.I. (Cédula de Identidad / Usuario):", font=ctk.CTkFont(weight="bold", size=12), text_color=C_TEXT).pack(anchor="w")
-        e_ci = ctk.CTkEntry(f_c2, placeholder_text="ej. 10955499", height=34)
+        e_ci = ctk.CTkEntry(f_c2, placeholder_text="ej. 10955499", height=36, corner_radius=CORNER_INPUT, border_color=C_BORDER, fg_color=C_BG)
         e_ci.pack(fill="x", pady=(2, 0))
 
         # 3. Contraseña
@@ -292,20 +294,20 @@ class VistaUsuarios(ctk.CTkFrame):
         f_c3.grid(row=1, column=0, padx=(0, 10), pady=8, sticky="nsew")
         pass_lbl_txt = "Contraseña (dejar en blanco para no cambiar):" if user_editar else "Contraseña:"
         ctk.CTkLabel(f_c3, text=pass_lbl_txt, font=ctk.CTkFont(weight="bold", size=12), text_color=C_TEXT).pack(anchor="w")
-        e_pass = ctk.CTkEntry(f_c3, show="*", placeholder_text="Contraseña segura", height=34)
+        e_pass = ctk.CTkEntry(f_c3, show="*", placeholder_text="Contraseña segura", height=36, corner_radius=CORNER_INPUT, border_color=C_BORDER, fg_color=C_BG)
         e_pass.pack(fill="x", pady=(2, 0))
 
         # 4. Rol de Usuario
         f_c4 = ctk.CTkFrame(f_grid, fg_color="transparent")
         f_c4.grid(row=1, column=1, padx=(10, 0), pady=8, sticky="nsew")
         ctk.CTkLabel(f_c4, text="Rol de Usuario:", font=ctk.CTkFont(weight="bold", size=12), text_color=C_TEXT).pack(anchor="w")
-        combo_rol = ctk.CTkComboBox(f_c4, values=ROLES_DISPONIBLES, height=34)
+        combo_rol = ctk.CTkComboBox(f_c4, values=ROLES_DISPONIBLES, height=36, corner_radius=CORNER_INPUT, border_color=C_BORDER, fg_color=C_BG)
         combo_rol.pack(fill="x", pady=(2, 0))
 
         # ----------------------------------------------------
         # SECCIÓN SELLO INSTITUCIONAL
         # ----------------------------------------------------
-        f_sello = ctk.CTkFrame(sf, fg_color="#F8FAFC", corner_radius=10, border_width=1, border_color=C_BORDER)
+        f_sello = ctk.CTkFrame(sf, fg_color=C_BG, corner_radius=CORNER_CARD, border_width=1, border_color=C_BORDER)
         f_sello.pack(fill="x", padx=16, pady=10)
 
         f_sello_in = ctk.CTkFrame(f_sello, fg_color="transparent")
@@ -320,14 +322,14 @@ class VistaUsuarios(ctk.CTkFrame):
             path = filedialog.askopenfilename(filetypes=[("Imágenes de Sello", "*.png;*.jpg;*.jpeg")])
             if path:
                 ruta_sello_act.set(path)
-                lbl_sello_status.configure(text=f"Seleccionado: {os.path.basename(path)}", text_color=C_GREEN_HOVER)
+                lbl_sello_status.configure(text=f"Seleccionado: {os.path.basename(path)}", text_color=C_GREEN)
 
         def quitar_sello():
             ruta_sello_act.set("")
             lbl_sello_status.configure(text="Sin Sello", text_color=C_SUBTEXT)
 
-        ctk.CTkButton(f_sello_in, text="📁 Subir Sello", font=ctk.CTkFont(weight="bold", size=11), fg_color=C_BLUE, height=28, command=buscar_sello).pack(side="left", padx=4)
-        ctk.CTkButton(f_sello_in, text="✖ Quitar", font=ctk.CTkFont(size=11), fg_color="#E2E8F0", text_color=C_TEXT, hover_color="#CBD5E1", height=28, command=quitar_sello).pack(side="left", padx=4)
+        ctk.CTkButton(f_sello_in, text="📁 Subir Sello", font=ctk.CTkFont(weight="bold", size=11), fg_color=C_BLUE, hover_color=C_BLUE_HOVER, corner_radius=CORNER_BTN, height=28, command=buscar_sello).pack(side="left", padx=4)
+        ctk.CTkButton(f_sello_in, text="✖ Quitar", font=ctk.CTkFont(size=11), fg_color=C_SECONDARY_BTN, text_color=C_TEXT, hover_color=C_CARD_HOVER, corner_radius=CORNER_BTN, height=28, command=quitar_sello).pack(side="left", padx=4)
         lbl_sello_status.pack(side="left", padx=8)
 
         # ----------------------------------------------------
@@ -350,21 +352,21 @@ class VistaUsuarios(ctk.CTkFrame):
             f_perm_header, 
             text="⚡ Aplicar Valores del Rol", 
             font=ctk.CTkFont(size=11, weight="bold"), 
-            fg_color="#EFF6FF", 
+            fg_color=C_BLUE_LIGHT, 
             text_color=C_BLUE, 
-            hover_color="#DBEAFE", 
+            hover_color=C_CARD_HOVER, 
             height=26,
-            corner_radius=6,
+            corner_radius=CORNER_BTN,
             command=lambda: aplicar_defaults_rol_en_ui(combo_rol.get())
         )
         btn_preset.pack(side="right")
 
         # Contenedor Tabla de Permisos
-        f_matriz = ctk.CTkFrame(f_perm, fg_color="#F8FAFC", corner_radius=10, border_width=1, border_color=C_BORDER)
+        f_matriz = ctk.CTkFrame(f_perm, fg_color=C_BG, corner_radius=CORNER_CARD, border_width=1, border_color=C_BORDER)
         f_matriz.pack(fill="x")
 
         # Cabecera de columnas de la matriz
-        f_m_hdr = ctk.CTkFrame(f_matriz, fg_color="#F1F5F9", height=32, corner_radius=8)
+        f_m_hdr = ctk.CTkFrame(f_matriz, fg_color=C_CARD, height=32, corner_radius=CORNER_BTN)
         f_m_hdr.pack(fill="x", padx=4, pady=4)
         f_m_hdr.columnconfigure(0, weight=4)
         f_m_hdr.columnconfigure(1, weight=2)
@@ -375,7 +377,7 @@ class VistaUsuarios(ctk.CTkFrame):
         ctk.CTkLabel(f_m_hdr, text="Pestaña / Módulo", font=ctk.CTkFont(weight="bold", size=12), text_color=C_TEXT).grid(row=0, column=0, sticky="w", padx=10)
         ctk.CTkLabel(f_m_hdr, text="👁️ Ver / Acceso", font=ctk.CTkFont(weight="bold", size=11), text_color=C_BLUE).grid(row=0, column=1)
         ctk.CTkLabel(f_m_hdr, text="➕ Agregar", font=ctk.CTkFont(weight="bold", size=11), text_color=C_GREEN).grid(row=0, column=2)
-        ctk.CTkLabel(f_m_hdr, text="✎ Cambiar", font=ctk.CTkFont(weight="bold", size=11), text_color=C_PURPLE).grid(row=0, column=3)
+        ctk.CTkLabel(f_m_hdr, text="✎ Cambiar", font=ctk.CTkFont(weight="bold", size=11), text_color=C_BLUE).grid(row=0, column=3)
         ctk.CTkLabel(f_m_hdr, text="🗑️ Eliminar", font=ctk.CTkFont(weight="bold", size=11), text_color=C_RED).grid(row=0, column=4)
 
         # Diccionario de variables de control de checkboxes
