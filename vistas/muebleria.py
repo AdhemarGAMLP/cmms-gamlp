@@ -1,7 +1,8 @@
 # vistas/muebleria.py
 import os
-import customtkinter as ctk
+import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
+import customtkinter as ctk
 from datetime import datetime, date
 import psycopg2.extras
 
@@ -39,6 +40,187 @@ TIPOS_ACTIVOS_COMUNES = [
 
 SECTORES_DISPONIBLES = ["SALUD", "G.A.M.L.P.", "ADMINISTRACIÓN CENTRAL"]
 DETALLES_TRANSACCION = ["ASIGNACION", "REASIGNACION", "TRANSFERENCIA", "ALTA", "BAJA", "DONACION", "EN CUSTODIA"]
+
+
+class AutocompletarEntryPopup:
+    """
+    Despliega un menú emergente flotante, sutil y no obligatorio con sugerencias
+    al escribir en un CTkEntry. El usuario puede seleccionar una opción o seguir
+    escribiendo libremente sin ninguna imposición.
+    """
+    def __init__(self, ctk_entry, proveedor_datos, min_chars=1, max_items=6):
+        self.entry = ctk_entry
+        self.proveedor_datos = proveedor_datos
+        self.min_chars = min_chars
+        self.max_items = max_items
+        self.popup = None
+        self.listbox = None
+        self._cerrando_id = None
+
+        # Vincular eventos del campo de texto
+        self.entry.bind("<KeyRelease>", self._al_escribir, add="+")
+        self.entry.bind("<FocusOut>", self._al_perder_foco, add="+")
+        self.entry.bind("<Down>", self._al_presionar_abajo, add="+")
+        self.entry.bind("<Escape>", lambda e: self.cerrar_popup(), add="+")
+
+    def _obtener_sugerencias(self, query):
+        q = query.strip().upper()
+        if not q:
+            return []
+        if callable(self.proveedor_datos):
+            datos = self.proveedor_datos(q)
+        else:
+            datos = self.proveedor_datos
+
+        starts = []
+        contains = []
+        for item in datos:
+            item_str = str(item).strip()
+            item_upper = item_str.upper()
+            if not item_str:
+                continue
+            if item_upper == q:
+                continue  # Ya es idéntico a lo que escribió
+            if item_upper.startswith(q):
+                if item_str not in starts:
+                    starts.append(item_str)
+            elif q in item_upper:
+                if item_str not in contains and item_str not in starts:
+                    contains.append(item_str)
+
+        resultados = starts + contains
+        return resultados[:self.max_items]
+
+    def _al_escribir(self, event=None):
+        if event and event.keysym in ("Down", "Up", "Return", "Escape", "Tab", "Shift_L", "Shift_R", "Control_L", "Control_R", "Alt_L", "Alt_R"):
+            return
+
+        texto = self.entry.get().strip()
+        if len(texto) < self.min_chars:
+            self.cerrar_popup()
+            return
+
+        sugerencias = self._obtener_sugerencias(texto)
+        if not sugerencias:
+            self.cerrar_popup()
+            return
+
+        self._mostrar_popup(sugerencias)
+
+    def _al_presionar_abajo(self, event):
+        if self.popup and self.listbox and self.listbox.size() > 0:
+            self.listbox.focus_set()
+            self.listbox.selection_clear(0, "end")
+            self.listbox.selection_set(0)
+            self.listbox.activate(0)
+            return "break"
+
+    def _mostrar_popup(self, sugerencias):
+        self.entry.update_idletasks()
+        try:
+            root_x = self.entry.winfo_rootx()
+            root_y = self.entry.winfo_rooty()
+            width = self.entry.winfo_width()
+            height = self.entry.winfo_height()
+        except:
+            return
+
+        if root_x <= 0 or width <= 10:
+            return
+
+        pos_y = root_y + height + 2
+        alto_item = 24
+        num_items = min(len(sugerencias), self.max_items)
+        alto_popup = max(28, num_items * alto_item + 8)
+
+        if not self.popup or not self.popup.winfo_exists():
+            self.popup = tk.Toplevel(self.entry.winfo_toplevel())
+            self.popup.wm_overrideredirect(True)
+            self.popup.attributes("-topmost", True)
+            self.popup.configure(bg="#94A3B8")
+
+            f_inner = tk.Frame(self.popup, bg="#FFFFFF", padx=1, pady=1)
+            f_inner.pack(fill="both", expand=True)
+
+            self.listbox = tk.Listbox(
+                f_inner,
+                font=("Segoe UI", 9),
+                bg="#FFFFFF",
+                fg="#1E293B",
+                selectbackground="#DBEAFE",
+                selectforeground="#1E40AF",
+                activestyle="none",
+                relief="flat",
+                highlightthickness=0,
+                cursor="hand2"
+            )
+            self.listbox.pack(fill="both", expand=True, padx=2, pady=2)
+
+            self.listbox.bind("<ButtonRelease-1>", self._al_seleccionar_click)
+            self.listbox.bind("<Return>", self._al_seleccionar_tecla)
+            self.listbox.bind("<Escape>", lambda e: self.cerrar_popup())
+            self.listbox.bind("<FocusOut>", self._al_perder_foco_popup)
+        else:
+            self.popup.lift()
+
+        self.popup.geometry(f"{width}x{alto_popup}+{root_x}+{pos_y}")
+
+        self.listbox.delete(0, "end")
+        for s in sugerencias:
+            self.listbox.insert("end", f"  🔍  {s}")
+
+    def _al_seleccionar_click(self, event=None):
+        sel = self.listbox.curselection()
+        if sel:
+            texto_raw = self.listbox.get(sel[0]).strip()
+            texto_limpio = texto_raw.replace("🔍", "").strip()
+            self._aplicar_texto(texto_limpio)
+
+    def _al_seleccionar_tecla(self, event=None):
+        sel = self.listbox.curselection()
+        if sel:
+            texto_raw = self.listbox.get(sel[0]).strip()
+            texto_limpio = texto_raw.replace("🔍", "").strip()
+            self._aplicar_texto(texto_limpio)
+            return "break"
+
+    def _aplicar_texto(self, texto):
+        self.entry.delete(0, "end")
+        self.entry.insert(0, texto)
+        self.cerrar_popup()
+        self.entry.focus_set()
+        try:
+            self.entry._entry.icursor("end")
+        except:
+            pass
+
+    def _al_perder_foco(self, event=None):
+        if self._cerrando_id:
+            self.entry.after_cancel(self._cerrando_id)
+        self._cerrando_id = self.entry.after(200, self._verificar_y_cerrar)
+
+    def _al_perder_foco_popup(self, event=None):
+        if self._cerrando_id:
+            self.entry.after_cancel(self._cerrando_id)
+        self._cerrando_id = self.entry.after(200, self._verificar_y_cerrar)
+
+    def _verificar_y_cerrar(self):
+        try:
+            foco = self.entry.focus_get()
+            if self.popup and foco != self.listbox and foco != self.entry and foco != getattr(self.entry, "_entry", None):
+                self.cerrar_popup()
+        except:
+            self.cerrar_popup()
+
+    def cerrar_popup(self):
+        if self.popup and self.popup.winfo_exists():
+            try:
+                self.popup.destroy()
+            except:
+                pass
+        self.popup = None
+        self.listbox = None
+
 
 class VistaMuebleria(ctk.CTkFrame):
     def __init__(self, master, app):
@@ -502,72 +684,62 @@ class VistaMuebleria(ctk.CTkFrame):
                 )
             )
 
-    def _obtener_tipos_activos_dinamicos(self):
-        """Retorna la lista de tipos de activos combinando los comunes con los ya registrados en BD."""
+    def _obtener_lista_tipos(self, query=""):
         tipos_set = set(TIPOS_ACTIVOS_COMUNES)
         for m in self.app.datos.get("muebleria", []):
-            t = str(m.get("tipo_activo") or "").strip().upper()
+            t = str(m.get("tipo_activo") or "").strip()
             if t:
                 tipos_set.add(t)
         return sorted(list(tipos_set))
 
-    def _obtener_catalogo_activos_existentes(self):
-        """Retorna plantillas de activos existentes para sugerencias de autocompletado inteligente."""
-        muebles = self.app.datos.get("muebleria", [])
-        vistas = set()
-        catalogo = []
-        for m in muebles:
-            tipo = str(m.get("tipo_activo") or "").strip()
-            desc = str(m.get("descripcion") or "").strip()
+    def _obtener_lista_modelos(self, query=""):
+        modelos_set = {
+            "OptiPlex 7080", "OptiPlex 3050", "ThinkPad E14", "ThinkCentre",
+            "LaserJet Pro M404", "LaserJet MFP M428", "EcoTank L3150",
+            "Ergonómica Mesh", "Oficina Estándar", "Tandem 3P", "Clínica 2C",
+            "5 Baldas", "4 Gavetas", "PowerEdge R440", "Smart-UPS 1500"
+        }
+        for m in self.app.datos.get("muebleria", []):
             mod = str(m.get("modelo") or "").strip()
-            sec = str(m.get("sector_actual") or "SALUD").strip()
-            if not desc and not tipo:
-                continue
-            key = (tipo.upper(), desc.upper(), mod.upper())
-            if key not in vistas:
-                vistas.add(key)
-                catalogo.append({
-                    "tipo_activo": tipo or "COMPUTADORA DE ESCRITORIO",
-                    "descripcion": desc,
-                    "modelo": mod,
-                    "sector_actual": sec
-                })
+            if mod:
+                modelos_set.add(mod)
+        return sorted(list(modelos_set))
 
-        defaults = [
-            {"tipo_activo": "COMPUTADORA DE ESCRITORIO", "descripcion": "COMPUTADORA CORE I7 16GB RAM 512GB SSD CON MONITOR Y TECLADO", "modelo": "OptiPlex 7080", "sector_actual": "SALUD"},
-            {"tipo_activo": "LAPTOP / PORTÁTIL", "descripcion": "LAPTOP CORE I5 8GB RAM 256GB SSD", "modelo": "ThinkPad E14", "sector_actual": "SALUD"},
-            {"tipo_activo": "IMPRESORA / MULTIFUNCIONAL", "descripcion": "IMPRESORA MULTIFUNCIONAL LÁSER MONOCROMÁTICA", "modelo": "LaserJet Pro M404", "sector_actual": "SALUD"},
-            {"tipo_activo": "ESCRITORIO", "descripcion": "ESCRITORIO METÁLICO CON TAPA DE MELAMINA Y 3 GAVETAS", "modelo": "Oficina Estándar", "sector_actual": "SALUD"},
-            {"tipo_activo": "SILLA EJECUTIVA / GIRATORIA", "descripcion": "SILLA GIRATORIA ERGONÓMICA CON RESPALDO DE MALLA Y APOYABRAZOS", "modelo": "Ergonómica Mesh", "sector_actual": "SALUD"},
-            {"tipo_activo": "SILLA TANDEM / ESPERA", "descripcion": "TANDEM DE 3 ASIENTOS METÁLICOS PARA SALA DE ESPERA", "modelo": "Tandem 3P", "sector_actual": "SALUD"},
-            {"tipo_activo": "VITRINA MÉDICA", "descripcion": "VITRINA MÉDICA DE 2 CUERPOS DE VIDRIO Y METAL", "modelo": "Clínica 2C", "sector_actual": "SALUD"},
-            {"tipo_activo": "ESTANTE METÁLICO", "descripcion": "ESTANTE METÁLICO DE 5 NIVELES REFORZADO", "modelo": "5 Baldas", "sector_actual": "SALUD"},
-            {"tipo_activo": "GAVETERO / ARCHIVADOR", "descripcion": "ARCHIVADOR METÁLICO DE 4 GAVETAS CON LLAVE", "modelo": "4 Gavetas", "sector_actual": "SALUD"},
-            {"tipo_activo": "MESA DE TRABAJO", "descripcion": "MESA DE TRABAJO DE ESTRUCTURA TUBULAR Y MELAMINA", "modelo": "Trabajo 120x60", "sector_actual": "SALUD"},
-            {"tipo_activo": "CAMILLA DE ATENCIÓN", "descripcion": "CAMILLA DE EXAMEN CLÍNICO CON COLCHONETA", "modelo": "Clínica Standard", "sector_actual": "SALUD"},
-            {"tipo_activo": "SERVIDOR", "descripcion": "SERVIDOR DE DATOS EN RACK XEON 32GB RAM", "modelo": "PowerEdge R440", "sector_actual": "SALUD"}
-        ]
-        for d in defaults:
-            key = (d["tipo_activo"].upper(), d["descripcion"].upper(), d["modelo"].upper())
-            if key not in vistas:
-                vistas.add(key)
-                catalogo.append(d)
-
-        return catalogo
+    def _obtener_lista_descripciones(self, query=""):
+        desc_set = {
+            "COMPUTADORA CORE I7 16GB RAM 512GB SSD CON MONITOR Y TECLADO",
+            "COMPUTADORA CORE I5 8GB RAM 1TB HDD CON MONITOR",
+            "LAPTOP CORE I5 8GB RAM 256GB SSD",
+            "IMPRESORA MULTIFUNCIONAL LÁSER MONOCROMÁTICA",
+            "ESCRITORIO METÁLICO CON TAPA DE MELAMINA Y 3 GAVETAS",
+            "SILLA GIRATORIA ERGONÓMICA CON RESPALDO DE MALLA Y APOYABRAZOS",
+            "SILLA TANDEM DE 3 ASIENTOS METÁLICOS PARA SALA DE ESPERA",
+            "VITRINA MÉDICA DE 2 CUERPOS DE VIDRIO Y METAL",
+            "ESTANTE METÁLICO DE 5 NIVELES REFORZADO",
+            "ARCHIVADOR METÁLICO DE 4 GAVETAS CON LLAVE",
+            "MESA DE TRABAJO DE ESTRUCTURA TUBULAR Y MELAMINA",
+            "CAMILLA DE EXAMEN CLÍNICO CON COLCHONETA",
+            "SERVIDOR DE DATOS EN RACK XEON 32GB RAM"
+        }
+        for m in self.app.datos.get("muebleria", []):
+            d = str(m.get("descripcion") or "").strip()
+            if d:
+                desc_set.add(d)
+        return sorted(list(desc_set))
 
     def abrir_formulario_mueble(self, mueble_editar=None):
-        """Abre la ventana modal para registrar o modificar un mueble / equipo de computación con recomendación inteligente."""
+        """Abre la ventana modal para registrar o modificar un mueble / equipo de computación."""
         modal = ctk.CTkToplevel(self)
         titulo_modal = "Modificar Activo (Mueblería / Computación)" if mueble_editar else "Registrar Nuevo Activo (Mueblería / Computación)"
         modal.title(titulo_modal)
-        modal.geometry("860x750")
+        modal.geometry("860x720")
         modal.configure(fg_color=C_BG)
         modal.transient(self)
         modal.grab_set()
 
         # Centrar ventana
         modal.update_idletasks()
-        w, h = 860, 750
+        w, h = 860, 720
         x = (modal.winfo_screenwidth() // 2) - (w // 2)
         y = (modal.winfo_screenheight() // 2) - (h // 2)
         modal.geometry(f"{w}x{h}+{x}+{y}")
@@ -599,9 +771,6 @@ class VistaMuebleria(ctk.CTkFrame):
                 "RED 5-SUR (MACRODISTRITO SUR)"
             ]
 
-        catalogo_existentes = self._obtener_catalogo_activos_existentes()
-        tipos_disponibles = self._obtener_tipos_activos_dinamicos()
-
         # Fila 1: Sector Actual & Detalle Transacción (Llenado Libre)
         f_r1 = ctk.CTkFrame(sf, fg_color="transparent")
         f_r1.pack(fill="x", pady=4)
@@ -616,7 +785,7 @@ class VistaMuebleria(ctk.CTkFrame):
         combo_sector.pack(fill="x")
         combo_sector.set(mueble_editar.get("sector_actual", "SALUD") if mueble_editar else "SALUD")
 
-        # Detalle Transacción (Llenado libre con sugerencias rápidas)
+        # Detalle Transacción (Llenado libre)
         f_trans = ctk.CTkFrame(f_r1, fg_color="transparent")
         f_trans.grid(row=0, column=1, sticky="ew")
         ctk.CTkLabel(f_trans, text="2. Detalle Transacción (Llenado libre)", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(0, 2))
@@ -680,7 +849,7 @@ class VistaMuebleria(ctk.CTkFrame):
             combo_red.set(lista_redes[0] if lista_redes else "")
             actualizar_centros_por_red(combo_red.get())
 
-        # Fila 3: Tipo de Activo (Llenable Libre con Sugerencias) & Modelo
+        # Fila 3: Tipo de Activo (Llenado libre con sugerencia emergente) & Modelo (Llenado libre con sugerencia emergente)
         f_r3 = ctk.CTkFrame(sf, fg_color="transparent")
         f_r3.pack(fill="x", pady=6)
         f_r3.columnconfigure(0, weight=1)
@@ -688,23 +857,25 @@ class VistaMuebleria(ctk.CTkFrame):
 
         f_tipo = ctk.CTkFrame(f_r3, fg_color="transparent")
         f_tipo.grid(row=0, column=0, sticky="ew", padx=(0, 10))
-        ctk.CTkLabel(f_tipo, text="5. Tipo de Activo (Escribe o Selecciona) *", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(0, 2))
-        
-        tipo_var = ctk.StringVar()
-        combo_tipo = ctk.CTkComboBox(f_tipo, values=tipos_disponibles, variable=tipo_var, fg_color=C_CARD, border_color=C_BORDER)
-        combo_tipo.pack(fill="x")
-        combo_tipo.set(mueble_editar.get("tipo_activo", "COMPUTADORA DE ESCRITORIO") if mueble_editar else "COMPUTADORA DE ESCRITORIO")
+        ctk.CTkLabel(f_tipo, text="5. Tipo de Activo *", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(0, 2))
+        e_tipo = ctk.CTkEntry(f_tipo, placeholder_text="Ej: COMPUTADORA DE ESCRITORIO, SILLA, ESCRITORIO...", fg_color=C_CARD, border_color=C_BORDER)
+        e_tipo.pack(fill="x")
+        if mueble_editar and mueble_editar.get("tipo_activo"):
+            e_tipo.insert(0, mueble_editar["tipo_activo"])
+        elif not mueble_editar:
+            e_tipo.insert(0, "COMPUTADORA DE ESCRITORIO")
+        pop_tipo = AutocompletarEntryPopup(e_tipo, self._obtener_lista_tipos)
 
         f_mod = ctk.CTkFrame(f_r3, fg_color="transparent")
         f_mod.grid(row=0, column=1, sticky="ew")
         ctk.CTkLabel(f_mod, text="6. Modelo", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(0, 2))
-        modelo_var = ctk.StringVar()
-        e_modelo = ctk.CTkEntry(f_mod, textvariable=modelo_var, placeholder_text="Ej: OptiPlex 7080, LaserJet Pro M404, Ergonómica...", fg_color=C_CARD, border_color=C_BORDER)
+        e_modelo = ctk.CTkEntry(f_mod, placeholder_text="Ej: OptiPlex 7080, LaserJet Pro M404, Ergonómica...", fg_color=C_CARD, border_color=C_BORDER)
         e_modelo.pack(fill="x")
         if mueble_editar and mueble_editar.get("modelo"):
             e_modelo.insert(0, mueble_editar["modelo"])
+        pop_mod = AutocompletarEntryPopup(e_modelo, self._obtener_lista_modelos)
 
-        # Fila 4: Descripción del Activo & Número de Serie
+        # Fila 4: Descripción del Activo (Llenado libre con sugerencia emergente) & Número de Serie (Único)
         f_r4 = ctk.CTkFrame(sf, fg_color="transparent")
         f_r4.pack(fill="x", pady=6)
         f_r4.columnconfigure(0, weight=1)
@@ -713,11 +884,11 @@ class VistaMuebleria(ctk.CTkFrame):
         f_desc = ctk.CTkFrame(f_r4, fg_color="transparent")
         f_desc.grid(row=0, column=0, sticky="ew", padx=(0, 10))
         ctk.CTkLabel(f_desc, text="7. Descripción del Activo *", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(0, 2))
-        desc_var = ctk.StringVar()
-        e_desc = ctk.CTkEntry(f_desc, textvariable=desc_var, placeholder_text="Ej: COMPUTADORA CORE I7 16GB RAM, ESCRITORIO DE MADERA 3 GAVETAS...", fg_color=C_CARD, border_color=C_BORDER)
+        e_desc = ctk.CTkEntry(f_desc, placeholder_text="Ej: COMPUTADORA CORE I7 16GB RAM, ESCRITORIO DE MADERA 3 GAVETAS...", fg_color=C_CARD, border_color=C_BORDER)
         e_desc.pack(fill="x")
         if mueble_editar and mueble_editar.get("descripcion"):
             e_desc.insert(0, mueble_editar["descripcion"])
+        pop_desc = AutocompletarEntryPopup(e_desc, self._obtener_lista_descripciones)
 
         f_ser = ctk.CTkFrame(f_r4, fg_color="transparent")
         f_ser.grid(row=0, column=1, sticky="ew")
@@ -726,113 +897,6 @@ class VistaMuebleria(ctk.CTkFrame):
         e_serie.pack(fill="x")
         if mueble_editar and mueble_editar.get("serie"):
             e_serie.insert(0, mueble_editar["serie"])
-
-        # =========================================================================
-        # 💡 PANEL DE RECOMENDACIÓN INTELIGENTE (AUTOCOMPLETADO DE ACTIVOS EXISTENTES)
-        # =========================================================================
-        f_recom = ctk.CTkFrame(sf, fg_color="#F8FAFC", corner_radius=10, border_width=1, border_color="#CBD5E1")
-        f_recom.pack(fill="x", pady=(4, 10), padx=2)
-
-        f_recom_head = ctk.CTkFrame(f_recom, fg_color="transparent")
-        f_recom_head.pack(fill="x", padx=10, pady=(6, 2))
-
-        lbl_recom_icon = ctk.CTkLabel(
-            f_recom_head, 
-            text="✨ Recomendación Inteligente:", 
-            font=ctk.CTkFont(size=12, weight="bold"), 
-            text_color=C_BLUE
-        )
-        lbl_recom_icon.pack(side="left")
-
-        lbl_recom_status = ctk.CTkLabel(
-            f_recom_head, 
-            text="Activos existentes encontrados. Haz clic para autocompletar:", 
-            font=ctk.CTkFont(size=11, slant="italic"), 
-            text_color=C_SUBTEXT
-        )
-        lbl_recom_status.pack(side="left", padx=8)
-
-        f_pills_container = ctk.CTkFrame(f_recom, fg_color="transparent")
-        f_pills_container.pack(fill="x", padx=10, pady=(2, 8))
-
-        def aplicar_sugerencia(sug):
-            if sug.get("tipo_activo"):
-                combo_tipo.set(sug["tipo_activo"])
-            if sug.get("descripcion"):
-                e_desc.delete(0, "end")
-                e_desc.insert(0, sug["descripcion"])
-            if sug.get("modelo"):
-                e_modelo.delete(0, "end")
-                e_modelo.insert(0, sug["modelo"])
-            if sug.get("sector_actual"):
-                combo_sector.set(sug["sector_actual"])
-            lbl_recom_status.configure(
-                text=f"✅ ¡Autocompletado con éxito ({sug.get('tipo_activo')} - {sug.get('modelo')})!",
-                text_color="#16A34A"
-            )
-
-        def actualizar_recomendaciones(*args):
-            # Limpiar botones previos
-            for w in f_pills_container.winfo_children():
-                w.destroy()
-
-            q_tipo = combo_tipo.get().strip().lower()
-            q_desc = desc_var.get().strip().lower()
-            q_mod = modelo_var.get().strip().lower()
-
-            coincidencias = []
-            for item in catalogo_existentes:
-                t_str = str(item.get("tipo_activo", "")).lower()
-                d_str = str(item.get("descripcion", "")).lower()
-                m_str = str(item.get("modelo", "")).lower()
-
-                score = 0
-                if q_tipo and q_tipo in t_str:
-                    score += 3
-                if q_desc and (q_desc in d_str or any(word in d_str for word in q_desc.split() if len(word) > 2)):
-                    score += 4
-                if q_mod and q_mod in m_str:
-                    score += 3
-
-                if score > 0 or (not q_desc and not q_mod and q_tipo and q_tipo in t_str):
-                    coincidencias.append((score, item))
-
-            coincidencias.sort(key=lambda x: x[0], reverse=True)
-            top_sugerencias = [c[1] for c in coincidencias[:4]]
-
-            if not top_sugerencias:
-                # Si no hay coincidencias exactas, mostrar los primeros 3 comunes
-                top_sugerencias = catalogo_existentes[:3]
-                lbl_recom_status.configure(
-                    text="Plantillas de activos comunes (haz clic para rellenar rápido):", 
-                    text_color=C_SUBTEXT
-                )
-            else:
-                lbl_recom_status.configure(
-                    text=f"Se encontraron {len(coincidencias)} activos similares. Haz clic para autocompletar:", 
-                    text_color=C_BLUE
-                )
-
-            for sug in top_sugerencias:
-                t_label = f"⚡ {sug.get('tipo_activo')}: {sug.get('modelo', 'Estándar')} - {sug.get('descripcion', '')[:28]}..."
-                btn_pill = ctk.CTkButton(
-                    f_pills_container, 
-                    text=t_label, 
-                    font=ctk.CTkFont(size=11, weight="bold"), 
-                    fg_color="#EFF6FF", 
-                    text_color=C_BLUE, 
-                    hover_color="#DBEAFE", 
-                    height=28, 
-                    corner_radius=6,
-                    command=lambda s=sug: aplicar_sugerencia(s)
-                )
-                btn_pill.pack(side="left", padx=3, pady=2)
-
-        # Escuchar cambios en campos clave para actualizar sugerencias
-        tipo_var.trace_add("write", actualizar_recomendaciones)
-        desc_var.trace_add("write", actualizar_recomendaciones)
-        modelo_var.trace_add("write", actualizar_recomendaciones)
-        actualizar_recomendaciones()
 
         # Fila 5: Código SISPAM & BERTIN
         f_r5 = ctk.CTkFrame(sf, fg_color="transparent")
@@ -942,6 +1006,20 @@ class VistaMuebleria(ctk.CTkFrame):
         if mueble_editar and mueble_editar.get("observaciones_de_asignacion"):
             txt_obs.insert("1.0", mueble_editar["observaciones_de_asignacion"])
 
+        # Cerrar popups si se hace scroll o cierra modal
+        def cerrar_todos_popups(e=None):
+            pop_tipo.cerrar_popup()
+            pop_mod.cerrar_popup()
+            pop_desc.cerrar_popup()
+
+        sf.bind("<MouseWheel>", cerrar_todos_popups)
+
+        def al_cerrar_modal():
+            cerrar_todos_popups()
+            modal.destroy()
+
+        modal.protocol("WM_DELETE_WINDOW", al_cerrar_modal)
+
         # Botones de Acción Modal
         f_mod_bot = ctk.CTkFrame(modal, fg_color=C_CARD, height=60, corner_radius=0)
         f_mod_bot.pack(fill="x", side="bottom")
@@ -951,13 +1029,20 @@ class VistaMuebleria(ctk.CTkFrame):
             sec_val = combo_sector.get().strip()
             red_val = combo_red.get().strip()
             cen_val = combo_centro.get().strip()
-            tipo_val = combo_tipo.get().strip()
+            tipo_val = e_tipo.get().strip()
             desc_val = e_desc.get().strip()
+
+            if not tipo_val:
+                messagebox.showwarning("Campo Requerido", "Por favor ingrese el tipo de activo.", parent=modal)
+                e_tipo.focus_set()
+                return
 
             if not desc_val:
                 messagebox.showwarning("Campo Requerido", "Por favor ingrese la descripción del activo.", parent=modal)
                 e_desc.focus_set()
                 return
+
+            cerrar_todos_popups()
 
             # Resolver IDs de Red y Centro
             red_obj = next((r for r in sedes.get("redes", []) if r["nombre"] == red_val), None)
@@ -973,7 +1058,7 @@ class VistaMuebleria(ctk.CTkFrame):
                 "tecnico_inventareador": e_tecnico.get().strip(),
                 "persona_asignada": e_persona.get().strip(),
                 "ci_asignado": e_ci.get().strip(),
-                "tipo_activo": tipo_val or "COMPUTADORA DE ESCRITORIO",
+                "tipo_activo": tipo_val,
                 "descripcion": desc_val,
                 "modelo": e_modelo.get().strip(),
                 "serie": e_serie.get().strip(),
@@ -1036,7 +1121,7 @@ class VistaMuebleria(ctk.CTkFrame):
             hover_color="#CBD5E1", 
             width=100, 
             height=38, 
-            command=modal.destroy
+            command=al_cerrar_modal
         ).pack(side="right", padx=5, pady=10)
 
     def modificar_mueble(self):
