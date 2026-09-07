@@ -1,5 +1,6 @@
 # excel_utils.py
 import os
+import re
 import openpyxl
 from openpyxl.utils.cell import coordinate_from_string, column_index_from_string
 from openpyxl.styles import Font, Alignment
@@ -9,6 +10,18 @@ try:
 except ImportError:
     pythoncom = None
     win32com = None
+
+def sanitizar_nombre_archivo(nombre, reemplazo="_"):
+    r"""
+    Elimina o reemplaza caracteres inválidos en nombres de archivos y carpetas
+    en sistemas de archivos de Windows y Linux (ej. /, \, :, *, ?, ", <, >, |).
+    """
+    if not nombre:
+        return "sin_nombre"
+    s = re.sub(r'[\\/*?:"<>|]', reemplazo, str(nombre))
+    s = re.sub(r'[\s_]+', '_', s).strip('._ ')
+    return s if s else "archivo"
+
 
 def obtener_ruta_plantilla(nombre_archivo):
     """

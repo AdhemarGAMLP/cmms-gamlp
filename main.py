@@ -46,7 +46,12 @@ from database import (
 
 from auth import inicializar_usuarios, login
 from web_server import arrancar_hilo_web
-from excel_utils import obtener_ruta_plantilla, escribir_en_celda_segura, exportar_excel_a_pdf
+from excel_utils import (
+    obtener_ruta_plantilla,
+    escribir_en_celda_segura,
+    exportar_excel_a_pdf,
+    sanitizar_nombre_archivo
+)
 
 
 # Importar las vistas modulares del subpaquete vistas
@@ -3332,9 +3337,11 @@ class SistemaMantenimiento(ctk.CTk):
                 w_texto('B53', e_obs.get("1.0", "end-1c").strip())
                 
                 timestamp_seguro = datetime.now().strftime('%H%M%S')
-                nombre_salida = f"HT_{eq_data['id']}_{datetime.now().strftime('%Y%m%d')}_{timestamp_seguro}.xlsx"
-                area_name = eq_data.get("area", "General")
-                area_folder = "".join([c for c in area_name if c.isalnum() or c==' ']).strip()
+                id_eq_limpio = sanitizar_nombre_archivo(eq_data.get('id', 'EQ'))
+                fecha_compacta = datetime.now().strftime('%Y%m%d')
+                nombre_salida = f"HT_{id_eq_limpio}_{fecha_compacta}_{timestamp_seguro}.xlsx"
+                area_name = eq_data.get("area", "General") or "General"
+                area_folder = sanitizar_nombre_archivo(area_name)
                 dir_mantenimiento = os.path.join(CARPETAS["areas"], area_folder, "mantenimientos")
                 os.makedirs(dir_mantenimiento, exist_ok=True)
                 ruta_salida = os.path.join(dir_mantenimiento, nombre_salida)
@@ -3357,15 +3364,27 @@ class SistemaMantenimiento(ctk.CTk):
                 messagebox.showerror("Error", str(e))
 
         def exportar_pdf_ht():
-            ruta_pdf = filedialog.asksaveasfilename(initialdir=dir_mantenimiento, initialfile=f"Hoja_Trabajo.pdf", defaultextension=".pdf", filetypes=[("PDF", "*.pdf")])
+            id_eq_limpio = sanitizar_nombre_archivo(eq_data.get('id', 'EQ'))
+            nombre_pdf_def = f"HT_{id_eq_limpio}_{datetime.now().strftime('%Y%m%d')}.pdf"
+            ruta_pdf = filedialog.asksaveasfilename(
+                initialdir=dir_mantenimiento,
+                initialfile=nombre_pdf_def,
+                defaultextension=".pdf",
+                filetypes=[("Archivos PDF (*.pdf)", "*.pdf")]
+            )
             if not ruta_pdf: 
                 return
             
-            messagebox.showinfo("Exportando", "Por favor espera, generando PDF...")
-            if exportar_excel_a_pdf(ruta_ht_excel_act.get(), ruta_pdf, rango_impresion="$A$1:$AR$67"):
-                os.startfile(os.path.abspath(ruta_pdf))
+            messagebox.showinfo("Exportando", "Generando documento PDF...")
+            exito_pdf = exportar_excel_a_pdf(ruta_ht_excel_act.get(), ruta_pdf, rango_impresion="$A$1:$AR$67")
+            if exito_pdf and os.path.exists(ruta_pdf):
+                try:
+                    os.startfile(os.path.abspath(ruta_pdf))
+                except:
+                    pass
+                messagebox.showinfo("Éxito", f"Documento PDF exportado correctamente:\n{ruta_pdf}")
             else:
-                messagebox.showerror("Error", "Fallo al generar el PDF.")
+                messagebox.showwarning("Aviso", "No se pudo convertir a PDF automáticamente.\nPuede abrir e imprimir el archivo Excel generado directamente.")
 
         btn_guardar = ctk.CTkButton(sf, text="Guardar Registro y Generar Hoja", height=45, fg_color=C_BLUE, hover_color=C_BLUE_HOVER, font=ctk.CTkFont(weight="bold"), command=guardar)
         btn_guardar.pack(pady=20, padx=20, fill="x")

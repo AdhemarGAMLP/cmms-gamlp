@@ -10,7 +10,14 @@ import psycopg2.extras
 from database import obtener_conexion, mover_a_papelera
 from estilos import *
 from config import CARPETAS
-from excel_utils import obtener_ruta_plantilla, exportar_excel_a_pdf, escribir_en_celda_segura, marcar_x, escribir_texto_largo
+from excel_utils import (
+    obtener_ruta_plantilla,
+    exportar_excel_a_pdf,
+    escribir_en_celda_segura,
+    marcar_x,
+    escribir_texto_largo,
+    sanitizar_nombre_archivo
+)
 
 class VistaHistorial(ctk.CTkFrame):
     def __init__(self, master, app):
@@ -463,24 +470,33 @@ class VistaHistorial(ctk.CTkFrame):
                     escribir_en_celda_segura(ws, 'AG56', str(rep_cant))
             
             # Guardar archivo en la subcarpeta del área correspondiente
-            area_name = eq_data.get("area", "General")
-            area_folder = "".join([c for c in area_name if c.isalnum() or c==' ']).strip()
+            area_name = eq_data.get("area", "General") or "General"
+            area_folder = sanitizar_nombre_archivo(area_name)
             dir_mantenimiento = os.path.join(CARPETAS["areas"], area_folder, "mantenimientos")
             os.makedirs(dir_mantenimiento, exist_ok=True)
             
-            nom_arch = f"HT_{id_eq}_{fecha_str.replace('-','')}.xlsx"
+            id_eq_limpio = sanitizar_nombre_archivo(id_eq)
+            fecha_limpia = str(fecha_str).replace('-', '').strip()
+            nom_arch = f"HT_{id_eq_limpio}_{fecha_limpia}.xlsx"
             ruta_guardar = os.path.join(dir_mantenimiento, nom_arch)
             wb.save(ruta_guardar)
             
             if exportar_pdf:
-                pdf_arch = nom_arch.replace(".xlsx", ".pdf")
+                pdf_arch = f"HT_{id_eq_limpio}_{fecha_limpia}.pdf"
                 ruta_pdf = os.path.join(dir_mantenimiento, pdf_arch)
-                exportar_excel_a_pdf(ruta_guardar, ruta_pdf, rango_impresion="$A$1:$AR$67")
-                try:
-                    os.startfile(ruta_pdf)
-                except Exception as ex:
-                    print("[ERROR] No se pudo abrir el PDF automáticamente:", ex)
-                messagebox.showinfo("Éxito", f"Orden de Trabajo exportada en PDF:\n{ruta_pdf}")
+                exito_pdf = exportar_excel_a_pdf(ruta_guardar, ruta_pdf, rango_impresion="$A$1:$AR$67")
+                if exito_pdf and os.path.exists(ruta_pdf):
+                    try:
+                        os.startfile(ruta_pdf)
+                    except Exception as ex:
+                        print("[ERROR] No se pudo abrir el PDF automáticamente:", ex)
+                    messagebox.showinfo("Éxito", f"Orden de Trabajo exportada en PDF:\n{ruta_pdf}")
+                else:
+                    try:
+                        os.startfile(ruta_guardar)
+                    except Exception:
+                        pass
+                    messagebox.showwarning("Aviso", f"La Hoja de Trabajo se guardó en Excel:\n{ruta_guardar}\n\n(No se pudo convertir automáticamente a PDF. Se requiere Microsoft Excel instalado en Windows).")
             else:
                 try:
                     os.startfile(ruta_guardar)

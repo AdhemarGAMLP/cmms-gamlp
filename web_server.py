@@ -15,8 +15,14 @@ except ImportError:
 from flask import Flask, render_template_string, request, redirect, url_for, send_from_directory, send_file
 from database import obtener_conexion
 from datetime import date, datetime
-from auth import login
-from excel_utils import obtener_ruta_plantilla, escribir_en_celda_segura, marcar_x, escribir_texto_largo, exportar_excel_a_pdf
+from excel_utils import (
+    obtener_ruta_plantilla,
+    escribir_en_celda_segura,
+    marcar_x,
+    escribir_texto_largo,
+    exportar_excel_a_pdf,
+    sanitizar_nombre_archivo
+)
 from config import CARPETAS, CONFIG
 
 app_web = Flask(__name__)
@@ -151,12 +157,13 @@ def generar_excel_ht_web(eq_data, form_data, realizado_por, sello_firma_path=Non
             fecha_compacta = datetime.now().strftime('%Y%m%d')
             
         timestamp_seguro = datetime.now().strftime('%H%M%S')
-        nombre_base = f"HT_{eq_data['id']}_{fecha_compacta}_{timestamp_seguro}"
+        id_eq_limpio = sanitizar_nombre_archivo(eq_data.get('id', 'EQ'))
+        nombre_base = f"HT_{id_eq_limpio}_{fecha_compacta}_{timestamp_seguro}"
         filename_xlsx = f"{nombre_base}.xlsx"
         filename_pdf = f"{nombre_base}.pdf"
         
-        area_name = eq_data.get("area", "General")
-        area_folder = "".join([c for c in area_name if c.isalnum() or c==' ']).strip()
+        area_name = eq_data.get("area", "General") or "General"
+        area_folder = sanitizar_nombre_archivo(area_name)
         dir_mantenimiento = os.path.join(CARPETAS["areas"], area_folder, "mantenimientos")
         os.makedirs(dir_mantenimiento, exist_ok=True)
         
@@ -1683,10 +1690,12 @@ def ver_equipo(id_equipo):
             
             xlsx_match = None
             pdf_match = None
-            prefix_1 = f"HT_{id_equipo}_{fecha_compacta}"
+            id_sanitizado = sanitizar_nombre_archivo(id_equipo)
+            prefix_1 = f"HT_{id_sanitizado}_{fecha_compacta}"
+            prefix_alt = f"HT_{id_equipo}_{fecha_compacta}"
             
             for filename in archivos_locales:
-                if filename.startswith(prefix_1):
+                if filename.startswith(prefix_1) or filename.startswith(prefix_alt):
                     if filename.endswith(".xlsx"):
                         xlsx_match = filename
                     elif filename.endswith(".pdf"):
