@@ -282,12 +282,10 @@ class VistaMuebleria(ctk.CTkFrame):
         self.f_kpis.columnconfigure(0, weight=1)
         self.f_kpis.columnconfigure(1, weight=1)
         self.f_kpis.columnconfigure(2, weight=1)
-        self.f_kpis.columnconfigure(3, weight=1)
 
         self.card_total = self._crear_kpi_card(self.f_kpis, 0, "📦 Total Activos", "0", C_BLUE)
-        self.card_ti = self._crear_kpi_card(self.f_kpis, 1, "💻 Computación / TI", "0", C_GREEN)
-        self.card_muebles = self._crear_kpi_card(self.f_kpis, 2, "🪑 Mobiliario / Enseres", "0", C_ORANGE)
-        self.card_asignados = self._crear_kpi_card(self.f_kpis, 3, "👤 Con Asignación", "0", C_BLUE)
+        self.card_muebles = self._crear_kpi_card(self.f_kpis, 1, "🪑 Mobiliario / Enseres", "0", C_ORANGE)
+        self.card_asignados = self._crear_kpi_card(self.f_kpis, 2, "👤 Con Asignación", "0", C_BLUE)
 
         # 3. Barra de Búsqueda y Filtros
         f_filtros = ctk.CTkFrame(self, fg_color=C_CARD, corner_radius=12, border_width=1, border_color=C_BORDER)
@@ -582,7 +580,6 @@ class VistaMuebleria(ctk.CTkFrame):
         ctx_red_nom = ctx.get("red_salud") if ctx else None
 
         filtrados = []
-        c_ti = 0
         c_muebles = 0
         c_asig = 0
 
@@ -648,8 +645,6 @@ class VistaMuebleria(ctk.CTkFrame):
             filtrados.append(m)
 
             # Contadores KPI
-            if self._es_tipo_computacion(t_act):
-                c_ti += 1
             if self._es_tipo_muebleria(t_act):
                 c_muebles += 1
             if str(m.get("persona_asignada") or "").strip():
@@ -659,7 +654,6 @@ class VistaMuebleria(ctk.CTkFrame):
 
         # Actualizar KPIs
         self.card_total.configure(text=str(len(filtrados)))
-        self.card_ti.configure(text=str(c_ti))
         self.card_muebles.configure(text=str(c_muebles))
         self.card_asignados.configure(text=str(c_asig))
 
