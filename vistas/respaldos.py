@@ -38,7 +38,7 @@ class VistaRespaldos(ctk.CTkFrame):
         # ----------------------------------------------------
         # COLUMNA 1: OPERACIONES MANUALES
         # ----------------------------------------------------
-        f_manual = ctk.CTkFrame(self.main_container, fg_color=C_CARD, corner_radius=16, border_width=1, border_color=C_BORDER)
+        f_manual = ctk.CTkFrame(self.main_container, fg_color=C_CARD, corner_radius=CORNER_CARD, border_width=1, border_color=C_BORDER)
         f_manual.grid(row=0, column=0, padx=12, pady=10, sticky="nsew")
 
         ctk.CTkLabel(f_manual, text="Copias Manuales y Migración", font=ctk.CTkFont(size=18, weight="bold"), text_color=C_TEXT).pack(pady=(20, 10), padx=20, anchor="w")
@@ -52,7 +52,7 @@ class VistaRespaldos(ctk.CTkFrame):
 
         # Botón Exportar Paquete Completo
         self.btn_paquete_exp = ctk.CTkButton(
-            f_manual, text="📦 Exportar Paquete Completo (BD + Fotos + Docs)", height=42, corner_radius=10,
+            f_manual, text="📦 Exportar Paquete Completo (BD + Fotos + Docs)", height=38, corner_radius=CORNER_BTN,
             fg_color=C_GREEN, hover_color=C_GREEN_HOVER, font=ctk.CTkFont(size=13, weight="bold"),
             command=self.ejecutar_exportar_paquete
         )
@@ -60,23 +60,23 @@ class VistaRespaldos(ctk.CTkFrame):
 
         # Botón Importar Paquete Completo
         self.btn_paquete_imp = ctk.CTkButton(
-            f_manual, text="📥 Importar Paquete Completo en esta PC", height=42, corner_radius=10,
-            fg_color=C_PURPLE, hover_color=C_PURPLE_HOVER, font=ctk.CTkFont(size=13, weight="bold"),
+            f_manual, text="📥 Importar Paquete Completo en esta PC", height=38, corner_radius=CORNER_BTN,
+            fg_color=C_BLUE_LIGHT, hover_color=C_CARD_HOVER, text_color=C_BLUE, font=ctk.CTkFont(size=13, weight="bold"),
             command=self.ejecutar_importar_paquete
         )
         self.btn_paquete_imp.pack(pady=(4, 15), padx=20, fill="x")
 
         # Botón Generar Copia BD
         self.btn_generar = ctk.CTkButton(
-            f_manual, text="💾 Generar Respaldo BD (Solo JSON)", height=38, corner_radius=10,
-            fg_color=C_BLUE, hover_color=C_BLUE_HOVER, font=ctk.CTkFont(size=13, weight="bold"),
+            f_manual, text="💾 Generar Respaldo BD (Solo JSON)", height=38, corner_radius=CORNER_BTN,
+            fg_color=C_SECONDARY_BTN, hover_color=C_CARD_HOVER, text_color=C_TEXT, font=ctk.CTkFont(size=13, weight="bold"),
             command=self.ejecutar_backup_manual
         )
         self.btn_generar.pack(pady=4, padx=20, fill="x")
 
         # Botón Restaurar Copia BD
         self.btn_restaurar = ctk.CTkButton(
-            f_manual, text="🔄 Restaurar Respaldo BD (Solo JSON)", height=38, corner_radius=10,
+            f_manual, text="🔄 Restaurar Respaldo BD (Solo JSON)", height=38, corner_radius=CORNER_BTN,
             fg_color=C_RED, hover_color=C_RED_HOVER, font=ctk.CTkFont(size=13, weight="bold"),
             command=self.ejecutar_restore_manual
         )
@@ -86,7 +86,7 @@ class VistaRespaldos(ctk.CTkFrame):
         # ----------------------------------------------------
         # COLUMNA 2: RESPALDOS AUTOMÁTICOS
         # ----------------------------------------------------
-        f_auto = ctk.CTkFrame(self.main_container, fg_color=C_CARD, corner_radius=16, border_width=1, border_color=C_BORDER)
+        f_auto = ctk.CTkFrame(self.main_container, fg_color=C_CARD, corner_radius=CORNER_CARD, border_width=1, border_color=C_BORDER)
 
         f_auto.grid(row=0, column=1, padx=15, pady=10, sticky="nsew")
 
@@ -94,13 +94,13 @@ class VistaRespaldos(ctk.CTkFrame):
         ctk.CTkLabel(f_auto, text="Respaldos automáticos semanales generados por el sistema:", font=ctk.CTkFont(size=13), text_color=C_SUBTEXT).pack(pady=(0, 15), padx=20, anchor="w")
 
         # Contenedor de la lista de archivos
-        self.scroll_list = ctk.CTkScrollableFrame(f_auto, fg_color=C_BG, height=220, corner_radius=10)
+        self.scroll_list = ctk.CTkScrollableFrame(f_auto, fg_color=C_BG, height=220, corner_radius=CORNER_CARD)
         self.scroll_list.pack(fill="both", expand=True, padx=20, pady=(0, 15))
 
         # Botón Restaurar Selección
         self.btn_restaurar_sel = ctk.CTkButton(
-            f_auto, text="🔄 Restaurar Respaldo Seleccionado", height=45, corner_radius=10,
-            fg_color=C_RED, hover_color=C_RED_HOVER, font=ctk.CTkFont(size=14, weight="bold"),
+            f_auto, text="🔄 Restaurar Respaldo Seleccionado", height=38, corner_radius=CORNER_BTN,
+            fg_color=C_RED, hover_color=C_RED_HOVER, font=ctk.CTkFont(size=13, weight="bold"),
             state="disabled", command=self.ejecutar_restore_seleccionado
         )
         self.btn_restaurar_sel.pack(pady=(0, 20), padx=20, fill="x")
@@ -169,7 +169,7 @@ class VistaRespaldos(ctk.CTkFrame):
             return
 
         for index, (file, f_path, fecha, tam, ts) in enumerate(archivos):
-            f_item = ctk.CTkFrame(self.scroll_list, fg_color=C_CARD, corner_radius=6)
+            f_item = ctk.CTkFrame(self.scroll_list, fg_color=C_CARD, corner_radius=CORNER_BTN)
             f_item.pack(fill="x", pady=4, padx=5)
             self.items_list.append(f_item)
 
@@ -179,8 +179,8 @@ class VistaRespaldos(ctk.CTkFrame):
 
             # Botón de radio virtual / Selección
             btn_sel = ctk.CTkButton(
-                f_item, text="Seleccionar", width=80, height=26, corner_radius=6,
-                fg_color="transparent", border_width=1, border_color=C_BORDER, text_color=C_TEXT,
+                f_item, text="Seleccionar", width=80, height=28, corner_radius=CORNER_BTN,
+                fg_color="transparent", border_width=1, border_color=C_BORDER, text_color=C_TEXT, hover_color=C_CARD_HOVER,
                 command=lambda f=file, fp=f_path, fi=f_item: self.seleccionar_archivo_auto(f, fp, fi)
             )
             btn_sel.pack(side="right", padx=10)

@@ -16,7 +16,8 @@ from tkinter import ttk, messagebox
 
 from estilos import (
     C_BG, C_CARD, C_BORDER, C_TEXT, C_SUBTEXT, 
-    C_BLUE, C_BLUE_HOVER, C_GREEN, C_RED, C_PURPLE, C_AMBER
+    C_BLUE, C_BLUE_HOVER, C_BLUE_LIGHT, C_GREEN, C_RED, C_CARD_HOVER,
+    CORNER_CARD, CORNER_BTN, CORNER_INPUT
 )
 from mapa_geo_utils import (
     consolidar_datos_geoespaciales,
@@ -49,8 +50,9 @@ class VistaMapa(ctk.CTkFrame):
             f_top, 
             text="🌐 Abrir Visor Satelital Fullscreen", 
             font=ctk.CTkFont(weight="bold", size=13),
-            fg_color="#2563EB", 
-            hover_color="#1D4ED8",
+            fg_color=C_BLUE, 
+            hover_color=C_BLUE_HOVER,
+            corner_radius=CORNER_BTN,
             height=38,
             command=self.abrir_visor_mapa_navegador
         )
@@ -61,20 +63,20 @@ class VistaMapa(ctk.CTkFrame):
         self.f_kpis.pack(fill="x", padx=25, pady=(0, 10))
         self.f_kpis.grid_columnconfigure((0, 1, 2, 3), weight=1)
 
-        self.kpi_centros = self.crear_kpi_card(self.f_kpis, 0, "🏥 Centros de Salud Georreferenciados", "0 Centros", "#F8FAFC", "#2563EB")
-        self.kpi_total_eq = self.crear_kpi_card(self.f_kpis, 1, "📦 Equipos Mapeados en La Paz", "0 Equipos", "#EFF6FF", "#1D4ED8")
-        self.kpi_operatividad = self.crear_kpi_card(self.f_kpis, 2, "🟢 Operatividad Promedio Territorial", "0 %", "#F0FDF4", "#16A34A")
-        self.kpi_red_mayor = self.crear_kpi_card(self.f_kpis, 3, "🏆 Red con Mayor Dotación", "-", "#FAF5FF", "#7C3AED")
+        self.kpi_centros = self.crear_kpi_card(self.f_kpis, 0, "🏥 Centros de Salud", "0 Centros", C_CARD, C_BLUE)
+        self.kpi_total_eq = self.crear_kpi_card(self.f_kpis, 1, "📦 Equipos Mapeados", "0 Equipos", C_CARD, C_BLUE)
+        self.kpi_operatividad = self.crear_kpi_card(self.f_kpis, 2, "🟢 Operatividad Promedio", "0 %", C_CARD, C_GREEN)
+        self.kpi_red_mayor = self.crear_kpi_card(self.f_kpis, 3, "🏆 Red con Mayor Dotación", "-", C_CARD, C_TEXT)
 
         # Barra de Filtros
-        f_filtros = ctk.CTkFrame(self, fg_color="#F8FAFC", corner_radius=10, border_width=1, border_color="#E2E8F0")
+        f_filtros = ctk.CTkFrame(self, fg_color=C_CARD, corner_radius=CORNER_CARD, border_width=1, border_color=C_BORDER)
         f_filtros.pack(fill="x", padx=25, pady=(0, 10))
 
-        ctk.CTkLabel(f_filtros, text="Filtrar por Red:", font=ctk.CTkFont(size=12, weight="bold")).pack(side="left", padx=(15, 4), pady=8)
-        self.cb_red_mapa = ctk.CTkComboBox(f_filtros, values=["[ Todas las Redes ]"], width=260, height=34, command=lambda v: self.filtrar_tabla_centros())
+        ctk.CTkLabel(f_filtros, text="Filtrar por Red:", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(side="left", padx=(15, 4), pady=8)
+        self.cb_red_mapa = ctk.CTkComboBox(f_filtros, values=["[ Todas las Redes ]"], width=260, height=34, corner_radius=CORNER_INPUT, border_color=C_BORDER, fg_color=C_BG, command=lambda v: self.filtrar_tabla_centros())
         self.cb_red_mapa.pack(side="left", padx=4, pady=8)
 
-        self.e_buscar_centro = ctk.CTkEntry(f_filtros, placeholder_text="🔍 Buscar centro o nivel...", width=220, height=34)
+        self.e_buscar_centro = ctk.CTkEntry(f_filtros, placeholder_text="🔍 Buscar centro o nivel...", width=220, height=34, corner_radius=CORNER_INPUT, border_color=C_BORDER, fg_color=C_BG)
         self.e_buscar_centro.pack(side="right", padx=15, pady=8)
         self.e_buscar_centro.bind("<KeyRelease>", self.on_buscar_debounce)
 
@@ -82,8 +84,10 @@ class VistaMapa(ctk.CTkFrame):
             f_filtros,
             text="📍 Centrar en Mapa",
             font=ctk.CTkFont(weight="bold", size=12),
-            fg_color=C_BLUE,
-            hover_color=C_BLUE_HOVER,
+            fg_color=C_BLUE_LIGHT,
+            hover_color=C_CARD_HOVER,
+            text_color=C_BLUE,
+            corner_radius=CORNER_BTN,
             height=34,
             command=self.abrir_visor_mapa_navegador
         )
@@ -92,6 +96,8 @@ class VistaMapa(ctk.CTkFrame):
         # Tabla Treeview de Centros Georreferenciados
         cols = ("centro", "red", "nivel", "total", "operativos", "baja", "porc", "alto_riesgo", "coords")
         self.tree_centros = ttk.Treeview(self, columns=cols, show="headings", height=14)
+        self.tree_centros.tag_configure("fila_par", background="#FFFFFF")
+        self.tree_centros.tag_configure("fila_impar", background="#F8FAFC")
 
         self.tree_centros.heading("centro", text="Centro de Salud / Hospital")
         self.tree_centros.heading("red", text="Red Territorial")
@@ -120,9 +126,9 @@ class VistaMapa(ctk.CTkFrame):
         scroll_y.pack(side="right", fill="y", padx=(0, 25), pady=(0, 20))
 
     def crear_kpi_card(self, parent, col, titulo, valor_ini, bg_col, text_col):
-        f = ctk.CTkFrame(parent, fg_color=bg_col, corner_radius=10, border_width=1, border_color="#E2E8F0")
+        f = ctk.CTkFrame(parent, fg_color=bg_col, corner_radius=CORNER_CARD, border_width=1, border_color=C_BORDER)
         f.grid(row=0, column=col, sticky="nsew", padx=4)
-        ctk.CTkLabel(f, text=titulo, font=ctk.CTkFont(size=11, weight="bold"), text_color="#475569").pack(anchor="w", padx=12, pady=(8, 2))
+        ctk.CTkLabel(f, text=titulo, font=ctk.CTkFont(size=11, weight="bold"), text_color=C_SUBTEXT).pack(anchor="w", padx=12, pady=(8, 2))
         lbl_v = ctk.CTkLabel(f, text=valor_ini, font=ctk.CTkFont(size=16, weight="bold"), text_color=text_col)
         lbl_v.pack(anchor="w", padx=12, pady=(0, 8))
         return lbl_v
@@ -174,6 +180,7 @@ class VistaMapa(ctk.CTkFrame):
         red_sel = self.cb_red_mapa.get()
         busq = self.e_buscar_centro.get().strip().lower()
 
+        fila_idx = 0
         for c in self.centros_geo:
             if not str(red_sel).startswith("[ Todas") and c.get("red") != red_sel:
                 continue
@@ -182,6 +189,7 @@ class VistaMapa(ctk.CTkFrame):
                 if not match:
                     continue
 
+            tag = "fila_par" if fila_idx % 2 == 0 else "fila_impar"
             self.tree_centros.insert("", "end", values=(
                 c["nombre"],
                 c["red"],
@@ -192,7 +200,8 @@ class VistaMapa(ctk.CTkFrame):
                 f"{c['porcentaje_operatividad']}%",
                 c["riesgo_alto"],
                 f"{c['lat']:.4f}, {c['lon']:.4f}"
-            ))
+            ), tags=(tag,))
+            fila_idx += 1
 
     def abrir_visor_mapa_navegador(self):
         """Genera el HTML del mapa con Leaflet + ESRI Satelital + Heatmap y lo abre en el navegador."""

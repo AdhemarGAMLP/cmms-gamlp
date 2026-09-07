@@ -40,12 +40,14 @@ class VistaCatalogo(ctk.CTkFrame):
         self.combo_ordenar.pack(side="left")
         self.combo_ordenar.set("Nombre (A-Z)")
 
-        marco = ctk.CTkFrame(self, fg_color=C_CARD, corner_radius=16, border_width=1, border_color=C_BORDER)
+        marco = ctk.CTkFrame(self, fg_color=C_CARD, corner_radius=12, border_width=1, border_color=C_BORDER)
         marco.pack(padx=30, pady=10, fill="both", expand=True)
         
         f_tree_cat = ctk.CTkFrame(marco, fg_color="transparent")
         f_tree_cat.pack(pady=12, padx=12, fill="both", expand=True)
         self.tabla_cat = ttk.Treeview(f_tree_cat, columns=("Nombre", "Marca", "Modelo", "Área", "Piso"), show="headings")
+        self.tabla_cat.tag_configure("fila_par", background="#FFFFFF", foreground=C_TEXT)
+        self.tabla_cat.tag_configure("fila_impar", background="#F8FAFC", foreground=C_TEXT)
         scrollbar_cat = ttk.Scrollbar(f_tree_cat, orient="vertical", command=self.tabla_cat.yview, style="Vertical.TScrollbar")
         self.tabla_cat.configure(yscrollcommand=scrollbar_cat.set)
         for c in ("Nombre", "Marca", "Modelo", "Área", "Piso"):
@@ -56,11 +58,11 @@ class VistaCatalogo(ctk.CTkFrame):
         
         f_bot_cat = ctk.CTkFrame(self, fg_color="transparent")
         f_bot_cat.pack(pady=(10, 25), padx=30, fill="x")
-        self.btn_anadir = ctk.CTkButton(f_bot_cat, text="✚ Añadir Modelo", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_BLUE, hover_color=C_BLUE_HOVER, corner_radius=10, height=42, command=self.abrir_formulario_catalogo)
+        self.btn_anadir = ctk.CTkButton(f_bot_cat, text="✚ Añadir Modelo", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_BLUE, hover_color=C_BLUE_HOVER, text_color="#FFFFFF", corner_radius=8, height=40, command=self.abrir_formulario_catalogo)
         self.btn_anadir.pack(side="left", expand=True, padx=8)
-        self.btn_modificar = ctk.CTkButton(f_bot_cat, text="✎ Modificar", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_PURPLE, hover_color=C_PURPLE_HOVER, corner_radius=10, height=42, command=self.modificar_catalogo)
+        self.btn_modificar = ctk.CTkButton(f_bot_cat, text="✎ Modificar", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_BLUE_LIGHT, hover_color="#D8E8FC", text_color=C_BLUE, corner_radius=8, height=40, command=self.modificar_catalogo)
         self.btn_modificar.pack(side="left", expand=True, padx=8)
-        self.btn_eliminar = ctk.CTkButton(f_bot_cat, text="🗑 Eliminar", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_RED, hover_color=C_RED_HOVER, corner_radius=10, height=42, command=self.eliminar_catalogo)
+        self.btn_eliminar = ctk.CTkButton(f_bot_cat, text="🗑 Eliminar", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_RED, hover_color=C_RED_HOVER, text_color="#FFFFFF", corner_radius=8, height=40, command=self.eliminar_catalogo)
         self.btn_eliminar.pack(side="left", expand=True, padx=8)
 
     def refrescar_datos(self):
@@ -95,15 +97,16 @@ class VistaCatalogo(ctk.CTkFrame):
         elif criterio == "Piso":
             catalogo.sort(key=lambda x: str(x.get("piso", "")).lower())
             
-        for c in catalogo: 
-            self.tabla_cat.insert("", "end", values=(c["nombre"], c.get("marca", ""), c.get("modelo", ""), c.get("area", ""), c.get("piso", "")))
+        for idx, c in enumerate(catalogo): 
+            tag_fila = "fila_par" if idx % 2 == 0 else "fila_impar"
+            self.tabla_cat.insert("", "end", values=(c["nombre"], c.get("marca", ""), c.get("modelo", ""), c.get("area", ""), c.get("piso", "")), tags=(tag_fila,))
 
         can_add = self.app.tiene_permiso("Catalogo", "agregar")
         can_edit = self.app.tiene_permiso("Catalogo", "cambiar")
         can_del = self.app.tiene_permiso("Catalogo", "eliminar")
-        self.btn_anadir.configure(state="normal" if can_add else "disabled", fg_color=C_BLUE if can_add else C_BORDER, text_color="white" if can_add else C_SUBTEXT)
-        self.btn_modificar.configure(state="normal" if can_edit else "disabled", fg_color=C_PURPLE if can_edit else C_BORDER, text_color="white" if can_edit else C_SUBTEXT)
-        self.btn_eliminar.configure(state="normal" if can_del else "disabled", fg_color=C_RED if can_del else C_BORDER, text_color="white" if can_del else C_SUBTEXT)
+        self.btn_anadir.configure(state="normal" if can_add else "disabled", fg_color=C_BLUE if can_add else C_BORDER, text_color="#FFFFFF" if can_add else C_SUBTEXT)
+        self.btn_modificar.configure(state="normal" if can_edit else "disabled", fg_color=C_BLUE_LIGHT if can_edit else C_BORDER, text_color=C_BLUE if can_edit else C_SUBTEXT)
+        self.btn_eliminar.configure(state="normal" if can_del else "disabled", fg_color=C_RED if can_del else C_BORDER, text_color="#FFFFFF" if can_del else C_SUBTEXT)
 
     def obtener_seleccion(self):
         sel = self.tabla_cat.focus()

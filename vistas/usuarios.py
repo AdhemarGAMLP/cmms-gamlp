@@ -103,7 +103,8 @@ class VistaUsuarios(ctk.CTkFrame):
             self.tabla_users.heading(c, text=c)
             self.tabla_users.column(c, anchor="center" if c not in ["Nombre Completo", "Permisos Especiales"] else "w", width=col_w.get(c, 100))
 
-        self.tabla_users.pack(side="left", fill="both", expand=True)
+        self.tabla_users.tag_configure("fila_par", background="#FFFFFF", foreground=C_TEXT)
+        self.tabla_users.tag_configure("fila_impar", background="#F8FAFC", foreground=C_TEXT)
         scrollbar_users.pack(side="right", fill="y", padx=(4, 0))
         self.tabla_users.bind("<Double-1>", lambda e: self.modificar_usuario())
 
@@ -117,8 +118,9 @@ class VistaUsuarios(ctk.CTkFrame):
             font=ctk.CTkFont(weight="bold", size=13), 
             fg_color=C_BLUE, 
             hover_color=C_BLUE_HOVER, 
-            corner_radius=10, 
-            height=40, 
+            text_color="#FFFFFF",
+            corner_radius=8, 
+            height=38, 
             command=lambda: self.abrir_formulario_usuario(None)
         ).pack(side="left", padx=(0, 10))
 
@@ -126,10 +128,11 @@ class VistaUsuarios(ctk.CTkFrame):
             f_bot, 
             text="✎ Modificar Permisos y Datos", 
             font=ctk.CTkFont(weight="bold", size=13), 
-            fg_color=C_PURPLE, 
-            hover_color=C_PURPLE_HOVER, 
-            corner_radius=10, 
-            height=40, 
+            fg_color=C_SECONDARY_BTN, 
+            hover_color=C_SECONDARY_BTN_HOVER, 
+            text_color=C_TEXT,
+            corner_radius=8, 
+            height=38, 
             command=self.modificar_usuario
         ).pack(side="left", padx=(0, 10))
 
@@ -139,8 +142,9 @@ class VistaUsuarios(ctk.CTkFrame):
             font=ctk.CTkFont(weight="bold", size=13), 
             fg_color=C_RED, 
             hover_color=C_RED_HOVER, 
-            corner_radius=10, 
-            height=40, 
+            text_color="#FFFFFF",
+            corner_radius=8, 
+            height=38, 
             command=self.eliminar_usuario
         ).pack(side="left")
 
@@ -170,7 +174,7 @@ class VistaUsuarios(ctk.CTkFrame):
             cur.close()
             conn.close()
 
-            for r in filas:
+            for idx, r in enumerate(filas):
                 perm = r.get("permisos") or {}
                 if isinstance(perm, str):
                     try: perm = json.loads(perm)
@@ -208,6 +212,7 @@ class VistaUsuarios(ctk.CTkFrame):
                 sello_status = "✅ Registrado" if r.get("sello_firma") else "❌ No Registrado"
                 estado_str = "Activo" if r.get("activo", True) else "Inactivo"
 
+                tag_fila = "fila_par" if idx % 2 == 0 else "fila_impar"
                 self.tabla_users.insert(
                     "", 
                     "end", 
@@ -219,7 +224,8 @@ class VistaUsuarios(ctk.CTkFrame):
                         acciones_str, 
                         sello_status,
                         estado_str
-                    )
+                    ),
+                    tags=(tag_fila,)
                 )
         except Exception as e:
             messagebox.showerror("Error al Cargar", f"No se pudieron cargar los usuarios:\n{e}")

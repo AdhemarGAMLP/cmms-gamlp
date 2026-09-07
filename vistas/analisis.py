@@ -130,7 +130,7 @@ class VistaAnalisis(ctk.CTkFrame):
         # ----------------------------------------------------
         # BREADCRUMB / BARRA DE NAVEGACIÓN TERRITORIAL
         # ----------------------------------------------------
-        f_bread = ctk.CTkFrame(self.scroll_frame, fg_color=C_CARD, corner_radius=12, border_width=1, border_color=C_BORDER)
+        f_bread = ctk.CTkFrame(self.scroll_frame, fg_color=C_CARD, corner_radius=CORNER_CARD, border_width=1, border_color=C_BORDER)
         f_bread.grid(row=0, column=0, columnspan=2, padx=12, pady=(4, 8), sticky="ew")
         self.canvas_widgets.append(f_bread)
         
@@ -142,11 +142,11 @@ class VistaAnalisis(ctk.CTkFrame):
             f_bread_in, 
             text="🌐 GAMLP (Todas las Redes)", 
             font=ctk.CTkFont(size=12, weight="bold"),
-            fg_color="#EFF6FF" if (red_activa or centro_activo) else C_BLUE,
-            text_color=C_BLUE if (red_activa or centro_activo) else "white",
-            hover_color="#DBEAFE" if (red_activa or centro_activo) else C_BLUE_HOVER,
+            fg_color=C_BLUE_LIGHT if (red_activa or centro_activo) else C_BLUE,
+            text_color=C_BLUE if (red_activa or centro_activo) else "#FFFFFF",
+            hover_color=C_CARD_HOVER if (red_activa or centro_activo) else C_BLUE_HOVER,
             height=30,
-            corner_radius=8,
+            corner_radius=CORNER_BTN,
             command=self.navegar_a_global
         )
         btn_glob.pack(side="left")
@@ -157,11 +157,11 @@ class VistaAnalisis(ctk.CTkFrame):
                 f_bread_in, 
                 text=f"🏥 {simplificar_nombre_red(red_activa)}", 
                 font=ctk.CTkFont(size=12, weight="bold"),
-                fg_color="#EFF6FF" if centro_activo else C_GREEN,
-                text_color=C_GREEN if centro_activo else "white",
-                hover_color="#DCFCE7" if centro_activo else "#047857",
+                fg_color=C_BLUE_LIGHT if centro_activo else C_GREEN,
+                text_color=C_BLUE if centro_activo else "#FFFFFF",
+                hover_color=C_CARD_HOVER if centro_activo else C_GREEN_HOVER,
                 height=30,
-                corner_radius=8,
+                corner_radius=CORNER_BTN,
                 command=lambda: self.navegar_a_red(red_activa)
             )
             btn_r.pack(side="left")
@@ -172,7 +172,7 @@ class VistaAnalisis(ctk.CTkFrame):
                 f_bread_in, 
                 text=f"📍 {centro_activo}", 
                 font=ctk.CTkFont(size=13, weight="bold"),
-                text_color=C_PURPLE
+                text_color=C_BLUE
             )
             lbl_c.pack(side="left", padx=4)
 
@@ -182,11 +182,11 @@ class VistaAnalisis(ctk.CTkFrame):
                 f_bread_in, 
                 text=f"⬅ Volver a {simplificar_nombre_red(red_activa) if red_activa else 'Redes'}", 
                 font=ctk.CTkFont(size=11, weight="bold"),
-                fg_color="#F1F5F9",
+                fg_color=C_SECONDARY_BTN,
                 text_color=C_TEXT,
-                hover_color="#E2E8F0",
+                hover_color=C_CARD_HOVER,
                 height=28,
-                corner_radius=8,
+                corner_radius=CORNER_BTN,
                 command=lambda: self.navegar_a_red(red_activa) if red_activa else self.navegar_a_global()
             )
             btn_volver.pack(side="right")
@@ -195,11 +195,11 @@ class VistaAnalisis(ctk.CTkFrame):
                 f_bread_in, 
                 text="⬅ Volver a Todas las Redes", 
                 font=ctk.CTkFont(size=11, weight="bold"),
-                fg_color="#F1F5F9",
+                fg_color=C_SECONDARY_BTN,
                 text_color=C_TEXT,
-                hover_color="#E2E8F0",
+                hover_color=C_CARD_HOVER,
                 height=28,
-                corner_radius=8,
+                corner_radius=CORNER_BTN,
                 command=self.navegar_a_global
             )
             btn_volver.pack(side="right")
@@ -207,7 +207,7 @@ class VistaAnalisis(ctk.CTkFrame):
         # ----------------------------------------------------
         # CARD 1: CENSO JERÁRQUICO (TARJETAS CLICABLES)
         # ----------------------------------------------------
-        f_card_dist = ctk.CTkFrame(self.scroll_frame, fg_color=C_CARD, corner_radius=16, border_width=1, border_color=C_BORDER)
+        f_card_dist = ctk.CTkFrame(self.scroll_frame, fg_color=C_CARD, corner_radius=CORNER_CARD, border_width=1, border_color=C_BORDER)
         f_card_dist.grid(row=1, column=0, columnspan=2, padx=12, pady=8, sticky="nsew")
         self.canvas_widgets.append(f_card_dist)
         items_censo, modo_censo, eqs_contexto, tit_censo = self.dibujar_distribucion_censo(f_card_dist, todos_equipos, red_activa, centro_activo)
@@ -215,7 +215,7 @@ class VistaAnalisis(ctk.CTkFrame):
         # ----------------------------------------------------
         # CARD 2.1: GRÁFICA VISUAL DE DISTRIBUCIÓN (BARRAS)
         # ----------------------------------------------------
-        f_card_g1 = ctk.CTkFrame(self.scroll_frame, fg_color=C_CARD, corner_radius=16, border_width=1, border_color=C_BORDER)
+        f_card_g1 = ctk.CTkFrame(self.scroll_frame, fg_color=C_CARD, corner_radius=CORNER_CARD, border_width=1, border_color=C_BORDER)
         f_card_g1.grid(row=2, column=0, padx=12, pady=8, sticky="nsew")
         self.canvas_widgets.append(f_card_g1)
         self.dibujar_grafica_distribucion_equipos(f_card_g1, items_censo, modo_censo)
@@ -223,7 +223,7 @@ class VistaAnalisis(ctk.CTkFrame):
         # ----------------------------------------------------
         # CARD 2.2: GRÁFICA DE TIPOS DE EQUIPOS MÁS FRECUENTES
         # ----------------------------------------------------
-        f_card_g2 = ctk.CTkFrame(self.scroll_frame, fg_color=C_CARD, corner_radius=16, border_width=1, border_color=C_BORDER)
+        f_card_g2 = ctk.CTkFrame(self.scroll_frame, fg_color=C_CARD, corner_radius=CORNER_CARD, border_width=1, border_color=C_BORDER)
         f_card_g2.grid(row=2, column=1, padx=12, pady=8, sticky="nsew")
         self.canvas_widgets.append(f_card_g2)
         self.dibujar_grafica_tipos_equipos(f_card_g2, eqs_contexto, modo_censo)
@@ -232,7 +232,7 @@ class VistaAnalisis(ctk.CTkFrame):
         # CARD 3: TABLA DE EQUIPOS EN LA MISMA PESTAÑA
         # (Se muestra siempre, permitiendo explorar equipos directamente)
         # ----------------------------------------------------
-        f_card_tabla = ctk.CTkFrame(self.scroll_frame, fg_color=C_CARD, corner_radius=16, border_width=1, border_color=C_BORDER)
+        f_card_tabla = ctk.CTkFrame(self.scroll_frame, fg_color=C_CARD, corner_radius=CORNER_CARD, border_width=1, border_color=C_BORDER)
         f_card_tabla.grid(row=3, column=0, columnspan=2, padx=12, pady=8, sticky="nsew")
         self.canvas_widgets.append(f_card_tabla)
         self.dibujar_tabla_equipos_en_pestana(f_card_tabla, eqs_contexto, modo_censo, red_activa, centro_activo)
@@ -261,7 +261,7 @@ class VistaAnalisis(ctk.CTkFrame):
         # ----------------------------------------------------
         # CARD 4: MANTENIMIENTOS POR MES (PREVENTIVOS VS CORRECTIVOS)
         # ----------------------------------------------------
-        f_card_m = ctk.CTkFrame(self.scroll_frame, fg_color=C_CARD, corner_radius=16, border_width=1, border_color=C_BORDER)
+        f_card_m = ctk.CTkFrame(self.scroll_frame, fg_color=C_CARD, corner_radius=CORNER_CARD, border_width=1, border_color=C_BORDER)
         f_card_m.grid(row=4, column=0, columnspan=2, padx=12, pady=8, sticky="nsew")
         self.canvas_widgets.append(f_card_m)
         self.dibujar_mensuales(f_card_m, inter_anio, anio_sel)
@@ -269,12 +269,12 @@ class VistaAnalisis(ctk.CTkFrame):
         # ----------------------------------------------------
         # CARD 5: PROPORCIÓN Y TOP EQUIPOS
         # ----------------------------------------------------
-        f_card_p = ctk.CTkFrame(self.scroll_frame, fg_color=C_CARD, corner_radius=16, border_width=1, border_color=C_BORDER)
+        f_card_p = ctk.CTkFrame(self.scroll_frame, fg_color=C_CARD, corner_radius=CORNER_CARD, border_width=1, border_color=C_BORDER)
         f_card_p.grid(row=5, column=0, padx=12, pady=8, sticky="nsew")
         self.canvas_widgets.append(f_card_p)
         self.dibujar_proporcion_tipo(f_card_p, inter_anio, anio_sel)
 
-        f_card_t = ctk.CTkFrame(self.scroll_frame, fg_color=C_CARD, corner_radius=16, border_width=1, border_color=C_BORDER)
+        f_card_t = ctk.CTkFrame(self.scroll_frame, fg_color=C_CARD, corner_radius=CORNER_CARD, border_width=1, border_color=C_BORDER)
         f_card_t.grid(row=5, column=1, padx=12, pady=8, sticky="nsew")
         self.canvas_widgets.append(f_card_t)
         self.dibujar_top_equipos(f_card_t, inter_anio)
@@ -282,12 +282,12 @@ class VistaAnalisis(ctk.CTkFrame):
         # ----------------------------------------------------
         # CARD 6: TOP ÁREAS Y REPUESTOS
         # ----------------------------------------------------
-        f_card_a = ctk.CTkFrame(self.scroll_frame, fg_color=C_CARD, corner_radius=16, border_width=1, border_color=C_BORDER)
+        f_card_a = ctk.CTkFrame(self.scroll_frame, fg_color=C_CARD, corner_radius=CORNER_CARD, border_width=1, border_color=C_BORDER)
         f_card_a.grid(row=6, column=0, padx=12, pady=8, sticky="nsew")
         self.canvas_widgets.append(f_card_a)
         self.dibujar_top_areas(f_card_a, inter_anio)
 
-        f_card_r = ctk.CTkFrame(self.scroll_frame, fg_color=C_CARD, corner_radius=16, border_width=1, border_color=C_BORDER)
+        f_card_r = ctk.CTkFrame(self.scroll_frame, fg_color=C_CARD, corner_radius=CORNER_CARD, border_width=1, border_color=C_BORDER)
         f_card_r.grid(row=6, column=1, padx=12, pady=8, sticky="nsew")
         self.canvas_widgets.append(f_card_r)
         self.dibujar_top_repuestos(f_card_r, inter_anio)
@@ -541,6 +541,8 @@ class VistaAnalisis(ctk.CTkFrame):
         tree = ttk.Treeview(f_tab_box, columns=cols, show="headings", height=8, selectmode="browse")
         sb = ttk.Scrollbar(f_tab_box, orient="vertical", command=tree.yview, style="Vertical.TScrollbar")
         tree.configure(yscrollcommand=sb.set)
+        tree.tag_configure("fila_par", background="#FFFFFF")
+        tree.tag_configure("fila_impar", background="#F8FAFC")
 
         col_w = {"Red": 75, "Centro de Salud": 170, "Área/Servicio": 130, "Equipo Médico": 200, "Marca": 100, "Modelo": 100, "Cod. AF": 100, "Estado": 90}
         for c in cols:
@@ -554,6 +556,7 @@ class VistaAnalisis(ctk.CTkFrame):
             for i in tree.get_children():
                 tree.delete(i)
             filtro = self.busqueda_tabla_var.get().lower().strip()
+            fila_idx = 0
             for eq in eqs_lista:
                 eq_nom = str(eq.get("nombre", ""))
                 eq_id = str(eq.get("id", ""))
@@ -568,7 +571,9 @@ class VistaAnalisis(ctk.CTkFrame):
                     if not (filtro in eq_nom.lower() or filtro in eq_id.lower() or filtro in eq_mar.lower() or filtro in eq_mod.lower() or filtro in eq_cen.lower() or filtro in eq_ser.lower()):
                         continue
 
-                tree.insert("", "end", values=(eq_red, eq_cen, eq_ser, eq_nom, eq_mar, eq_mod, eq_id, eq_est))
+                tag = "fila_par" if fila_idx % 2 == 0 else "fila_impar"
+                tree.insert("", "end", values=(eq_red, eq_cen, eq_ser, eq_nom, eq_mar, eq_mod, eq_id, eq_est), tags=(tag,))
+                fila_idx += 1
 
         self._deb_inline = None
         def _on_busq_inline(*args):
@@ -617,7 +622,7 @@ class VistaAnalisis(ctk.CTkFrame):
         f_search = ctk.CTkFrame(f_top, fg_color="transparent")
         f_search.pack(side="right", padx=20, pady=12)
         ctk.CTkLabel(f_search, text="🔍", font=ctk.CTkFont(size=14)).pack(side="left", padx=4)
-        e_busq = ctk.CTkEntry(f_search, textvariable=busq_modal_var, placeholder_text="Buscar en esta lista...", width=220, fg_color=C_BG, border_color=C_BORDER, corner_radius=8)
+        e_busq = ctk.CTkEntry(f_search, textvariable=busq_modal_var, placeholder_text="Buscar en esta lista...", width=220, fg_color=C_BG, border_color=C_BORDER, corner_radius=CORNER_INPUT)
         e_busq.pack(side="left")
 
         f_tabla = ctk.CTkFrame(self.modal_equipos, fg_color="transparent")
@@ -627,6 +632,8 @@ class VistaAnalisis(ctk.CTkFrame):
         tree = ttk.Treeview(f_tabla, columns=cols, show="headings", selectmode="browse")
         sb = ttk.Scrollbar(f_tabla, orient="vertical", command=tree.yview, style="Vertical.TScrollbar")
         tree.configure(yscrollcommand=sb.set)
+        tree.tag_configure("fila_par", background="#FFFFFF")
+        tree.tag_configure("fila_impar", background="#F8FAFC")
 
         col_w = {"Red": 75, "Centro de Salud": 170, "Área/Servicio": 130, "Equipo Médico": 200, "Marca": 100, "Modelo": 100, "Cod. AF": 100, "Estado": 90}
         for c in cols:
@@ -640,6 +647,7 @@ class VistaAnalisis(ctk.CTkFrame):
             for i in tree.get_children():
                 tree.delete(i)
             filtro = busq_modal_var.get().lower().strip()
+            fila_idx = 0
             for eq in lista_equipos:
                 eq_nom = str(eq.get("nombre", ""))
                 eq_id = str(eq.get("id", ""))
@@ -654,7 +662,9 @@ class VistaAnalisis(ctk.CTkFrame):
                     if not (filtro in eq_nom.lower() or filtro in eq_id.lower() or filtro in eq_mar.lower() or filtro in eq_mod.lower() or filtro in eq_cen.lower() or filtro in eq_ser.lower()):
                         continue
 
-                tree.insert("", "end", values=(eq_red, eq_cen, eq_ser, eq_nom, eq_mar, eq_mod, eq_id, eq_est))
+                tag = "fila_par" if fila_idx % 2 == 0 else "fila_impar"
+                tree.insert("", "end", values=(eq_red, eq_cen, eq_ser, eq_nom, eq_mar, eq_mod, eq_id, eq_est), tags=(tag,))
+                fila_idx += 1
 
         deb_modal = [None]
         def _on_busq_modal(*args):
@@ -677,10 +687,10 @@ class VistaAnalisis(ctk.CTkFrame):
         f_bot = ctk.CTkFrame(self.modal_equipos, fg_color=C_CARD, corner_radius=0, height=50)
         f_bot.pack(fill="x", side="bottom")
 
-        btn_abrir = ctk.CTkButton(f_bot, text="📄 Ver Ficha Técnica / Hoja de Vida", font=ctk.CTkFont(weight="bold", size=12), fg_color=C_BLUE, hover_color=C_BLUE_HOVER, height=36, corner_radius=8, command=_abrir_hv_desde_modal)
+        btn_abrir = ctk.CTkButton(f_bot, text="📄 Ver Ficha Técnica / Hoja de Vida", font=ctk.CTkFont(weight="bold", size=12), fg_color=C_BLUE, hover_color=C_BLUE_HOVER, height=36, corner_radius=CORNER_BTN, command=_abrir_hv_desde_modal)
         btn_abrir.pack(side="left", padx=20, pady=10)
 
-        btn_cerrar = ctk.CTkButton(f_bot, text="Cerrar", font=ctk.CTkFont(weight="bold", size=12), fg_color=C_CARD, text_color=C_TEXT, hover_color=C_BORDER, height=36, corner_radius=8, command=self.modal_equipos.destroy)
+        btn_cerrar = ctk.CTkButton(f_bot, text="Cerrar", font=ctk.CTkFont(weight="bold", size=12), fg_color=C_SECONDARY_BTN, text_color=C_TEXT, hover_color=C_CARD_HOVER, height=36, corner_radius=CORNER_BTN, command=self.modal_equipos.destroy)
         btn_cerrar.pack(side="right", padx=20, pady=10)
 
     # ========================================================
@@ -823,7 +833,7 @@ class VistaAnalisis(ctk.CTkFrame):
         self.figuras.append(fig)
         self.configurar_estilo_figura(fig, ax, "Top 5 Áreas Clínicas")
 
-        bars = ax.barh(nombres, counts, color=C_PURPLE, height=0.55)
+        bars = ax.barh(nombres, counts, color=C_BLUE, height=0.55)
         ax.invert_yaxis()
         ax.grid(axis='x', linestyle='--', alpha=0.3, color=C_SUBTEXT)
         ax.bar_label(bars, color=C_TEXT, padding=3, weight="bold")
@@ -853,7 +863,7 @@ class VistaAnalisis(ctk.CTkFrame):
         self.figuras.append(fig)
         self.configurar_estilo_figura(fig, ax, "Top 5 Repuestos Usados")
 
-        bars = ax.bar(nombres, counts, color=C_YELLOW, width=0.5)
+        bars = ax.bar(nombres, counts, color=C_ORANGE, width=0.5)
         ax.grid(axis='y', linestyle='--', alpha=0.3, color=C_SUBTEXT)
         ax.bar_label(bars, color=C_TEXT, padding=3, weight="bold")
 

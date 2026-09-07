@@ -113,7 +113,7 @@ class VentanaSelectorSede(ctk.CTkToplevel):
         ctk.CTkLabel(f_top, text="Selecciona la ubicación territorial para filtrar el inventario\no accede de forma general a todo el municipio:", font=ctk.CTkFont(size=11), text_color=C_SUBTEXT).pack(pady=(4, 0))
 
         # Tarjeta de Controles en Cascada
-        card = ctk.CTkFrame(self, fg_color=C_CARD, corner_radius=16, border_width=1, border_color=C_BORDER)
+        card = ctk.CTkFrame(self, fg_color=C_CARD, corner_radius=CORNER_CARD, border_width=1, border_color=C_BORDER)
         card.pack(padx=30, pady=10, fill="both", expand=True)
 
         # 1. DEPARTAMENTO
@@ -121,34 +121,34 @@ class VentanaSelectorSede(ctk.CTkToplevel):
         deptos_nombres = [d["nombre"] for d in self.sedes_data.get("departamentos", [])]
         if not deptos_nombres:
             deptos_nombres = ["La Paz"]
-        self.combo_depto = ctk.CTkComboBox(card, values=deptos_nombres, command=self.on_depto_cambiado, height=38, corner_radius=10, border_color=C_BORDER, fg_color=C_BG)
+        self.combo_depto = ctk.CTkComboBox(card, values=deptos_nombres, command=self.on_depto_cambiado, height=38, corner_radius=CORNER_INPUT, border_color=C_BORDER, fg_color=C_BG)
         self.combo_depto.pack(padx=25, fill="x", pady=(0, 10))
         if "La Paz" in deptos_nombres:
             self.combo_depto.set("La Paz")
 
         # 2. MUNICIPIO
         ctk.CTkLabel(card, text="🏛️ 2. Municipio:", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", padx=25, pady=(0, 2))
-        self.combo_mun = ctk.CTkComboBox(card, values=["GAMLP"], command=self.on_mun_cambiado, height=38, corner_radius=10, border_color=C_BORDER, fg_color=C_BG)
+        self.combo_mun = ctk.CTkComboBox(card, values=["GAMLP"], command=self.on_mun_cambiado, height=38, corner_radius=CORNER_INPUT, border_color=C_BORDER, fg_color=C_BG)
         self.combo_mun.pack(padx=25, fill="x", pady=(0, 10))
 
         # 3. RED DE SALUD
         ctk.CTkLabel(card, text="🌐 3. Red de Salud:", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", padx=25, pady=(0, 2))
-        self.combo_red = ctk.CTkComboBox(card, values=["[ Todas las Redes (Acceso General GAMLP) ]"], command=self.on_red_cambiada, height=38, corner_radius=10, border_color=C_BORDER, fg_color=C_BG)
+        self.combo_red = ctk.CTkComboBox(card, values=["[ Todas las Redes (Acceso General GAMLP) ]"], command=self.on_red_cambiada, height=38, corner_radius=CORNER_INPUT, border_color=C_BORDER, fg_color=C_BG)
         self.combo_red.pack(padx=25, fill="x", pady=(0, 10))
 
         # 4. CENTRO DE SALUD
         ctk.CTkLabel(card, text="🏥 4. Centro de Salud / Hospital:", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", padx=25, pady=(0, 2))
-        self.combo_centro = ctk.CTkComboBox(card, values=["[ Todos los Centros de GAMLP ]"], command=lambda e: self.actualizar_resumen(), height=38, corner_radius=10, border_color=C_BORDER, fg_color=C_BG)
+        self.combo_centro = ctk.CTkComboBox(card, values=["[ Todos los Centros de GAMLP ]"], command=lambda e: self.actualizar_resumen(), height=38, corner_radius=CORNER_INPUT, border_color=C_BORDER, fg_color=C_BG)
         self.combo_centro.pack(padx=25, fill="x", pady=(0, 12))
 
         # Badge Informativo de Selección
-        self.f_resumen = ctk.CTkFrame(card, fg_color="#F1F5F9", corner_radius=10, border_width=1, border_color="#CBD5E1")
+        self.f_resumen = ctk.CTkFrame(card, fg_color=C_BLUE_LIGHT, corner_radius=CORNER_INPUT, border_width=1, border_color=C_BORDER)
         self.f_resumen.pack(padx=25, fill="x", pady=(0, 15))
         self.lbl_resumen = ctk.CTkLabel(self.f_resumen, text="📍 Vista: Acceso General", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_BLUE)
         self.lbl_resumen.pack(pady=8, padx=12)
 
         # Botón de Acceso
-        btn_ingresar = ctk.CTkButton(self, text="Ingresar al Sistema ➔", font=ctk.CTkFont(size=14, weight="bold"), height=46, corner_radius=12, fg_color=C_BLUE, hover_color=C_BLUE_HOVER, command=self.confirmar_seleccion)
+        btn_ingresar = ctk.CTkButton(self, text="Ingresar al Sistema ➔", font=ctk.CTkFont(size=14, weight="bold"), height=42, corner_radius=CORNER_BTN, fg_color=C_BLUE, hover_color=C_BLUE_HOVER, command=self.confirmar_seleccion)
         btn_ingresar.pack(padx=30, pady=(5, 20), fill="x")
 
         # Inicializar cascada con La Paz
@@ -284,21 +284,21 @@ class VentanaLogin(ctk.CTk):
         ctk.CTkLabel(self, text="🏛️ SGEM GAMLP", font=ctk.CTkFont(size=24, weight="bold"), text_color=C_BLUE).pack(pady=(25, 2))
         ctk.CTkLabel(self, text=f"Sistema de Gestión de Equipamiento Médico ({VERSION_APP})", font=ctk.CTkFont(size=12), text_color=C_SUBTEXT).pack(pady=(0, 12))
         
-        marco = ctk.CTkFrame(self, fg_color=C_CARD, corner_radius=16, border_width=1, border_color=C_BORDER)
+        marco = ctk.CTkFrame(self, fg_color=C_CARD, corner_radius=CORNER_CARD, border_width=1, border_color=C_BORDER)
         marco.pack(padx=30, pady=5, fill="both", expand=True)
 
         ctk.CTkLabel(marco, text="Usuario:", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", padx=25, pady=(15, 2))
-        self.e_user = ctk.CTkEntry(marco, placeholder_text="Ingrese su usuario", width=300, height=38, corner_radius=10, border_color=C_BORDER, fg_color=C_BG)
+        self.e_user = ctk.CTkEntry(marco, placeholder_text="Ingrese su usuario", width=300, height=38, corner_radius=CORNER_INPUT, border_color=C_BORDER, fg_color=C_BG)
         self.e_user.pack(padx=25, pady=(0, 8))
         
         ctk.CTkLabel(marco, text="Contraseña:", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", padx=25, pady=(0, 2))
-        self.e_pass = ctk.CTkEntry(marco, placeholder_text="••••••••", show="*", width=300, height=38, corner_radius=10, border_color=C_BORDER, fg_color=C_BG)
+        self.e_pass = ctk.CTkEntry(marco, placeholder_text="••••••••", show="*", width=300, height=38, corner_radius=CORNER_INPUT, border_color=C_BORDER, fg_color=C_BG)
         self.e_pass.pack(padx=25, pady=(0, 12))
         self.e_pass.bind("<Return>", lambda e: self.intentar_login())
         
-        ctk.CTkButton(marco, text="Ingresar al Sistema", command=self.intentar_login, height=40, corner_radius=10, font=ctk.CTkFont(weight="bold", size=13), fg_color=C_BLUE, hover_color=C_BLUE_HOVER).pack(padx=25, pady=(5, 8), fill="x")
+        ctk.CTkButton(marco, text="Ingresar al Sistema", command=self.intentar_login, height=40, corner_radius=CORNER_BTN, font=ctk.CTkFont(weight="bold", size=13), fg_color=C_BLUE, hover_color=C_BLUE_HOVER).pack(padx=25, pady=(5, 8), fill="x")
         
-        ctk.CTkButton(marco, text="⚙️ Configurar Servidor (IP / Nube)", command=self.abrir_config_servidor, height=28, fg_color="transparent", text_color=C_SUBTEXT, hover_color=C_CARD_HOVER, font=ctk.CTkFont(size=11)).pack(pady=(0, 10))
+        ctk.CTkButton(marco, text="⚙️ Configurar Servidor (IP / Nube)", command=self.abrir_config_servidor, height=28, corner_radius=CORNER_BTN, fg_color="transparent", text_color=C_SUBTEXT, hover_color=C_CARD_HOVER, font=ctk.CTkFont(size=11)).pack(pady=(0, 10))
 
 
     def intentar_login(self):
@@ -502,7 +502,7 @@ class SistemaMantenimiento(ctk.CTk):
         style.configure("Treeview", 
                         background=C_CARD, 
                         foreground=C_TEXT, 
-                        rowheight=38, 
+                        rowheight=36, 
                         fieldbackground=C_CARD, 
                         borderwidth=0, 
                         font=('Segoe UI', 10))
@@ -510,14 +510,14 @@ class SistemaMantenimiento(ctk.CTk):
                   background=[('selected', C_BLUE)], 
                   foreground=[('selected', '#FFFFFF')])
         style.configure("Treeview.Heading", 
-                        background="#F1F5F9", 
-                        foreground="#475569", 
+                        background="#F2F2F7", 
+                        foreground="#48484A", 
                         font=('Segoe UI', 10, 'bold'), 
                         borderwidth=0, 
                         relief="flat")
         style.layout("Treeview", [('Treeview.treearea', {'sticky': 'nswe'})])
 
-        # Diseño y comportamiento de Scrollbar minimalista
+        # Diseño y comportamiento de Scrollbar minimalista ultra delgado (6px Apple style)
         style.layout("Vertical.TScrollbar", [
             ('Vertical.Scrollbar.trough', {
                 'children': [
@@ -527,13 +527,13 @@ class SistemaMantenimiento(ctk.CTk):
             })
         ])
         style.configure("Vertical.TScrollbar", 
-                        background="#CBD5E1", 
+                        background="#C7C7CC", 
                         troughcolor=C_CARD, 
                         bordercolor=C_CARD, 
-                        thickness=8, 
+                        thickness=6, 
                         relief="flat")
         style.map("Vertical.TScrollbar", 
-                  background=[('pressed', '#64748B'), ('active', '#94A3B8')])
+                  background=[('pressed', '#8E8E93'), ('active', '#AEAEB2')])
 
         style.layout("Horizontal.TScrollbar", [
             ('Horizontal.Scrollbar.trough', {
@@ -544,13 +544,13 @@ class SistemaMantenimiento(ctk.CTk):
             })
         ])
         style.configure("Horizontal.TScrollbar", 
-                        background="#CBD5E1", 
+                        background="#C7C7CC", 
                         troughcolor=C_CARD, 
                         bordercolor=C_CARD, 
-                        thickness=8, 
+                        thickness=6, 
                         relief="flat")
         style.map("Horizontal.TScrollbar", 
-                  background=[('pressed', '#64748B'), ('active', '#94A3B8')])
+                  background=[('pressed', '#8E8E93'), ('active', '#AEAEB2')])
 
 
     def iniciar_sincronizacion_background(self):
@@ -908,32 +908,32 @@ class SistemaMantenimiento(ctk.CTk):
         self.lbl_name.pack(pady=(0, 4))
 
         # Badge de Sede / Centro de Salud Activo
-        self.f_sede_badge = ctk.CTkFrame(self.top_sidebar, fg_color="#F8FAFC", corner_radius=8, border_width=1, border_color="#CBD5E1")
+        self.f_sede_badge = ctk.CTkFrame(self.top_sidebar, fg_color=C_CARD, corner_radius=10, border_width=1, border_color=C_BORDER)
         self.f_sede_badge.pack(pady=(0, 6), padx=10, fill="x")
         
         sede_txt = self.contexto_sede.get("resumen_texto", "🌐 Acceso General GAMLP") if hasattr(self, "contexto_sede") and self.contexto_sede else "🌐 Acceso General GAMLP"
         self.lbl_sede_badge = ctk.CTkLabel(self.f_sede_badge, text=sede_txt, font=ctk.CTkFont(size=10, weight="bold"), text_color=C_BLUE, wraplength=200)
-        self.lbl_sede_badge.pack(pady=(4, 2), padx=6)
+        self.lbl_sede_badge.pack(pady=(6, 2), padx=6)
         
-        self.btn_cambiar_sede = ctk.CTkButton(self.f_sede_badge, text="🔄 Cambiar Sede", font=ctk.CTkFont(size=10, weight="bold"), height=22, fg_color=C_CARD, text_color=C_TEXT, hover_color=C_BORDER, corner_radius=6, command=self.abrir_selector_sede_rapido)
-        self.btn_cambiar_sede.pack(pady=(0, 4), padx=6, fill="x")
+        self.btn_cambiar_sede = ctk.CTkButton(self.f_sede_badge, text="🔄 Cambiar Sede", font=ctk.CTkFont(size=10, weight="bold"), height=24, fg_color=C_BLUE_LIGHT, text_color=C_BLUE, hover_color="#D8E8FC", corner_radius=6, command=self.abrir_selector_sede_rapido)
+        self.btn_cambiar_sede.pack(pady=(2, 6), padx=6, fill="x")
 
-        self.btn_alertas = ctk.CTkButton(self.top_sidebar, text="🔔 Alertas (0)", height=34, font=ctk.CTkFont(weight="bold", size=12), fg_color=C_BG, text_color=C_TEXT, command=self.mostrar_ventana_alertas)
+        self.btn_alertas = ctk.CTkButton(self.top_sidebar, text="🔔 Alertas (0)", height=34, font=ctk.CTkFont(weight="bold", size=12), fg_color=C_CARD_HOVER, text_color=C_TEXT, corner_radius=8, command=self.mostrar_ventana_alertas)
         self.btn_alertas.pack(pady=(0, 6), padx=12, fill="x")
 
         # 2. Área Inferior Fija
         self.bottom_sidebar = ctk.CTkFrame(self.sidebar, fg_color="transparent")
         self.bottom_sidebar.pack(side="bottom", fill="x", pady=(5, 10))
         
-        self.btn_bottom_mantenimiento = ctk.CTkButton(self.bottom_sidebar, text="✚ Mantenimiento", height=38, corner_radius=8, font=ctk.CTkFont(size=13, weight="bold"), fg_color=C_BLUE, hover_color=C_BLUE_HOVER, command=self.modulo_mantenimiento)
+        self.btn_bottom_mantenimiento = ctk.CTkButton(self.bottom_sidebar, text="✚ Mantenimiento", height=38, corner_radius=8, font=ctk.CTkFont(size=13, weight="bold"), fg_color=C_BLUE, hover_color=C_BLUE_HOVER, text_color="#FFFFFF", command=self.modulo_mantenimiento)
         if self.tiene_permiso("Historial", "agregar"):
             self.btn_bottom_mantenimiento.pack(pady=2, padx=12, fill="x")
 
         # 3. Área Central (Scrollable Frame para que quepan todos los botones en cualquier pantalla)
-        self.scroll_sidebar = ctk.CTkScrollableFrame(self.sidebar, fg_color="transparent", scrollbar_button_color=C_CARD, scrollbar_button_hover_color=C_BORDER)
+        self.scroll_sidebar = ctk.CTkScrollableFrame(self.sidebar, fg_color="transparent", scrollbar_button_color="#C7C7CC", scrollbar_button_hover_color="#8E8E93")
         self.scroll_sidebar.pack(side="top", fill="both", expand=True, padx=2, pady=2)
 
-        btn_estilo = {"fg_color": "transparent", "text_color": C_TEXT, "hover_color": C_BG, "anchor": "center", "height": 34, "font": ctk.CTkFont(size=13, weight="bold")}
+        btn_estilo = {"fg_color": "transparent", "text_color": C_TEXT, "hover_color": C_CARD_HOVER, "anchor": "center", "height": 34, "corner_radius": 8, "font": ctk.CTkFont(size=13, weight="bold")}
         self.botones_nav = []
         
         self.btn_nav_inv = ctk.CTkButton(self.scroll_sidebar, text="📦 Inventario", command=lambda: self.mostrar_vista("Inventario"), **btn_estilo)
@@ -1102,9 +1102,9 @@ class SistemaMantenimiento(ctk.CTk):
         c = len(self.alertas_activas)
         self.btn_alertas.configure(text=f"🔔 Alertas ({c})")
         if c > 0: 
-            self.btn_alertas.configure(fg_color=C_RED, hover_color=C_RED_HOVER, text_color="white")
+            self.btn_alertas.configure(fg_color=C_RED, hover_color=C_RED_HOVER, text_color="#FFFFFF")
         else: 
-            self.btn_alertas.configure(fg_color=C_BG, text_color=C_TEXT)
+            self.btn_alertas.configure(fg_color=C_CARD_HOVER, text_color=C_TEXT)
 
     def mostrar_ventana_alertas(self):
         v = ctk.CTkToplevel(self)

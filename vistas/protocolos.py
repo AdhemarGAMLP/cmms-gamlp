@@ -44,16 +44,15 @@ class VistaProtocolos(ctk.CTkFrame):
             self.filtro_resp_var.set("")
         ctk.CTkButton(f_filtros, text="Limpiar Filtros", width=100, fg_color=C_BG, text_color=C_BLUE, hover_color=C_BORDER, corner_radius=8, command=limpiar_filtros).pack(side="left", padx=15)
 
-        marco = ctk.CTkFrame(self, fg_color=C_CARD, corner_radius=16, border_width=1, border_color=C_BORDER)
+        marco = ctk.CTkFrame(self, fg_color=C_CARD, corner_radius=12, border_width=1, border_color=C_BORDER)
         marco.pack(padx=30, pady=10, fill="both", expand=True)
         
         cols = ("Fecha", "Tipo Protocolo", "Turnos (M | T | N)", "Responsable(s)")
         f_tree_prot = ctk.CTkFrame(marco, fg_color="transparent")
         f_tree_prot.pack(pady=12, padx=12, fill="both", expand=True)
         self.tabla_prot = ttk.Treeview(f_tree_prot, columns=cols, show="headings")
-        self.tabla_prot.tag_configure("completo", background="#D1FAE5", foreground="#047857")
-        self.tabla_prot.tag_configure("incompleto", background="#FEE2E2", foreground="#B91C1C")
-        self.tabla_prot.tag_configure("futuro", background="#FFFFFF", foreground=C_TEXT)
+        self.tabla_prot.tag_configure("fila_par", background="#FFFFFF", foreground=C_TEXT)
+        self.tabla_prot.tag_configure("fila_impar", background="#F8FAFC", foreground=C_TEXT)
         scrollbar_prot = ttk.Scrollbar(f_tree_prot, orient="vertical", command=self.tabla_prot.yview, style="Vertical.TScrollbar")
         self.tabla_prot.configure(yscrollcommand=scrollbar_prot.set)
         for c in cols:
@@ -65,9 +64,9 @@ class VistaProtocolos(ctk.CTkFrame):
         f_bot = ctk.CTkFrame(self, fg_color="transparent")
         f_bot.pack(pady=(10, 25), padx=30, fill="x")
         
-        ctk.CTkButton(f_bot, text="✚ Registrar/Modificar Protocolo", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_BLUE, hover_color=C_BLUE_HOVER, corner_radius=10, height=42, command=self.abrir_formulario_protocolo).pack(side="left", expand=True, padx=8)
-        ctk.CTkButton(f_bot, text="📄 Abrir Excel Completo", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_GREEN, hover_color=C_GREEN_HOVER, corner_radius=10, height=42, command=self.abrir_excel_protocolo).pack(side="left", expand=True, padx=8)
-        ctk.CTkButton(f_bot, text="⬇ Exportar a PDF", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_ORANGE, hover_color=C_ORANGE_LIGHT, corner_radius=10, height=42, command=self.exportar_pdf_protocolo).pack(side="left", expand=True, padx=8)
+        ctk.CTkButton(f_bot, text="✚ Registrar/Modificar Protocolo", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_BLUE, hover_color=C_BLUE_HOVER, text_color="#FFFFFF", corner_radius=8, height=40, command=self.abrir_formulario_protocolo).pack(side="left", expand=True, padx=8)
+        ctk.CTkButton(f_bot, text="📄 Abrir Excel Completo", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_BLUE_LIGHT, hover_color="#D8E8FC", text_color=C_BLUE, corner_radius=8, height=40, command=self.abrir_excel_protocolo).pack(side="left", expand=True, padx=8)
+        ctk.CTkButton(f_bot, text="⬇ Exportar a PDF", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_SECONDARY_BTN, hover_color=C_SECONDARY_BTN_HOVER, text_color=C_TEXT, corner_radius=8, height=40, command=self.exportar_pdf_protocolo).pack(side="left", expand=True, padx=8)
 
 
     def refrescar_datos(self):
@@ -120,27 +119,24 @@ class VistaProtocolos(ctk.CTkFrame):
         
         def get_shift_status(fecha_str, turno_name, is_filled):
             if is_filled:
-                return "[✔]"
+                return "🟢"
             # Si no está lleno
             if fecha_str < hoy_str:
                 # Fechas pasadas siempre son salteadas (rojo)
-                return "[✘]"
+                return "🔴"
             elif fecha_str > hoy_str:
-                # Fechas futuras no se tienen que llenar aún (blanco/gris)
-                return "[ ]"
+                # Fechas futuras no se tienen que llenar aún (gris/blanco)
+                return "⚪"
             else:
                 # Hoy
                 if turno_name == "Mañana":
-                    # Mañana se considera salteada si ya es tarde (después de las 14:00)
-                    return "[✘]" if curr_hour >= 14 else "[ ]"
+                    return "🔴" if curr_hour >= 14 else "⚪"
                 elif turno_name == "Tarde":
-                    # Tarde se considera salteada si ya es de noche/mañana (después de las 20:00)
-                    return "[✘]" if curr_hour >= 20 else "[ ]"
+                    return "🔴" if curr_hour >= 20 else "⚪"
                 else: # Noche
-                    # Noche no se considera salteada durante el día actual
-                    return "[ ]"
+                    return "⚪"
 
-        for key in sorted_keys:
+        for idx, key in enumerate(sorted_keys):
             fecha, tipo = key
             info = grouped[key]
             
@@ -148,18 +144,10 @@ class VistaProtocolos(ctk.CTkFrame):
             m_status = get_shift_status(fecha_str, "Mañana", info["Mañana"])
             t_status = get_shift_status(fecha_str, "Tarde", info["Tarde"])
             n_status = get_shift_status(fecha_str, "Noche", info["Noche"])
-            turnos_str = f"  {m_status}     {t_status}     {n_status}  "
+            turnos_str = f"  M: {m_status}   |   T: {t_status}   |   N: {n_status}  "
             
             resps_str = ", ".join(sorted(list(info["responsables"])))
-            
-            # Determinar tag
-            if info["Mañana"] and info["Tarde"] and info["Noche"]:
-                tag_row = "completo"
-            elif fecha_str > hoy_str:
-                tag_row = "futuro"
-            else:
-                tag_row = "incompleto"
-                
+            tag_row = "fila_par" if idx % 2 == 0 else "fila_impar"
             self.tabla_prot.insert("", "end", values=(fecha_str, tipo, turnos_str, resps_str), tags=(tag_row,))
 
     def abrir_formulario_protocolo(self, fecha_preset=None):

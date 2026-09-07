@@ -1,39 +1,49 @@
 # estilos.py
-# Paleta de Colores Moderna (Slate & Royal Medical Blue)
+# Paleta de Colores Apple Human Interface Guidelines (HIG)
 
-C_BG = "#F8FAFC"             # Slate 50 ultra suave
-C_CARD = "#FFFFFF"           # Blanco puro para tarjetas
-C_CARD_HOVER = "#F1F5F9"     # Slate 100
-C_TEXT = "#0F172A"           # Slate 900 (ultra legible y nítido)
-C_SUBTEXT = "#64748B"        # Slate 500
-C_GRAY = "#94A3B8"           # Slate 400
-C_BORDER = "#E2E8F0"         # Slate 200 (borde sutil y fino)
+# Fondos y Superficies
+C_BG = "#F2F2F7"             # Apple System Grouped Background (Gris ultra suave y limpio)
+C_CARD = "#FFFFFF"           # Blanco puro para tarjetas y modales
+C_CARD_HOVER = "#E5E5EA"     # Apple System Gray 5 (Hover sutil)
+C_BORDER = "#E5E5EA"         # Separador y borde fino Apple
+C_BORDER_DARK = "#D1D1D6"    # Apple System Gray 4 para bordes de inputs
 
-# Acentos Principales
-C_BLUE = "#2563EB"           # Royal Blue Médico
-C_BLUE_HOVER = "#1D4ED8"
-C_BLUE_LIGHT = "#EFF6FF"     # Azul pastel suave para selección activa
+# Tipografía y Textos
+C_TEXT = "#1C1C1E"           # Apple System Gray 6 Dark (Texto primario 100% nítido)
+C_SUBTEXT = "#8E8E93"        # Apple System Gray (Texto secundario / hints)
+C_GRAY = "#C7C7CC"           # Apple System Gray 4
 
-C_GREEN = "#10B981"          # Esmeralda
-C_GREEN_HOVER = "#059669"
-C_GREEN_LIGHT = "#ECFDF5"
+# Acentos y Acciones Semánticas
+C_BLUE = "#007AFF"           # Apple System Corporate Blue (Acción principal)
+C_BLUE_HOVER = "#0062CC"     # Azul corporativo hover
+C_BLUE_LIGHT = "#E5F1FF"     # Tinte azul pastel suave para selección activa / badges
 
-C_ORANGE = "#F59E0B"         # Ámbar
-C_ORANGE_LIGHT = "#FFFBEB"
+C_GREEN = "#34C759"          # Apple System Green (Éxito / Al Día)
+C_GREEN_HOVER = "#28A745"
+C_GREEN_LIGHT = "#EAF9EE"
 
-C_RED = "#EF4444"            # Carmesí
-C_RED_HOVER = "#DC2626"
-C_RED_LIGHT = "#FEF2F2"
+C_ORANGE = "#FF9500"         # Apple System Orange (Advertencia / Riesgo Medio / Por Vencer)
+C_ORANGE_LIGHT = "#FFF5E5"
 
-C_PURPLE = "#8B5CF6"         # Violeta
-C_PURPLE_HOVER = "#7C3AED"
-C_PURPLE_LIGHT = "#F5F3FF"
+C_RED = "#FF3B30"            # Apple System Red (Destructivo / Eliminar / Riesgo Alto / Vencido)
+C_RED_HOVER = "#D70015"
+C_RED_LIGHT = "#FFEBEA"
 
-C_YELLOW = "#FBBF24"
+C_YELLOW = "#FFCC00"         # Apple System Yellow
+C_AMBER = "#FF9500"
 
-# Constantes de Curvatura y Tipografía
-CORNER_CARD = 14
-CORNER_BTN = 10
+# Botones Secundarios / Tintes
+C_SECONDARY_BTN = "#E5E5EA"
+C_SECONDARY_BTN_HOVER = "#D1D1D6"
+
+# Compatibilidad de transición (Unificado a Azul Corporativo)
+C_PURPLE = "#007AFF"
+C_PURPLE_HOVER = "#0062CC"
+C_PURPLE_LIGHT = "#E5F1FF"
+
+# Constantes de Curvatura y Estilo Apple
+CORNER_CARD = 12
+CORNER_BTN = 8
 CORNER_INPUT = 8
 
 

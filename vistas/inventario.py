@@ -46,7 +46,7 @@ class VistaInventario(ctk.CTkFrame):
         f_search = ctk.CTkFrame(f_top, fg_color="transparent")
         f_search.pack(side="right")
         ctk.CTkLabel(f_search, text="🔍 Buscar:", font=ctk.CTkFont(weight="bold"), text_color=C_TEXT).pack(side="left", padx=5)
-        e_buscar = ctk.CTkEntry(f_search, textvariable=self.busqueda_var, placeholder_text="Buscar Red, Centro, Servicio, Equipo, AF...", width=280, fg_color=C_CARD, border_color=C_BORDER, corner_radius=10)
+        e_buscar = ctk.CTkEntry(f_search, textvariable=self.busqueda_var, placeholder_text="Buscar Red, Centro, Servicio, Equipo, AF...", width=280, fg_color=C_CARD, border_color=C_BORDER, corner_radius=8)
         e_buscar.pack(side="left")
 
         # Barra de Ordenación/Filtros
@@ -59,12 +59,13 @@ class VistaInventario(ctk.CTkFrame):
             command=lambda e: self.refrescar_datos(), 
             width=190, 
             fg_color=C_CARD, 
-            border_color=C_BORDER
+            border_color=C_BORDER,
+            corner_radius=8
         )
         self.combo_ordenar.pack(side="left")
         self.combo_ordenar.set("Red")
 
-        marco_tabla = ctk.CTkFrame(self, fg_color=C_CARD, corner_radius=16, border_width=1, border_color=C_BORDER)
+        marco_tabla = ctk.CTkFrame(self, fg_color=C_CARD, corner_radius=12, border_width=1, border_color=C_BORDER)
         marco_tabla.pack(pady=10, padx=30, fill="both", expand=True)
         
         # Columnas solicitadas: Red, Centro de Salud, Servicio, Equipo, Marca, Modelo, Cod. AF
@@ -74,9 +75,8 @@ class VistaInventario(ctk.CTkFrame):
         self.tabla_inv = ttk.Treeview(f_tree_inv, columns=cols, show="headings")
         scrollbar_inv = ttk.Scrollbar(f_tree_inv, orient="vertical", command=self.tabla_inv.yview, style="Vertical.TScrollbar")
         self.tabla_inv.configure(yscrollcommand=scrollbar_inv.set)
-        self.tabla_inv.tag_configure("Sin Garantia", background="#FFFFFF", foreground=C_TEXT)
-        self.tabla_inv.tag_configure("Con Garantia", background="#F8FAFC", foreground=C_SUBTEXT)
-        self.tabla_inv.tag_configure("Garantia Vencer", background="#FEF3C7", foreground="#B45309")
+        self.tabla_inv.tag_configure("fila_par", background="#FFFFFF", foreground=C_TEXT)
+        self.tabla_inv.tag_configure("fila_impar", background="#F8FAFC", foreground=C_TEXT)
         
         widths = {
             "Red": 80,
@@ -96,11 +96,11 @@ class VistaInventario(ctk.CTkFrame):
 
         f_bot = ctk.CTkFrame(self, fg_color="transparent")
         f_bot.pack(pady=(10, 25), padx=30, fill="x")
-        self.btn_registrar = ctk.CTkButton(f_bot, text="✚ Registrar Equipo", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_BLUE, hover_color=C_BLUE_HOVER, corner_radius=10, height=42, command=self.registrar_equipo)
+        self.btn_registrar = ctk.CTkButton(f_bot, text="✚ Registrar Equipo", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_BLUE, hover_color=C_BLUE_HOVER, text_color="#FFFFFF", corner_radius=8, height=40, command=self.registrar_equipo)
         self.btn_registrar.pack(side="left", expand=True, padx=8)
-        self.btn_modificar = ctk.CTkButton(f_bot, text="✎ Modificar Ficha", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_PURPLE, hover_color=C_PURPLE_HOVER, corner_radius=10, height=42, command=self.modificar_equipo)
+        self.btn_modificar = ctk.CTkButton(f_bot, text="✎ Modificar Ficha", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_BLUE_LIGHT, hover_color="#D8E8FC", text_color=C_BLUE, corner_radius=8, height=40, command=self.modificar_equipo)
         self.btn_modificar.pack(side="left", expand=True, padx=8)
-        self.btn_eliminar = ctk.CTkButton(f_bot, text="🗑 Eliminar Activo", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_RED, hover_color=C_RED_HOVER, corner_radius=10, height=42, command=self.eliminar_equipo)
+        self.btn_eliminar = ctk.CTkButton(f_bot, text="🗑 Eliminar Activo", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_RED, hover_color=C_RED_HOVER, text_color="#FFFFFF", corner_radius=8, height=40, command=self.eliminar_equipo)
         self.btn_eliminar.pack(side="left", expand=True, padx=8)
 
     def obtener_id_seleccionado(self):
@@ -201,7 +201,7 @@ class VistaInventario(ctk.CTkFrame):
             equipos.sort(key=lambda x: x.get("garantia") == "Con Garantía", reverse=True)
 
         hoy = date.today()
-        for eq in equipos:
+        for idx, eq in enumerate(equipos):
             # 1. Determinar tag de garantía para colorear fila
             gar = eq.get("garantia", "Sin Garantía")
             f_venc = eq.get("fecha_vencimiento_garantia")
@@ -225,6 +225,7 @@ class VistaInventario(ctk.CTkFrame):
             centro_txt = eq.get("centro_salud_nombre") or "-"
             servicio_txt = eq.get("servicio") or eq.get("area") or "-"
             
+            tag_fila = "fila_par" if idx % 2 == 0 else "fila_impar"
             self.tabla_inv.insert("", "end", values=(
                 red_corta,
                 centro_txt,
@@ -233,16 +234,16 @@ class VistaInventario(ctk.CTkFrame):
                 eq.get("marca") or "-",
                 eq.get("modelo") or "-",
                 eq.get("id", "")
-            ), tags=(tag_gar,))
+            ), tags=(tag_fila,))
 
         # Control dinámico de botones según permisos
         can_add = self.app.tiene_permiso("Inventario", "agregar")
         can_edit = self.app.tiene_permiso("Inventario", "cambiar")
         can_del = self.app.tiene_permiso("Inventario", "eliminar")
 
-        self.btn_registrar.configure(state="normal" if can_add else "disabled", fg_color=C_BLUE if can_add else C_BORDER, text_color="white" if can_add else C_SUBTEXT)
-        self.btn_modificar.configure(state="normal" if can_edit else "disabled", fg_color=C_PURPLE if can_edit else C_BORDER, text_color="white" if can_edit else C_SUBTEXT)
-        self.btn_eliminar.configure(state="normal" if can_del else "disabled", fg_color=C_RED if can_del else C_BORDER, text_color="white" if can_del else C_SUBTEXT)
+        self.btn_registrar.configure(state="normal" if can_add else "disabled", fg_color=C_BLUE if can_add else C_BORDER, text_color="#FFFFFF" if can_add else C_SUBTEXT)
+        self.btn_modificar.configure(state="normal" if can_edit else "disabled", fg_color=C_BLUE_LIGHT if can_edit else C_BORDER, text_color=C_BLUE if can_edit else C_SUBTEXT)
+        self.btn_eliminar.configure(state="normal" if can_del else "disabled", fg_color=C_RED if can_del else C_BORDER, text_color="#FFFFFF" if can_del else C_SUBTEXT)
 
     def ordenar_columna(self, col, reverse):
         datos = [(self.tabla_inv.set(k, col), k) for k in self.tabla_inv.get_children("")]

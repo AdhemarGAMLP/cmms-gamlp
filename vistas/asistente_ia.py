@@ -15,7 +15,8 @@ from datetime import datetime
 
 from estilos import (
     C_BG, C_CARD, C_BORDER, C_TEXT, C_SUBTEXT, 
-    C_BLUE, C_BLUE_HOVER, C_GREEN, C_RED, C_PURPLE, C_AMBER
+    C_BLUE, C_BLUE_HOVER, C_BLUE_LIGHT, C_GREEN, C_RED, C_CARD_HOVER,
+    CORNER_CARD, CORNER_BTN, CORNER_INPUT
 )
 from ia_biomedica import (
     diagnosticar_falla_ia, 
@@ -50,12 +51,20 @@ class VistaAsistenteIA(ctk.CTkFrame):
             f_top, 
             text="⚡ Diagnóstico Experto Local | Mantenimiento Predictivo RUL | 100% Offline ($0 Costo)", 
             font=ctk.CTkFont(size=12), 
-            text_color="#2563EB"
+            text_color=C_BLUE
         )
         lbl_sub.pack(side="right", pady=(4, 0))
 
         # Tabview principal con 3 subpestañas
-        self.tabview = ctk.CTkTabview(self, fg_color=C_CARD, corner_radius=12)
+        self.tabview = ctk.CTkTabview(
+            self, fg_color=C_CARD, corner_radius=CORNER_CARD, text_color=C_TEXT,
+            border_width=1, border_color=C_BORDER,
+            segmented_button_fg_color="#E5E5EA",
+            segmented_button_selected_color="#FFFFFF",
+            segmented_button_selected_hover_color="#E5E5EA",
+            segmented_button_unselected_color="#E5E5EA",
+            segmented_button_unselected_hover_color=C_CARD_HOVER
+        )
         self.tabview.pack(fill="both", expand=True, padx=25, pady=(5, 15))
 
         self.tab_diag = self.tabview.add("🩺 Diagnóstico de Fallas")
@@ -71,7 +80,7 @@ class VistaAsistenteIA(ctk.CTkFrame):
     # =========================================================================
     def construir_tab_diagnostico(self):
         # Panel superior de búsqueda
-        f_search_box = ctk.CTkFrame(self.tab_diag, fg_color="#F8FAFC", corner_radius=10, border_width=1, border_color="#E2E8F0")
+        f_search_box = ctk.CTkFrame(self.tab_diag, fg_color=C_CARD, corner_radius=CORNER_CARD, border_width=1, border_color=C_BORDER)
         f_search_box.pack(fill="x", padx=15, pady=12)
 
         ctk.CTkLabel(
@@ -88,6 +97,9 @@ class VistaAsistenteIA(ctk.CTkFrame):
             f_in_row, 
             placeholder_text="Ej: 'Error de presión E01 en autoclave', 'SpO2 curva plana', 'Sillón dental fuga aire', 'Desfibrilador no carga joules'...", 
             height=38,
+            corner_radius=CORNER_INPUT,
+            border_color=C_BORDER,
+            fg_color=C_BG,
             font=ctk.CTkFont(size=13)
         )
         self.e_sintoma.pack(side="left", fill="x", expand=True, padx=(0, 10))
@@ -95,7 +107,7 @@ class VistaAsistenteIA(ctk.CTkFrame):
 
         # Tipos de equipo
         tipos_disponibles = ["Todos"] + [c["tipo_equipo"] for c in BASE_CONOCIMIENTO_FALLAS]
-        self.cb_tipo_diag = ctk.CTkComboBox(f_in_row, values=tipos_disponibles, width=220, height=38)
+        self.cb_tipo_diag = ctk.CTkComboBox(f_in_row, values=tipos_disponibles, width=220, height=38, corner_radius=CORNER_INPUT, border_color=C_BORDER, fg_color=C_BG)
         self.cb_tipo_diag.set("Todos")
         self.cb_tipo_diag.pack(side="left", padx=(0, 10))
 
@@ -107,6 +119,7 @@ class VistaAsistenteIA(ctk.CTkFrame):
             hover_color=C_BLUE_HOVER, 
             height=38,
             width=160,
+            corner_radius=CORNER_BTN,
             command=self.ejecutar_diagnostico
         )
         btn_analizar.pack(side="left")
@@ -128,12 +141,12 @@ class VistaAsistenteIA(ctk.CTkFrame):
             ctk.CTkButton(
                 f_suggs,
                 text=label_btn,
-                font=ctk.CTkFont(size=11),
-                fg_color="#EFF6FF",
-                text_color="#1D4ED8",
-                hover_color="#DBEAFE",
+                font=ctk.CTkFont(size=11, weight="bold"),
+                fg_color=C_BLUE_LIGHT,
+                text_color=C_BLUE,
+                hover_color=C_CARD_HOVER,
                 height=26,
-                corner_radius=6,
+                corner_radius=CORNER_BTN,
                 command=lambda p=prompt_txt: self.cargar_consulta_rapida(p)
             ).pack(side="left", padx=4)
 
@@ -297,24 +310,24 @@ class VistaAsistenteIA(ctk.CTkFrame):
         self.f_kpis.pack(fill="x", pady=(0, 8))
         self.f_kpis.grid_columnconfigure((0, 1, 2, 3), weight=1)
 
-        self.kpi_alto_riesgo = self.crear_kpi_card(self.f_kpis, 0, "🔴 Alto Riesgo de Fallo (60d)", "0 Equipos", "#FEF2F2", "#DC2626")
-        self.kpi_preventivo = self.crear_kpi_card(self.f_kpis, 1, "🟡 Preventivo Requerido", "0 Equipos", "#FFFBEB", "#D97706")
-        self.kpi_confiable = self.crear_kpi_card(self.f_kpis, 2, "🟢 Confiabilidad Óptima", "0 Equipos", "#F0FDF4", "#16A34A")
-        self.kpi_vida_util = self.crear_kpi_card(self.f_kpis, 3, "⏳ Vida Útil Promedio (RUL)", "0.0 Años", "#EFF6FF", "#2563EB")
+        self.kpi_alto_riesgo = self.crear_kpi_card(self.f_kpis, 0, "🔴 Alto Riesgo (60d)", "0 Equipos", C_CARD, C_RED)
+        self.kpi_preventivo = self.crear_kpi_card(self.f_kpis, 1, "🟡 Preventivo Requerido", "0 Equipos", C_CARD, "#B45309")
+        self.kpi_confiable = self.crear_kpi_card(self.f_kpis, 2, "🟢 Confiabilidad Óptima", "0 Equipos", C_CARD, C_GREEN)
+        self.kpi_vida_util = self.crear_kpi_card(self.f_kpis, 3, "⏳ Vida Útil Promedio (RUL)", "0.0 Años", C_CARD, C_BLUE)
 
         # Filtros
-        f_filtros = ctk.CTkFrame(self.tab_pred, fg_color="#F8FAFC", corner_radius=8, border_width=1, border_color="#E2E8F0")
+        f_filtros = ctk.CTkFrame(self.tab_pred, fg_color=C_CARD, corner_radius=CORNER_CARD, border_width=1, border_color=C_BORDER)
         f_filtros.pack(fill="x", padx=15, pady=(0, 8))
 
-        ctk.CTkLabel(f_filtros, text="Filtro Red:", font=ctk.CTkFont(size=12, weight="bold")).pack(side="left", padx=(10, 4), pady=6)
-        self.cb_pred_red = ctk.CTkComboBox(f_filtros, values=["[ Todas las Redes ]"], width=230, height=32, command=lambda v: self.filtrar_tabla_predictiva())
+        ctk.CTkLabel(f_filtros, text="Filtro Red:", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(side="left", padx=(10, 4), pady=6)
+        self.cb_pred_red = ctk.CTkComboBox(f_filtros, values=["[ Todas las Redes ]"], width=230, height=32, corner_radius=CORNER_INPUT, border_color=C_BORDER, fg_color=C_BG, command=lambda v: self.filtrar_tabla_predictiva())
         self.cb_pred_red.pack(side="left", padx=4, pady=6)
 
-        ctk.CTkLabel(f_filtros, text="Nivel de Riesgo:", font=ctk.CTkFont(size=12, weight="bold")).pack(side="left", padx=(15, 4), pady=6)
-        self.cb_pred_riesgo = ctk.CTkComboBox(f_filtros, values=["Todos", "🔴 Alto Riesgo (>75%)", "🟡 Preventivo (45-75%)", "🟢 Confiable (<45%)"], width=200, height=32, command=lambda v: self.filtrar_tabla_predictiva())
+        ctk.CTkLabel(f_filtros, text="Nivel de Riesgo:", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(side="left", padx=(15, 4), pady=6)
+        self.cb_pred_riesgo = ctk.CTkComboBox(f_filtros, values=["Todos", "🔴 Alto Riesgo (>75%)", "🟡 Preventivo (45-75%)", "🟢 Confiable (<45%)"], width=200, height=32, corner_radius=CORNER_INPUT, border_color=C_BORDER, fg_color=C_BG, command=lambda v: self.filtrar_tabla_predictiva())
         self.cb_pred_riesgo.pack(side="left", padx=4, pady=6)
 
-        self.e_buscar_pred = ctk.CTkEntry(f_filtros, placeholder_text="🔍 Buscar equipo o centro...", width=200, height=32)
+        self.e_buscar_pred = ctk.CTkEntry(f_filtros, placeholder_text="🔍 Buscar equipo o centro...", width=200, height=32, corner_radius=CORNER_INPUT, border_color=C_BORDER, fg_color=C_BG)
         self.e_buscar_pred.pack(side="right", padx=10, pady=6)
         self.e_buscar_pred.bind("<KeyRelease>", self.on_buscar_pred_debounce)
 
@@ -326,6 +339,7 @@ class VistaAsistenteIA(ctk.CTkFrame):
             hover_color=C_BLUE_HOVER, 
             height=32,
             width=120,
+            corner_radius=CORNER_BTN,
             command=self.calcular_predictivo_completo
         )
         btn_recalc.pack(side="right", padx=5)
@@ -333,6 +347,8 @@ class VistaAsistenteIA(ctk.CTkFrame):
         # Tabla Treeview para el Parque de Equipos
         cols = ("af", "nombre", "centro", "red", "edad", "rul", "prob", "dias", "estado", "recomendacion")
         self.tree_pred = ttk.Treeview(self.tab_pred, columns=cols, show="headings", height=12)
+        self.tree_pred.tag_configure("fila_par", background="#FFFFFF")
+        self.tree_pred.tag_configure("fila_impar", background="#F8FAFC")
         
         self.tree_pred.heading("af", text="Cod. AF")
         self.tree_pred.heading("nombre", text="Equipo Médico")
@@ -363,9 +379,9 @@ class VistaAsistenteIA(ctk.CTkFrame):
         scroll_y.pack(side="right", fill="y", padx=(0, 15), pady=(0, 15))
 
     def crear_kpi_card(self, parent, col, titulo, valor_ini, bg_col, text_col):
-        f = ctk.CTkFrame(parent, fg_color=bg_col, corner_radius=10, border_width=1, border_color="#E2E8F0")
+        f = ctk.CTkFrame(parent, fg_color=bg_col, corner_radius=CORNER_CARD, border_width=1, border_color=C_BORDER)
         f.grid(row=0, column=col, sticky="nsew", padx=4)
-        ctk.CTkLabel(f, text=titulo, font=ctk.CTkFont(size=11, weight="bold"), text_color="#475569").pack(anchor="w", padx=10, pady=(6, 2))
+        ctk.CTkLabel(f, text=titulo, font=ctk.CTkFont(size=11, weight="bold"), text_color=C_SUBTEXT).pack(anchor="w", padx=10, pady=(6, 2))
         lbl_v = ctk.CTkLabel(f, text=valor_ini, font=ctk.CTkFont(size=16, weight="bold"), text_color=text_col)
         lbl_v.pack(anchor="w", padx=10, pady=(0, 6))
         return lbl_v
@@ -410,6 +426,7 @@ class VistaAsistenteIA(ctk.CTkFrame):
         riesgo_sel = self.cb_pred_riesgo.get()
         busq = self.e_buscar_pred.get().strip().lower()
 
+        fila_idx = 0
         for e in self.equipos_analizados:
             # Filtro Red
             if not str(red_sel).startswith("[ Todas") and e.get("red") != red_sel:
@@ -432,6 +449,7 @@ class VistaAsistenteIA(ctk.CTkFrame):
                 if not match_txt:
                     continue
 
+            tag = "fila_par" if fila_idx % 2 == 0 else "fila_impar"
             self.tree_pred.insert("", "end", values=(
                 e["equipo_id"],
                 e["nombre"],
@@ -443,7 +461,8 @@ class VistaAsistenteIA(ctk.CTkFrame):
                 f"~{e['dias_estimados_fallo']} d",
                 e["estado_predictivo"],
                 e["recomendacion"]
-            ))
+            ), tags=(tag,))
+            fila_idx += 1
 
     # =========================================================================
     # SUBPESTAÑA 3: PRESUPUESTADOR PREDICTIVO DE REPUESTOS
@@ -457,16 +476,16 @@ class VistaAsistenteIA(ctk.CTkFrame):
         self.f_kpis_pres.pack(fill="x", pady=(0, 8))
         self.f_kpis_pres.grid_columnconfigure((0, 1, 2), weight=1)
 
-        self.kpi_pres_inversion = self.crear_kpi_card(self.f_kpis_pres, 0, "💵 Presupuesto Total Proyectado (6 Meses)", "0.00 Bs.", "#EFF6FF", "#1D4ED8")
-        self.kpi_pres_criticos = self.crear_kpi_card(self.f_kpis_pres, 1, "🔴 Repuestos en Quiebre de Stock", "0 Tipos", "#FEF2F2", "#DC2626")
-        self.kpi_pres_cubiertos = self.crear_kpi_card(self.f_kpis_pres, 2, "🟢 Demanda Cubierta con Stock", "0 %", "#F0FDF4", "#16A34A")
+        self.kpi_pres_inversion = self.crear_kpi_card(self.f_kpis_pres, 0, "💵 Presupuesto Total Proyectado (6 Meses)", "0.00 Bs.", C_CARD, C_BLUE)
+        self.kpi_pres_criticos = self.crear_kpi_card(self.f_kpis_pres, 1, "🔴 Repuestos en Quiebre de Stock", "0 Tipos", C_CARD, C_RED)
+        self.kpi_pres_cubiertos = self.crear_kpi_card(self.f_kpis_pres, 2, "🟢 Demanda Cubierta con Stock", "0 %", C_CARD, C_GREEN)
 
         # Barra de Filtros
-        f_bar_pres = ctk.CTkFrame(self.tab_pres, fg_color="#F8FAFC", corner_radius=8, border_width=1, border_color="#E2E8F0")
+        f_bar_pres = ctk.CTkFrame(self.tab_pres, fg_color=C_CARD, corner_radius=CORNER_CARD, border_width=1, border_color=C_BORDER)
         f_bar_pres.pack(fill="x", padx=15, pady=(0, 8))
 
-        ctk.CTkLabel(f_bar_pres, text="Proyectar para Red:", font=ctk.CTkFont(size=12, weight="bold")).pack(side="left", padx=(10, 4), pady=6)
-        self.cb_pres_red = ctk.CTkComboBox(f_bar_pres, values=["[ Todas las Redes ]"], width=260, height=32, command=lambda v: self.actualizar_presupuestador())
+        ctk.CTkLabel(f_bar_pres, text="Proyectar para Red:", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(side="left", padx=(10, 4), pady=6)
+        self.cb_pres_red = ctk.CTkComboBox(f_bar_pres, values=["[ Todas las Redes ]"], width=260, height=32, corner_radius=CORNER_INPUT, border_color=C_BORDER, fg_color=C_BG, command=lambda v: self.actualizar_presupuestador())
         self.cb_pres_red.pack(side="left", padx=4, pady=6)
 
         btn_act_pres = ctk.CTkButton(
@@ -476,6 +495,7 @@ class VistaAsistenteIA(ctk.CTkFrame):
             fg_color=C_BLUE, 
             hover_color=C_BLUE_HOVER, 
             height=32,
+            corner_radius=CORNER_BTN,
             command=self.actualizar_presupuestador
         )
         btn_act_pres.pack(side="right", padx=10, pady=6)
@@ -483,6 +503,8 @@ class VistaAsistenteIA(ctk.CTkFrame):
         # Tabla Treeview de Presupuesto
         cols_pres = ("repuesto", "equipos", "demanda", "stock", "deficit", "costo_u", "total", "prioridad")
         self.tree_pres = ttk.Treeview(self.tab_pres, columns=cols_pres, show="headings", height=12)
+        self.tree_pres.tag_configure("fila_par", background="#FFFFFF")
+        self.tree_pres.tag_configure("fila_impar", background="#F8FAFC")
 
         self.tree_pres.heading("repuesto", text="Repuesto Crítico / Accesorio")
         self.tree_pres.heading("equipos", text="Equipos Compatibles")
@@ -528,7 +550,9 @@ class VistaAsistenteIA(ctk.CTkFrame):
         self.kpi_pres_criticos.configure(text=f"{cant_quiebre} Repuestos")
         self.kpi_pres_cubiertos.configure(text=f"{porc_cubierto}%")
 
+        fila_idx = 0
         for p in pronostico:
+            tag = "fila_par" if fila_idx % 2 == 0 else "fila_impar"
             self.tree_pres.insert("", "end", values=(
                 p["repuesto"],
                 f"{p['equipos_instalados']} equipos",
@@ -538,7 +562,8 @@ class VistaAsistenteIA(ctk.CTkFrame):
                 f"{p['costo_unitario']:,.2f}",
                 f"{p['costo_total_estimado']:,.2f}",
                 p["prioridad"]
-            ))
+            ), tags=(tag,))
+            fila_idx += 1
 
     def refrescar_datos(self):
         """Llamado al abrir la pestaña para cargar datos en memoria."""

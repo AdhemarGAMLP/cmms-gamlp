@@ -40,8 +40,20 @@ class VistaSedes(ctk.CTkFrame):
             text_color=C_TEXT
         ).pack(side="left")
 
-        # Tabview principal
-        self.tabview = ctk.CTkTabview(self, fg_color=C_CARD, corner_radius=16, border_width=1, border_color=C_BORDER)
+        # Tabview principal Apple HIG
+        self.tabview = ctk.CTkTabview(
+            self, 
+            fg_color=C_CARD, 
+            corner_radius=12, 
+            border_width=1, 
+            border_color=C_BORDER,
+            segmented_button_fg_color="#E5E5EA",
+            segmented_button_selected_color="#FFFFFF",
+            segmented_button_selected_hover_color="#FFFFFF",
+            segmented_button_unselected_color="#E5E5EA",
+            segmented_button_unselected_hover_color="#D1D1D6",
+            text_color="#1C1C1E"
+        )
         self.tabview.pack(padx=25, pady=(5, 20), fill="both", expand=True)
 
         self.tab_centros = self.tabview.add("🏥 Centros de Salud")
@@ -68,7 +80,8 @@ class VistaSedes(ctk.CTkFrame):
             command=lambda e: self.poblar_tabla_centros(),
             width=220, 
             fg_color=C_BG, 
-            border_color=C_BORDER
+            border_color=C_BORDER,
+            corner_radius=8
         )
         self.combo_filtro_red.pack(side="left", padx=(0, 15))
 
@@ -96,6 +109,8 @@ class VistaSedes(ctk.CTkFrame):
 
         cols = ("ID", "Red de Salud", "Centro de Salud / Hospital", "Nivel", "Ubicación / Dirección", "Teléfono", "Responsable", "Estado")
         self.tabla_centros = ttk.Treeview(f_tab_box, columns=cols, show="headings", selectmode="browse")
+        self.tabla_centros.tag_configure("fila_par", background="#FFFFFF", foreground=C_TEXT)
+        self.tabla_centros.tag_configure("fila_impar", background="#F8FAFC", foreground=C_TEXT)
         sb = ttk.Scrollbar(f_tab_box, orient="vertical", command=self.tabla_centros.yview, style="Vertical.TScrollbar")
         self.tabla_centros.configure(yscrollcommand=sb.set)
 
@@ -127,7 +142,8 @@ class VistaSedes(ctk.CTkFrame):
             font=ctk.CTkFont(weight="bold", size=13), 
             fg_color=C_BLUE, 
             hover_color=C_BLUE_HOVER, 
-            corner_radius=10, 
+            text_color="#FFFFFF",
+            corner_radius=8, 
             height=38, 
             command=lambda: self.abrir_formulario_centro(editar=False)
         ).pack(side="left", padx=(0, 10))
@@ -136,9 +152,10 @@ class VistaSedes(ctk.CTkFrame):
             f_bot, 
             text="✎ Modificar Centro", 
             font=ctk.CTkFont(weight="bold", size=13), 
-            fg_color=C_PURPLE, 
-            hover_color=C_PURPLE_HOVER, 
-            corner_radius=10, 
+            fg_color=C_SECONDARY_BTN, 
+            hover_color=C_SECONDARY_BTN_HOVER, 
+            text_color=C_TEXT,
+            corner_radius=8, 
             height=38, 
             command=lambda: self.abrir_formulario_centro(editar=True)
         ).pack(side="left", padx=(0, 10))
@@ -149,7 +166,8 @@ class VistaSedes(ctk.CTkFrame):
             font=ctk.CTkFont(weight="bold", size=13), 
             fg_color=C_RED, 
             hover_color=C_RED_HOVER, 
-            corner_radius=10, 
+            text_color="#FFFFFF",
+            corner_radius=8, 
             height=38, 
             command=self.eliminar_centro_click
         )
@@ -185,6 +203,8 @@ class VistaSedes(ctk.CTkFrame):
 
         cols = ("ID", "Código", "Nombre de Red", "Macrodistrito", "Municipio", "Responsable", "Teléfono", "Estado")
         self.tabla_redes = ttk.Treeview(f_tab_box, columns=cols, show="headings", selectmode="browse")
+        self.tabla_redes.tag_configure("fila_par", background="#FFFFFF", foreground=C_TEXT)
+        self.tabla_redes.tag_configure("fila_impar", background="#F8FAFC", foreground=C_TEXT)
         sb = ttk.Scrollbar(f_tab_box, orient="vertical", command=self.tabla_redes.yview, style="Vertical.TScrollbar")
         self.tabla_redes.configure(yscrollcommand=sb.set)
 
@@ -215,7 +235,8 @@ class VistaSedes(ctk.CTkFrame):
             font=ctk.CTkFont(weight="bold", size=13), 
             fg_color=C_BLUE, 
             hover_color=C_BLUE_HOVER, 
-            corner_radius=10, 
+            text_color="#FFFFFF",
+            corner_radius=8, 
             height=38, 
             command=lambda: self.abrir_formulario_red(editar=False)
         ).pack(side="left", padx=(0, 10))
@@ -224,9 +245,10 @@ class VistaSedes(ctk.CTkFrame):
             f_bot, 
             text="✎ Modificar Red", 
             font=ctk.CTkFont(weight="bold", size=13), 
-            fg_color=C_PURPLE, 
-            hover_color=C_PURPLE_HOVER, 
-            corner_radius=10, 
+            fg_color=C_SECONDARY_BTN, 
+            hover_color=C_SECONDARY_BTN_HOVER, 
+            text_color=C_TEXT,
+            corner_radius=8, 
             height=38, 
             command=lambda: self.abrir_formulario_red(editar=True)
         ).pack(side="left", padx=(0, 10))
@@ -237,7 +259,8 @@ class VistaSedes(ctk.CTkFrame):
             font=ctk.CTkFont(weight="bold", size=13), 
             fg_color=C_RED, 
             hover_color=C_RED_HOVER, 
-            corner_radius=10, 
+            text_color="#FFFFFF",
+            corner_radius=8, 
             height=38, 
             command=self.eliminar_red_click
         ).pack(side="left")
@@ -252,13 +275,15 @@ class VistaSedes(ctk.CTkFrame):
         f_split.columnconfigure(1, weight=1)
 
         # Lado Izquierdo: Municipios
-        f_left = ctk.CTkFrame(f_split, fg_color="#F8FAFC", corner_radius=14, border_width=1, border_color=C_BORDER)
+        f_left = ctk.CTkFrame(f_split, fg_color=C_CARD, corner_radius=12, border_width=1, border_color=C_BORDER)
         f_left.grid(row=0, column=0, padx=(0, 8), pady=0, sticky="nsew")
 
         ctk.CTkLabel(f_left, text="🏢 Municipios / Gobiernos Autónomos", font=ctk.CTkFont(size=16, weight="bold"), text_color=C_TEXT).pack(anchor="w", padx=14, pady=(12, 6))
         
         cols_m = ("ID", "Municipio", "Código", "Departamento", "Estado")
         self.tabla_mun = ttk.Treeview(f_left, columns=cols_m, show="headings", selectmode="browse", height=8)
+        self.tabla_mun.tag_configure("fila_par", background="#FFFFFF", foreground=C_TEXT)
+        self.tabla_mun.tag_configure("fila_impar", background="#F8FAFC", foreground=C_TEXT)
         for c in cols_m:
             self.tabla_mun.heading(c, text=c)
             self.tabla_mun.column(c, anchor="center" if c in ["ID", "Código", "Estado"] else "w", width=70 if c in ["ID", "Código", "Estado"] else 120)
@@ -266,17 +291,19 @@ class VistaSedes(ctk.CTkFrame):
 
         f_bot_m = ctk.CTkFrame(f_left, fg_color="transparent")
         f_bot_m.pack(fill="x", padx=12, pady=(4, 12))
-        ctk.CTkButton(f_bot_m, text="✚ Añadir Municipio", font=ctk.CTkFont(weight="bold", size=12), fg_color=C_BLUE, height=32, corner_radius=8, command=lambda: self.abrir_formulario_municipio(editar=False)).pack(side="left", padx=(0, 6))
-        ctk.CTkButton(f_bot_m, text="✎ Modificar", font=ctk.CTkFont(weight="bold", size=12), fg_color=C_PURPLE, height=32, corner_radius=8, command=lambda: self.abrir_formulario_municipio(editar=True)).pack(side="left")
+        ctk.CTkButton(f_bot_m, text="✚ Añadir Municipio", font=ctk.CTkFont(weight="bold", size=12), fg_color=C_BLUE, hover_color=C_BLUE_HOVER, text_color="#FFFFFF", height=32, corner_radius=8, command=lambda: self.abrir_formulario_municipio(editar=False)).pack(side="left", padx=(0, 6))
+        ctk.CTkButton(f_bot_m, text="✎ Modificar", font=ctk.CTkFont(weight="bold", size=12), fg_color=C_SECONDARY_BTN, hover_color=C_SECONDARY_BTN_HOVER, text_color=C_TEXT, height=32, corner_radius=8, command=lambda: self.abrir_formulario_municipio(editar=True)).pack(side="left")
 
         # Lado Derecho: Departamentos
-        f_right = ctk.CTkFrame(f_split, fg_color="#F8FAFC", corner_radius=14, border_width=1, border_color=C_BORDER)
+        f_right = ctk.CTkFrame(f_split, fg_color=C_CARD, corner_radius=12, border_width=1, border_color=C_BORDER)
         f_right.grid(row=0, column=1, padx=(8, 0), pady=0, sticky="nsew")
 
         ctk.CTkLabel(f_right, text="🗺️ Departamentos de Bolivia", font=ctk.CTkFont(size=16, weight="bold"), text_color=C_TEXT).pack(anchor="w", padx=14, pady=(12, 6))
 
         cols_d = ("ID", "Departamento", "Código", "Estado")
         self.tabla_dep = ttk.Treeview(f_right, columns=cols_d, show="headings", selectmode="browse", height=8)
+        self.tabla_dep.tag_configure("fila_par", background="#FFFFFF", foreground=C_TEXT)
+        self.tabla_dep.tag_configure("fila_impar", background="#F8FAFC", foreground=C_TEXT)
         for c in cols_d:
             self.tabla_dep.heading(c, text=c)
             self.tabla_dep.column(c, anchor="center" if c in ["ID", "Código", "Estado"] else "w", width=70 if c in ["ID", "Código", "Estado"] else 140)
@@ -284,8 +311,8 @@ class VistaSedes(ctk.CTkFrame):
 
         f_bot_d = ctk.CTkFrame(f_right, fg_color="transparent")
         f_bot_d.pack(fill="x", padx=12, pady=(4, 12))
-        ctk.CTkButton(f_bot_d, text="✚ Añadir Departamento", font=ctk.CTkFont(weight="bold", size=12), fg_color=C_BLUE, height=32, corner_radius=8, command=lambda: self.abrir_formulario_departamento(editar=False)).pack(side="left", padx=(0, 6))
-        ctk.CTkButton(f_bot_d, text="✎ Modificar", font=ctk.CTkFont(weight="bold", size=12), fg_color=C_PURPLE, height=32, corner_radius=8, command=lambda: self.abrir_formulario_departamento(editar=True)).pack(side="left")
+        ctk.CTkButton(f_bot_d, text="✚ Añadir Departamento", font=ctk.CTkFont(weight="bold", size=12), fg_color=C_BLUE, hover_color=C_BLUE_HOVER, text_color="#FFFFFF", height=32, corner_radius=8, command=lambda: self.abrir_formulario_departamento(editar=False)).pack(side="left", padx=(0, 6))
+        ctk.CTkButton(f_bot_d, text="✎ Modificar", font=ctk.CTkFont(weight="bold", size=12), fg_color=C_SECONDARY_BTN, hover_color=C_SECONDARY_BTN_HOVER, text_color=C_TEXT, height=32, corner_radius=8, command=lambda: self.abrir_formulario_departamento(editar=True)).pack(side="left")
 
     # ========================================================
     # POBLAR DATOS
@@ -312,7 +339,7 @@ class VistaSedes(ctk.CTkFrame):
         filtro_red = self.filtro_red_var.get().strip()
         filtro_txt = self.busqueda_centro_var.get().lower().strip()
 
-        for c in self.jerarquia.get("centros", []):
+        for idx, c in enumerate(self.jerarquia.get("centros", [])):
             r_nom = redes_dict.get(c.get("red_salud_id"), "Sin Red")
             if filtro_red != "Todas las Redes" and r_nom.lower() != filtro_red.lower():
                 continue
@@ -335,7 +362,8 @@ class VistaSedes(ctk.CTkFrame):
                 if not match:
                     continue
 
-            self.tabla_centros.insert("", "end", values=(c_id, r_nom, c_nom, c_niv, c_dir, c_tel, c_res, c_est))
+            tag_fila = "fila_par" if idx % 2 == 0 else "fila_impar"
+            self.tabla_centros.insert("", "end", values=(c_id, r_nom, c_nom, c_niv, c_dir, c_tel, c_res, c_est), tags=(tag_fila,))
 
     def poblar_tabla_redes(self):
         for item in self.tabla_redes.get_children():
@@ -344,7 +372,7 @@ class VistaSedes(ctk.CTkFrame):
         muns_dict = {m["id"]: m["nombre"] for m in self.jerarquia.get("municipios", [])}
         filtro_txt = self.busqueda_red_var.get().lower().strip()
 
-        for r in self.jerarquia.get("redes", []):
+        for idx, r in enumerate(self.jerarquia.get("redes", [])):
             r_id = str(r.get("id", ""))
             r_cod = str(r.get("codigo", ""))
             r_nom = str(r.get("nombre", ""))
@@ -362,21 +390,24 @@ class VistaSedes(ctk.CTkFrame):
                 if not match:
                     continue
 
-            self.tabla_redes.insert("", "end", values=(r_id, r_cod, r_nom, r_mac, r_mun, r_res, r_tel, r_est))
+            tag_fila = "fila_par" if idx % 2 == 0 else "fila_impar"
+            self.tabla_redes.insert("", "end", values=(r_id, r_cod, r_nom, r_mac, r_mun, r_res, r_tel, r_est), tags=(tag_fila,))
 
     def poblar_tabla_municipios(self):
         for item in self.tabla_mun.get_children():
             self.tabla_mun.delete(item)
         deptos_dict = {d["id"]: d["nombre"] for d in self.jerarquia.get("departamentos", [])}
-        for m in self.jerarquia.get("municipios", []):
+        for idx, m in enumerate(self.jerarquia.get("municipios", [])):
             d_nom = deptos_dict.get(m.get("departamento_id"), "La Paz")
-            self.tabla_mun.insert("", "end", values=(m.get("id"), m.get("nombre"), m.get("codigo") or "-", d_nom, m.get("estado") or "Activo"))
+            tag_fila = "fila_par" if idx % 2 == 0 else "fila_impar"
+            self.tabla_mun.insert("", "end", values=(m.get("id"), m.get("nombre"), m.get("codigo") or "-", d_nom, m.get("estado") or "Activo"), tags=(tag_fila,))
 
     def poblar_tabla_departamentos(self):
         for item in self.tabla_dep.get_children():
             self.tabla_dep.delete(item)
-        for d in self.jerarquia.get("departamentos", []):
-            self.tabla_dep.insert("", "end", values=(d.get("id"), d.get("nombre"), d.get("codigo") or "-", d.get("estado") or "Activo"))
+        for idx, d in enumerate(self.jerarquia.get("departamentos", [])):
+            tag_fila = "fila_par" if idx % 2 == 0 else "fila_impar"
+            self.tabla_dep.insert("", "end", values=(d.get("id"), d.get("nombre"), d.get("codigo") or "-", d.get("estado") or "Activo"), tags=(tag_fila,))
 
     # ========================================================
     # FORMULARIO MODAL: CENTRO DE SALUD

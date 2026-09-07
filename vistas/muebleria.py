@@ -287,7 +287,7 @@ class VistaMuebleria(ctk.CTkFrame):
         self.card_total = self._crear_kpi_card(self.f_kpis, 0, "📦 Total Activos", "0", C_BLUE)
         self.card_ti = self._crear_kpi_card(self.f_kpis, 1, "💻 Computación / TI", "0", C_GREEN)
         self.card_muebles = self._crear_kpi_card(self.f_kpis, 2, "🪑 Mobiliario / Enseres", "0", C_ORANGE)
-        self.card_asignados = self._crear_kpi_card(self.f_kpis, 3, "👤 Con Asignación", "0", C_PURPLE)
+        self.card_asignados = self._crear_kpi_card(self.f_kpis, 3, "👤 Con Asignación", "0", C_BLUE)
 
         # 3. Barra de Búsqueda y Filtros
         f_filtros = ctk.CTkFrame(self, fg_color=C_CARD, corner_radius=12, border_width=1, border_color=C_BORDER)
@@ -433,6 +433,8 @@ class VistaMuebleria(ctk.CTkFrame):
             align = "center" if col_name in ("ID", "Sector", "Red de Salud", "Modelo", "Serie", "C.I. Asignado", "Cód. SISPAM", "BERTIN", "SAPM", "Fecha Asignación") else "w"
             self.tabla.column(col_name, width=w, minwidth=40, anchor=align)
 
+        self.tabla.tag_configure("fila_par", background="#FFFFFF", foreground=C_TEXT)
+        self.tabla.tag_configure("fila_impar", background="#F8FAFC", foreground=C_TEXT)
         self.tabla.grid(row=0, column=0, sticky="nsew")
         scroll_y.grid(row=0, column=1, sticky="ns")
         scroll_x.grid(row=1, column=0, sticky="ew")
@@ -453,6 +455,7 @@ class VistaMuebleria(ctk.CTkFrame):
             font=ctk.CTkFont(weight="bold", size=13), 
             fg_color=C_BLUE, 
             hover_color=C_BLUE_HOVER, 
+            text_color="#FFFFFF",
             corner_radius=8, 
             height=38, 
             command=lambda: self.abrir_formulario_mueble()
@@ -465,8 +468,9 @@ class VistaMuebleria(ctk.CTkFrame):
             f_botones, 
             text="📥 Descargar Excel", 
             font=ctk.CTkFont(weight="bold", size=13), 
-            fg_color="#059669", 
-            hover_color="#047857", 
+            fg_color=C_GREEN, 
+            hover_color=C_GREEN_HOVER, 
+            text_color="#FFFFFF",
             corner_radius=8, 
             height=38, 
             command=self.descargar_excel_muebleria
@@ -478,8 +482,9 @@ class VistaMuebleria(ctk.CTkFrame):
             f_botones, 
             text="📤 Importar Excel", 
             font=ctk.CTkFont(weight="bold", size=13), 
-            fg_color="#0D9488", 
-            hover_color="#0F766E", 
+            fg_color=C_BLUE_LIGHT, 
+            hover_color="#D8E8FC", 
+            text_color=C_BLUE,
             corner_radius=8, 
             height=38, 
             command=self.importar_excel_muebleria
@@ -492,8 +497,9 @@ class VistaMuebleria(ctk.CTkFrame):
             f_botones, 
             text="✎ Modificar", 
             font=ctk.CTkFont(weight="bold", size=13), 
-            fg_color=C_PURPLE, 
-            hover_color=C_PURPLE_HOVER, 
+            fg_color=C_SECONDARY_BTN, 
+            hover_color=C_SECONDARY_BTN_HOVER, 
+            text_color=C_TEXT,
             corner_radius=8, 
             height=38, 
             command=self.modificar_mueble
@@ -508,6 +514,7 @@ class VistaMuebleria(ctk.CTkFrame):
             font=ctk.CTkFont(weight="bold", size=13), 
             fg_color=C_RED, 
             hover_color=C_RED_HOVER, 
+            text_color="#FFFFFF",
             corner_radius=8, 
             height=38, 
             command=self.eliminar_mueble
@@ -660,7 +667,8 @@ class VistaMuebleria(ctk.CTkFrame):
         for item in self.tabla.get_children():
             self.tabla.delete(item)
 
-        for m in filtrados:
+        for idx, m in enumerate(filtrados):
+            tag_fila = "fila_par" if idx % 2 == 0 else "fila_impar"
             self.tabla.insert(
                 "", 
                 "end", 
@@ -681,7 +689,8 @@ class VistaMuebleria(ctk.CTkFrame):
                     m.get("sapm") or "",
                     m.get("ubicacion") or "",
                     m.get("fecha_asignacion") or ""
-                )
+                ),
+                tags=(tag_fila,)
             )
 
     def _obtener_lista_tipos(self, query=""):

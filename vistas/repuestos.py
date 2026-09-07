@@ -30,23 +30,23 @@ class VistaRepuestos(ctk.CTkFrame):
         f_tab_bar_outer = ctk.CTkFrame(self, fg_color="transparent")
         f_tab_bar_outer.pack(padx=30, pady=(10, 0), fill="x")
 
-        self.f_tab_bar = ctk.CTkFrame(f_tab_bar_outer, fg_color=C_CARD, corner_radius=12, border_width=1, border_color=C_BORDER)
+        self.f_tab_bar = ctk.CTkFrame(f_tab_bar_outer, fg_color="#E5E5EA", corner_radius=10, border_width=0)
         self.f_tab_bar.pack(side="left")
 
         self.btn_tab_stock = ctk.CTkButton(self.f_tab_bar, text="📦 Repuestos en Stock", font=ctk.CTkFont(weight="bold", size=13),
-                                          corner_radius=8, height=36, command=lambda: self.cambiar_tab("stock"))
-        self.btn_tab_stock.pack(side="left", padx=4, pady=4)
+                                          corner_radius=8, height=34, command=lambda: self.cambiar_tab("stock"))
+        self.btn_tab_stock.pack(side="left", padx=3, pady=3)
 
         self.btn_tab_req = ctk.CTkButton(self.f_tab_bar, text="📋 Repuestos Requeridos (Necesarios)", font=ctk.CTkFont(weight="bold", size=13),
-                                        corner_radius=8, height=36, command=lambda: self.cambiar_tab("req"))
-        self.btn_tab_req.pack(side="left", padx=4, pady=4)
+                                        corner_radius=8, height=34, command=lambda: self.cambiar_tab("req"))
+        self.btn_tab_req.pack(side="left", padx=3, pady=3)
 
         self.btn_tab_hist = ctk.CTkButton(self.f_tab_bar, text="📜 Historial de Repuestos Usados", font=ctk.CTkFont(weight="bold", size=13),
-                                         corner_radius=8, height=36, command=lambda: self.cambiar_tab("hist"))
-        self.btn_tab_hist.pack(side="left", padx=4, pady=4)
+                                         corner_radius=8, height=34, command=lambda: self.cambiar_tab("hist"))
+        self.btn_tab_hist.pack(side="left", padx=3, pady=3)
 
         # Contenedor Principal de Contenido
-        self.f_contenedor_tabs = ctk.CTkFrame(self, fg_color=C_CARD, corner_radius=16, border_width=1, border_color=C_BORDER)
+        self.f_contenedor_tabs = ctk.CTkFrame(self, fg_color=C_CARD, corner_radius=12, border_width=1, border_color=C_BORDER)
         self.f_contenedor_tabs.pack(padx=30, pady=10, fill="both", expand=True)
 
         self.tab_stock = ctk.CTkFrame(self.f_contenedor_tabs, fg_color="transparent")
@@ -66,18 +66,23 @@ class VistaRepuestos(ctk.CTkFrame):
         self.busqueda_stock_var = ctk.StringVar()
         self.busqueda_stock_var.trace_add("write", self._on_busqueda_cambiada)
         ctk.CTkLabel(f_filtros_stock, text="🔍 Buscar:", font=ctk.CTkFont(weight="bold"), text_color=C_TEXT).pack(side="left", padx=5)
-        e_buscar_stock = ctk.CTkEntry(f_filtros_stock, textvariable=self.busqueda_stock_var, placeholder_text="Buscar por Repuesto, Red, Centro, Marca, Modelo...", width=260, fg_color=C_CARD, border_color=C_BORDER, corner_radius=10)
+        e_buscar_stock = ctk.CTkEntry(f_filtros_stock, textvariable=self.busqueda_stock_var, placeholder_text="Buscar Repuesto, Red, Centro, Marca, P/N...", width=260, fg_color=C_CARD, border_color=C_BORDER, corner_radius=8)
         e_buscar_stock.pack(side="left", padx=5)
-        
+
         ctk.CTkLabel(f_filtros_stock, text="Ordenar por:", font=ctk.CTkFont(weight="bold", size=12), text_color=C_TEXT).pack(side="left", padx=(15, 5))
-        self.combo_ordenar_stock = ctk.CTkComboBox(f_filtros_stock, values=["Repuesto (A-Z)", "Repuesto (Z-A)", "Centro de Salud", "Red de Salud", "Cantidad (Mayor)", "Cantidad (Menor)", "Costo (Mayor)"], command=lambda e: self.refrescar_datos(), width=170, fg_color=C_CARD, border_color=C_BORDER)
+        self.combo_ordenar_stock = ctk.CTkComboBox(f_filtros_stock, values=["Repuesto (A-Z)", "Repuesto (Z-A)", "Centro de Salud", "Red de Salud", "Stock (Mayor)", "Stock (Menor)", "Costo (Mayor)"], command=lambda e: self.refrescar_datos(), width=180, fg_color=C_CARD, border_color=C_BORDER, corner_radius=8)
         self.combo_ordenar_stock.pack(side="left", padx=5)
         self.combo_ordenar_stock.set("Repuesto (A-Z)")
         
-        cols_stock = ("Centro de Salud", "Área", "Repuesto", "Marca", "Modelo / P/N", "Cantidad")
+        self.lbl_kpi_stock = ctk.CTkLabel(f_filtros_stock, text="Total Ítems: 0 | Valor Total: 0.00 Bs.", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_BLUE)
+        self.lbl_kpi_stock.pack(side="right", padx=10)
+        
+        cols_stock = ("Centro de Salud", "Área", "Repuesto", "Marca", "Modelo / P/N", "Stock Disponible", "Costo Unit. (Bs)")
         f_tree_stock = ctk.CTkFrame(marco_stock, fg_color="transparent")
         f_tree_stock.pack(pady=5, padx=5, fill="both", expand=True)
         self.tabla_stock = ttk.Treeview(f_tree_stock, columns=cols_stock, show="headings")
+        self.tabla_stock.tag_configure("fila_par", background="#FFFFFF", foreground=C_TEXT)
+        self.tabla_stock.tag_configure("fila_impar", background="#F8FAFC", foreground=C_TEXT)
         scrollbar_stock = ttk.Scrollbar(f_tree_stock, orient="vertical", command=self.tabla_stock.yview, style="Vertical.TScrollbar")
         self.tabla_stock.configure(yscrollcommand=scrollbar_stock.set)
         for c in cols_stock:
@@ -88,12 +93,12 @@ class VistaRepuestos(ctk.CTkFrame):
         
         f_bot_stock = ctk.CTkFrame(self.tab_stock, fg_color="transparent")
         f_bot_stock.pack(pady=(5, 15), padx=10, fill="x")
-        ctk.CTkButton(f_bot_stock, text="✚ Añadir a Stock", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_BLUE, hover_color=C_BLUE_HOVER, corner_radius=10, height=40, command=lambda: self.abrir_formulario_repuesto(estado_inicial="En Stock")).pack(side="left", expand=True, padx=6)
-        ctk.CTkButton(f_bot_stock, text="📥 Descargar Inventario (.xlsx)", font=ctk.CTkFont(weight="bold", size=13), fg_color="#059669", hover_color="#047857", corner_radius=10, height=40, command=lambda: self.descargar_excel_repuestos(tipo="Stock")).pack(side="left", expand=True, padx=6)
-        ctk.CTkButton(f_bot_stock, text="✎ Modificar", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_PURPLE, hover_color=C_PURPLE_HOVER, corner_radius=10, height=40, command=lambda: self.modificar_repuesto(tabla_origen="stock")).pack(side="left", expand=True, padx=6)
-        self.btn_eliminar_stock = ctk.CTkButton(f_bot_stock, text="🗑 Eliminar", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_RED, hover_color=C_RED_HOVER, corner_radius=10, height=40, command=lambda: self.eliminar_repuesto(tabla_origen="stock"))
+        ctk.CTkButton(f_bot_stock, text="✚ Añadir a Stock", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_BLUE, hover_color=C_BLUE_HOVER, text_color="#FFFFFF", corner_radius=8, height=38, command=lambda: self.abrir_formulario_repuesto(estado_inicial="En Stock")).pack(side="left", expand=True, padx=6)
+        ctk.CTkButton(f_bot_stock, text="📥 Descargar Inventario (.xlsx)", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_GREEN, hover_color=C_GREEN_HOVER, text_color="#FFFFFF", corner_radius=8, height=38, command=lambda: self.descargar_excel_repuestos(tipo="Stock")).pack(side="left", expand=True, padx=6)
+        ctk.CTkButton(f_bot_stock, text="✎ Modificar", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_SECONDARY_BTN, hover_color=C_SECONDARY_BTN_HOVER, text_color=C_TEXT, corner_radius=8, height=38, command=lambda: self.modificar_repuesto(tabla_origen="stock")).pack(side="left", expand=True, padx=6)
+        self.btn_eliminar_stock = ctk.CTkButton(f_bot_stock, text="🗑 Eliminar", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_RED, hover_color=C_RED_HOVER, text_color="#FFFFFF", corner_radius=8, height=38, command=lambda: self.eliminar_repuesto(tabla_origen="stock"))
         self.btn_eliminar_stock.pack(side="left", expand=True, padx=6)
-        if not self.app.es_jefe: self.btn_eliminar_stock.configure(state="disabled", fg_color=C_BORDER, text_color=C_SUBTEXT)
+        if not self.app.es_jefe: self.btn_eliminar_stock.configure(state="disabled", fg_color=C_CARD_HOVER, text_color=C_SUBTEXT)
 
         # =========================================================================
         # --- TAB 2: REPUESTOS REQUERIDOS (NECESARIOS / PENDIENTES) ---
@@ -108,11 +113,11 @@ class VistaRepuestos(ctk.CTkFrame):
         self.busqueda_req_var = ctk.StringVar()
         self.busqueda_req_var.trace_add("write", self._on_busqueda_cambiada)
         ctk.CTkLabel(f_top_req, text="🔍 Buscar:", font=ctk.CTkFont(weight="bold"), text_color=C_TEXT).pack(side="left", padx=5)
-        e_buscar_req = ctk.CTkEntry(f_top_req, textvariable=self.busqueda_req_var, placeholder_text="Buscar Requerimiento, Red, Centro, Marca, P/N...", width=260, fg_color=C_CARD, border_color=C_BORDER, corner_radius=10)
+        e_buscar_req = ctk.CTkEntry(f_top_req, textvariable=self.busqueda_req_var, placeholder_text="Buscar Requerimiento, Red, Centro, Marca, P/N...", width=260, fg_color=C_CARD, border_color=C_BORDER, corner_radius=8)
         e_buscar_req.pack(side="left", padx=5)
 
         ctk.CTkLabel(f_top_req, text="Ordenar por:", font=ctk.CTkFont(weight="bold", size=12), text_color=C_TEXT).pack(side="left", padx=(15, 5))
-        self.combo_ordenar_req = ctk.CTkComboBox(f_top_req, values=["Repuesto (A-Z)", "Repuesto (Z-A)", "Centro de Salud", "Red de Salud", "Cantidad (Mayor)", "Costo Estimado (Mayor)"], command=lambda e: self.refrescar_datos(), width=180, fg_color=C_CARD, border_color=C_BORDER)
+        self.combo_ordenar_req = ctk.CTkComboBox(f_top_req, values=["Repuesto (A-Z)", "Repuesto (Z-A)", "Centro de Salud", "Red de Salud", "Cantidad (Mayor)", "Costo Estimado (Mayor)"], command=lambda e: self.refrescar_datos(), width=180, fg_color=C_CARD, border_color=C_BORDER, corner_radius=8)
         self.combo_ordenar_req.pack(side="left", padx=5)
         self.combo_ordenar_req.set("Repuesto (A-Z)")
         
@@ -123,6 +128,8 @@ class VistaRepuestos(ctk.CTkFrame):
         f_tree_req = ctk.CTkFrame(marco_req, fg_color="transparent")
         f_tree_req.pack(pady=5, padx=5, fill="both", expand=True)
         self.tabla_req = ttk.Treeview(f_tree_req, columns=cols_req, show="headings")
+        self.tabla_req.tag_configure("fila_par", background="#FFFFFF", foreground=C_TEXT)
+        self.tabla_req.tag_configure("fila_impar", background="#F8FAFC", foreground=C_TEXT)
         scrollbar_req = ttk.Scrollbar(f_tree_req, orient="vertical", command=self.tabla_req.yview, style="Vertical.TScrollbar")
         self.tabla_req.configure(yscrollcommand=scrollbar_req.set)
         for c in cols_req:
@@ -133,13 +140,13 @@ class VistaRepuestos(ctk.CTkFrame):
         
         f_bot_req = ctk.CTkFrame(self.tab_req, fg_color="transparent")
         f_bot_req.pack(pady=(5, 15), padx=10, fill="x")
-        ctk.CTkButton(f_bot_req, text="✚ Solicitar Repuesto", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_ORANGE, hover_color="#D97706", corner_radius=10, height=40, command=lambda: self.abrir_formulario_repuesto(estado_inicial="Requerido")).pack(side="left", expand=True, padx=6)
-        ctk.CTkButton(f_bot_req, text="📥 Descargar Requerimientos (.xlsx)", font=ctk.CTkFont(weight="bold", size=13), fg_color="#059669", hover_color="#047857", corner_radius=10, height=40, command=lambda: self.descargar_excel_repuestos(tipo="Requerido")).pack(side="left", expand=True, padx=6)
-        ctk.CTkButton(f_bot_req, text="✅ Pasar a Stock", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_GREEN, hover_color=C_GREEN_HOVER, corner_radius=10, height=40, command=self.pasar_a_stock).pack(side="left", expand=True, padx=6)
-        ctk.CTkButton(f_bot_req, text="✎ Modificar", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_PURPLE, hover_color=C_PURPLE_HOVER, corner_radius=10, height=40, command=lambda: self.modificar_repuesto(tabla_origen="req")).pack(side="left", expand=True, padx=6)
-        self.btn_eliminar_req = ctk.CTkButton(f_bot_req, text="🗑 Eliminar", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_RED, hover_color=C_RED_HOVER, corner_radius=10, height=40, command=lambda: self.eliminar_repuesto(tabla_origen="req"))
+        ctk.CTkButton(f_bot_req, text="✚ Solicitar Repuesto", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_ORANGE, hover_color=C_ORANGE_LIGHT, text_color="#FFFFFF", corner_radius=8, height=38, command=lambda: self.abrir_formulario_repuesto(estado_inicial="Requerido")).pack(side="left", expand=True, padx=6)
+        ctk.CTkButton(f_bot_req, text="📥 Descargar Requerimientos (.xlsx)", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_GREEN, hover_color=C_GREEN_HOVER, text_color="#FFFFFF", corner_radius=8, height=38, command=lambda: self.descargar_excel_repuestos(tipo="Requerido")).pack(side="left", expand=True, padx=6)
+        ctk.CTkButton(f_bot_req, text="✅ Pasar a Stock", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_BLUE, hover_color=C_BLUE_HOVER, text_color="#FFFFFF", corner_radius=8, height=38, command=self.pasar_a_stock).pack(side="left", expand=True, padx=6)
+        ctk.CTkButton(f_bot_req, text="✎ Modificar", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_SECONDARY_BTN, hover_color=C_SECONDARY_BTN_HOVER, text_color=C_TEXT, corner_radius=8, height=38, command=lambda: self.modificar_repuesto(tabla_origen="req")).pack(side="left", expand=True, padx=6)
+        self.btn_eliminar_req = ctk.CTkButton(f_bot_req, text="🗑 Eliminar", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_RED, hover_color=C_RED_HOVER, text_color="#FFFFFF", corner_radius=8, height=38, command=lambda: self.eliminar_repuesto(tabla_origen="req"))
         self.btn_eliminar_req.pack(side="left", expand=True, padx=6)
-        if not self.app.es_jefe: self.btn_eliminar_req.configure(state="disabled", fg_color=C_BORDER, text_color=C_SUBTEXT)
+        if not self.app.es_jefe: self.btn_eliminar_req.configure(state="disabled", fg_color=C_CARD_HOVER, text_color=C_SUBTEXT)
         
         # =========================================================================
         # --- TAB 3: HISTORIAL DE REPUESTOS USADOS ---
@@ -182,19 +189,19 @@ class VistaRepuestos(ctk.CTkFrame):
         self.tab_req.pack_forget()
         self.tab_hist.pack_forget()
 
-        # Inactivos: fondo transparente, texto negro/oscuro legible, borde suave
+        # Inactivos: fondo transparente, texto oscuro legible
         for btn in (self.btn_tab_stock, self.btn_tab_req, self.btn_tab_hist):
-            btn.configure(fg_color="transparent", text_color=C_TEXT, hover_color="#E2E8F0")
+            btn.configure(fg_color="transparent", text_color=C_TEXT, hover_color="#D1D1D6")
 
-        # Activo: fondo azul vibrante, texto blanco
+        # Activo: cápsula blanca Apple con texto oscuro nítido
         if tab_name == "stock":
-            self.btn_tab_stock.configure(fg_color=C_BLUE, text_color="#FFFFFF", hover_color=C_BLUE_HOVER)
+            self.btn_tab_stock.configure(fg_color="#FFFFFF", text_color="#1C1C1E", hover_color="#FFFFFF")
             self.tab_stock.pack(fill="both", expand=True)
         elif tab_name == "req":
-            self.btn_tab_req.configure(fg_color=C_BLUE, text_color="#FFFFFF", hover_color=C_BLUE_HOVER)
+            self.btn_tab_req.configure(fg_color="#FFFFFF", text_color="#1C1C1E", hover_color="#FFFFFF")
             self.tab_req.pack(fill="both", expand=True)
         elif tab_name == "hist":
-            self.btn_tab_hist.configure(fg_color=C_BLUE, text_color="#FFFFFF", hover_color=C_BLUE_HOVER)
+            self.btn_tab_hist.configure(fg_color="#FFFFFF", text_color="#1C1C1E", hover_color="#FFFFFF")
             self.tab_hist.pack(fill="both", expand=True)
 
     def refrescar_datos(self):

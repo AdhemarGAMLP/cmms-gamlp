@@ -37,16 +37,15 @@ class VistaHistorial(ctk.CTkFrame):
         ctk.CTkLabel(f_top, text="Historial General de Mantenimientos", font=ctk.CTkFont(size=28, weight="bold"), text_color=C_TEXT).pack(side="left")
 
         # Pestañas de Historial
-        self.tabview_hist = ctk.CTkTabview(self, fg_color=C_CARD, corner_radius=16, text_color=C_TEXT,
+        self.tabview_hist = ctk.CTkTabview(self, fg_color=C_CARD, corner_radius=CORNER_CARD, text_color=C_TEXT,
                                            border_width=1, border_color=C_BORDER,
-                                           segmented_button_fg_color=C_BG,
-                                           segmented_button_selected_color=C_BLUE,
-                                           segmented_button_selected_hover_color=C_BLUE_HOVER,
-                                           segmented_button_unselected_color=C_BG,
+                                           segmented_button_fg_color="#E5E5EA",
+                                           segmented_button_selected_color="#FFFFFF",
+                                           segmented_button_selected_hover_color="#E5E5EA",
+                                           segmented_button_unselected_color="#E5E5EA",
                                            segmented_button_unselected_hover_color=C_CARD_HOVER)
         self.tabview_hist.pack(padx=30, pady=10, fill="both", expand=True)
 
-        
         self.tab_todo = self.tabview_hist.add("📋 Todo el Historial")
         self.tab_mensual = self.tabview_hist.add("📅 Historial Mensual")
         
@@ -60,11 +59,11 @@ class VistaHistorial(ctk.CTkFrame):
         self.busqueda_todo_var = ctk.StringVar()
         self.busqueda_todo_var.trace_add("write", self._on_busqueda_cambiada)
         ctk.CTkLabel(f_filtros_todo, text="🔍 Buscar:", font=ctk.CTkFont(weight="bold"), text_color=C_TEXT).pack(side="left", padx=5)
-        e_buscar_todo = ctk.CTkEntry(f_filtros_todo, textvariable=self.busqueda_todo_var, placeholder_text="Buscar ID, Equipo o Detalle...", width=220, fg_color=C_CARD, border_color=C_BORDER, corner_radius=10)
+        e_buscar_todo = ctk.CTkEntry(f_filtros_todo, textvariable=self.busqueda_todo_var, placeholder_text="Buscar ID, Equipo o Detalle...", width=220, fg_color=C_CARD, border_color=C_BORDER, corner_radius=CORNER_INPUT)
         e_buscar_todo.pack(side="left", padx=5)
         
         ctk.CTkLabel(f_filtros_todo, text="Ordenar por:", font=ctk.CTkFont(weight="bold", size=12), text_color=C_TEXT).pack(side="left", padx=(15, 5))
-        self.combo_ordenar_todo = ctk.CTkComboBox(f_filtros_todo, values=["Fecha (Reciente)", "Fecha (Antiguo)", "Equipo (A-Z)", "Equipo (Z-A)", "Responsable"], command=lambda e: self.refrescar_datos(), width=160, fg_color=C_CARD, border_color=C_BORDER)
+        self.combo_ordenar_todo = ctk.CTkComboBox(f_filtros_todo, values=["Fecha (Reciente)", "Fecha (Antiguo)", "Equipo (A-Z)", "Equipo (Z-A)", "Responsable"], command=lambda e: self.refrescar_datos(), width=160, fg_color=C_CARD, border_color=C_BORDER, corner_radius=CORNER_INPUT)
         self.combo_ordenar_todo.pack(side="left", padx=5)
         self.combo_ordenar_todo.set("Fecha (Reciente)")
         
@@ -76,6 +75,8 @@ class VistaHistorial(ctk.CTkFrame):
         self.tabla_hist_todo = ttk.Treeview(f_tree_todo, columns=cols, show="headings", displaycolumns=("Fecha", "Hora", "ID Equipo", "Nombre Equipo", "Tipo Mantenimiento", "Responsable", "Detalle de Trabajo"))
         scrollbar_todo = ttk.Scrollbar(f_tree_todo, orient="vertical", command=self.tabla_hist_todo.yview, style="Vertical.TScrollbar")
         self.tabla_hist_todo.configure(yscrollcommand=scrollbar_todo.set)
+        self.tabla_hist_todo.tag_configure("fila_par", background="#FFFFFF")
+        self.tabla_hist_todo.tag_configure("fila_impar", background="#F8FAFC")
         
         for c in cols[:-1]:
             self.tabla_hist_todo.heading(c, text=c)
@@ -106,23 +107,23 @@ class VistaHistorial(ctk.CTkFrame):
         # Seleccionar Mes y Año
         ctk.CTkLabel(f_filtros_mes, text="Mes:", font=ctk.CTkFont(weight="bold"), text_color=C_TEXT).pack(side="left", padx=5)
         nombres_meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
-        self.combo_mes = ctk.CTkComboBox(f_filtros_mes, values=nombres_meses, command=lambda e: self.refrescar_datos(), width=120, fg_color=C_CARD, border_color=C_BORDER)
+        self.combo_mes = ctk.CTkComboBox(f_filtros_mes, values=nombres_meses, command=lambda e: self.refrescar_datos(), width=120, fg_color=C_CARD, border_color=C_BORDER, corner_radius=CORNER_INPUT)
         self.combo_mes.pack(side="left", padx=5)
         self.combo_mes.set(nombres_meses[datetime.now().month - 1])
         
         ctk.CTkLabel(f_filtros_mes, text="Año:", font=ctk.CTkFont(weight="bold"), text_color=C_TEXT).pack(side="left", padx=(15, 5))
-        self.combo_anio = ctk.CTkComboBox(f_filtros_mes, values=[str(y) for y in range(2024, 2032)], command=lambda e: self.refrescar_datos(), width=100, fg_color=C_CARD, border_color=C_BORDER)
+        self.combo_anio = ctk.CTkComboBox(f_filtros_mes, values=[str(y) for y in range(2024, 2032)], command=lambda e: self.refrescar_datos(), width=100, fg_color=C_CARD, border_color=C_BORDER, corner_radius=CORNER_INPUT)
         self.combo_anio.pack(side="left", padx=5)
         self.combo_anio.set(str(datetime.now().year))
         
         self.busqueda_mes_var = ctk.StringVar()
         self.busqueda_mes_var.trace_add("write", self._on_busqueda_cambiada)
         ctk.CTkLabel(f_filtros_mes, text="🔍 Buscar:", font=ctk.CTkFont(weight="bold"), text_color=C_TEXT).pack(side="left", padx=(15, 5))
-        e_buscar_mes = ctk.CTkEntry(f_filtros_mes, textvariable=self.busqueda_mes_var, placeholder_text="Buscar en este mes...", width=180, fg_color=C_CARD, border_color=C_BORDER, corner_radius=10)
+        e_buscar_mes = ctk.CTkEntry(f_filtros_mes, textvariable=self.busqueda_mes_var, placeholder_text="Buscar en este mes...", width=180, fg_color=C_CARD, border_color=C_BORDER, corner_radius=CORNER_INPUT)
         e_buscar_mes.pack(side="left", padx=5)
 
         ctk.CTkLabel(f_filtros_mes, text="Ordenar por:", font=ctk.CTkFont(weight="bold", size=12), text_color=C_TEXT).pack(side="left", padx=(15, 5))
-        self.combo_ordenar_mes = ctk.CTkComboBox(f_filtros_mes, values=["Fecha (Reciente)", "Fecha (Antiguo)", "Equipo (A-Z)", "Equipo (Z-A)", "Responsable"], command=lambda e: self.refrescar_datos(), width=140, fg_color=C_CARD, border_color=C_BORDER)
+        self.combo_ordenar_mes = ctk.CTkComboBox(f_filtros_mes, values=["Fecha (Reciente)", "Fecha (Antiguo)", "Equipo (A-Z)", "Equipo (Z-A)", "Responsable"], command=lambda e: self.refrescar_datos(), width=140, fg_color=C_CARD, border_color=C_BORDER, corner_radius=CORNER_INPUT)
         self.combo_ordenar_mes.pack(side="left", padx=5)
         self.combo_ordenar_mes.set("Fecha (Reciente)")
         
@@ -132,8 +133,9 @@ class VistaHistorial(ctk.CTkFrame):
         self.tabla_hist_mes = ttk.Treeview(f_tree_mes, columns=cols, show="headings", displaycolumns=("Fecha", "Hora", "ID Equipo", "Nombre Equipo", "Tipo Mantenimiento", "Responsable", "Detalle de Trabajo"))
         scrollbar_mes = ttk.Scrollbar(f_tree_mes, orient="vertical", command=self.tabla_hist_mes.yview, style="Vertical.TScrollbar")
         self.tabla_hist_mes.configure(yscrollcommand=scrollbar_mes.set)
+        self.tabla_hist_mes.tag_configure("fila_par", background="#FFFFFF")
+        self.tabla_hist_mes.tag_configure("fila_impar", background="#F8FAFC")
         self.tabla_hist_mes.bind("<Double-1>", lambda e: abrir_ficha_desde_hist(e, self.tabla_hist_mes))
-
         
         for c in cols[:-1]:
             self.tabla_hist_mes.heading(c, text=c)
@@ -149,14 +151,17 @@ class VistaHistorial(ctk.CTkFrame):
         f_bot_hist = ctk.CTkFrame(self, fg_color="transparent")
         f_bot_hist.pack(pady=(10, 25), padx=30, fill="x")
         
-        btn_reconstruir = ctk.CTkButton(f_bot_hist, text="📄 Reconstruir Hoja (Excel)", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_BLUE, hover_color=C_BLUE_HOVER, corner_radius=10, height=42, command=lambda: self.procesar_hoja_historial(exportar_pdf=False))
+        btn_reconstruir = ctk.CTkButton(f_bot_hist, text="📄 Reconstruir Hoja (Excel)", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_BLUE, hover_color=C_BLUE_HOVER, corner_radius=CORNER_BTN, height=38, command=lambda: self.procesar_hoja_historial(exportar_pdf=False))
         btn_reconstruir.pack(side="left", expand=True, padx=8)
         
-        btn_exportar = ctk.CTkButton(f_bot_hist, text="⬇ Exportar a PDF", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_PURPLE, hover_color=C_PURPLE_HOVER, corner_radius=10, height=42, command=lambda: self.procesar_hoja_historial(exportar_pdf=True))
+        btn_exportar = ctk.CTkButton(f_bot_hist, text="⬇ Exportar a PDF", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_GREEN, hover_color=C_GREEN_HOVER, corner_radius=CORNER_BTN, height=38, command=lambda: self.procesar_hoja_historial(exportar_pdf=True))
         btn_exportar.pack(side="left", expand=True, padx=8)
         
-        self.btn_eliminar = ctk.CTkButton(f_bot_hist, text="🗑 Eliminar", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_RED, hover_color=C_RED_HOVER, corner_radius=10, height=42, command=self.eliminar_historial)
+        self.btn_eliminar = ctk.CTkButton(f_bot_hist, text="🗑 Eliminar", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_RED, hover_color=C_RED_HOVER, corner_radius=CORNER_BTN, height=38, command=self.eliminar_historial)
         self.btn_eliminar.pack(side="left", expand=True, padx=8)
+        
+        if not self.app.es_jefe:
+            self.btn_eliminar.configure(state="disabled", fg_color=C_BORDER, text_color=C_SUBTEXT)
         
         if not self.app.es_jefe:
             self.btn_eliminar.configure(state="disabled", fg_color=C_BORDER, text_color=C_SUBTEXT)
@@ -225,8 +230,9 @@ class VistaHistorial(ctk.CTkFrame):
         elif crit_todo == "Responsable":
             items_todo.sort(key=lambda x: str(x["responsable"]).lower())
             
-        for inter in items_todo:
-            self.tabla_hist_todo.insert("", "end", values=(inter["fecha"], inter["hora"], inter["id"], inter["equipo"], inter["tipo"], inter["responsable"], inter["detalle"], inter["id_bd"]))
+        for idx, inter in enumerate(items_todo):
+            tag = "fila_par" if idx % 2 == 0 else "fila_impar"
+            self.tabla_hist_todo.insert("", "end", values=(inter["fecha"], inter["hora"], inter["id"], inter["equipo"], inter["tipo"], inter["responsable"], inter["detalle"], inter["id_bd"]), tags=(tag,))
 
         # --- 2. RELLENAR HISTORIAL MENSUAL ---
         mes_nombre = self.combo_mes.get() if hasattr(self, "combo_mes") else "Enero"
@@ -289,8 +295,9 @@ class VistaHistorial(ctk.CTkFrame):
         elif crit_mes == "Responsable":
             items_mes.sort(key=lambda x: str(x["responsable"]).lower())
             
-        for inter in items_mes:
-            self.tabla_hist_mes.insert("", "end", values=(inter["fecha"], inter["hora"], inter["id"], inter["equipo"], inter["tipo"], inter["responsable"], inter["detalle"], inter["id_bd"]))
+        for idx, inter in enumerate(items_mes):
+            tag = "fila_par" if idx % 2 == 0 else "fila_impar"
+            self.tabla_hist_mes.insert("", "end", values=(inter["fecha"], inter["hora"], inter["id"], inter["equipo"], inter["tipo"], inter["responsable"], inter["detalle"], inter["id_bd"]), tags=(tag,))
 
     def obtener_seleccion(self):
         # Devolver selección de la pestaña activa

@@ -33,11 +33,20 @@ class VistaCronograma(ctk.CTkFrame):
                                             command=self.abrir_selector_gestion)
         self.btn_descargar.pack(side="right")
         
-        # Tabview Estilo Moderno
-        self.tabview = ctk.CTkTabview(self, fg_color=C_CARD, border_width=1, border_color=C_BORDER, text_color=C_TEXT, corner_radius=16, 
-                                      segmented_button_selected_color=C_BLUE, segmented_button_selected_hover_color=C_BLUE_HOVER,
-                                      segmented_button_unselected_color=C_BG,
-                                      segmented_button_unselected_hover_color=C_CARD_HOVER)
+        # Tabview Estilo Apple HIG (Segmented Control Cápsula)
+        self.tabview = ctk.CTkTabview(
+            self, 
+            fg_color=C_CARD, 
+            border_width=1, 
+            border_color=C_BORDER, 
+            corner_radius=12,
+            segmented_button_fg_color="#E5E5EA",
+            segmented_button_selected_color="#FFFFFF",
+            segmented_button_selected_hover_color="#FFFFFF",
+            segmented_button_unselected_color="#E5E5EA",
+            segmented_button_unselected_hover_color="#D1D1D6",
+            text_color="#1C1C1E"
+        )
         self.tabview.pack(pady=10, padx=30, fill="both", expand=True)
         
         tab_lista = self.tabview.add("📋 Resumen")
@@ -51,11 +60,11 @@ class VistaCronograma(ctk.CTkFrame):
         self.busqueda_var = ctk.StringVar()
         self.busqueda_var.trace_add("write", self._on_busqueda_cambiada)
         ctk.CTkLabel(f_filtros_crono, text="🔍 Buscar:", font=ctk.CTkFont(weight="bold"), text_color=C_TEXT).pack(side="left", padx=5)
-        e_buscar = ctk.CTkEntry(f_filtros_crono, textvariable=self.busqueda_var, placeholder_text="Buscar ID o Equipo...", width=250, fg_color=C_BG, border_color=C_BORDER, corner_radius=10)
+        e_buscar = ctk.CTkEntry(f_filtros_crono, textvariable=self.busqueda_var, placeholder_text="Buscar ID o Equipo...", width=250, fg_color=C_BG, border_color=C_BORDER, corner_radius=8)
         e_buscar.pack(side="left", padx=5)
 
         ctk.CTkLabel(f_filtros_crono, text="Ordenar por:", font=ctk.CTkFont(weight="bold", size=12), text_color=C_TEXT).pack(side="left", padx=(15, 5))
-        self.combo_ordenar = ctk.CTkComboBox(f_filtros_crono, values=["ID", "Equipo (A-Z)", "Equipo (Z-A)", "Criticidad", "Fecha Próx", "Estado"], command=lambda e: self.refrescar_datos(), width=160, fg_color=C_BG, border_color=C_BORDER)
+        self.combo_ordenar = ctk.CTkComboBox(f_filtros_crono, values=["ID", "Equipo (A-Z)", "Equipo (Z-A)", "Criticidad", "Fecha Próx", "Estado"], command=lambda e: self.refrescar_datos(), width=160, fg_color=C_BG, border_color=C_BORDER, corner_radius=8)
         self.combo_ordenar.pack(side="left", padx=5)
         self.combo_ordenar.set("ID")
         
@@ -70,11 +79,9 @@ class VistaCronograma(ctk.CTkFrame):
         self.t_cro_lista.pack(side="left", fill="both", expand=True)
         scrollbar_crono.pack(side="right", fill="y", padx=(5, 0))
         
-        # Colores semánticos suaves para las filas
-        self.t_cro_lista.tag_configure("Vencido", background="#FEE2E2", foreground="#B91C1C")
-        self.t_cro_lista.tag_configure("Por Vencer", background="#FEF3C7", foreground="#B45309")
-        self.t_cro_lista.tag_configure("Al Día", background="#D1FAE5", foreground="#047857")
-        self.t_cro_lista.tag_configure("Dado de Baja", background="#F1F5F9", foreground="#64748B")
+        # Filas limpias con contraste accesible (Apple HIG zebra)
+        self.t_cro_lista.tag_configure("fila_par", background="#FFFFFF", foreground=C_TEXT)
+        self.t_cro_lista.tag_configure("fila_impar", background="#F8FAFC", foreground=C_TEXT)
 
 
         def abrir_ficha_desde_crono(event):
@@ -301,9 +308,20 @@ class VistaCronograma(ctk.CTkFrame):
         else: # ID
             items.sort(key=lambda x: str(x["id"]).lower())
             
-        for it in items:
+        for idx, it in enumerate(items):
             f_prox_str = it['f_prox'].strftime("%Y-%m-%d") if it['estado'] != "Dado de Baja" else "N/A"
-            self.t_cro_lista.insert("", "end", values=(it['id'], it['eq_label'], it['crit'], f_prox_str, it['estado']), tags=(it['estado'],))
+            est_raw = it['estado']
+            if est_raw == "Vencido":
+                est_display = "🔴 Vencido"
+            elif est_raw == "Por Vencer":
+                est_display = "🟡 Por Vencer"
+            elif est_raw == "Al Día":
+                est_display = "🟢 Al Día"
+            else:
+                est_display = "⚪ Dado de Baja"
+                
+            tag_fila = "fila_par" if idx % 2 == 0 else "fila_impar"
+            self.t_cro_lista.insert("", "end", values=(it['id'], it['eq_label'], it['crit'], f_prox_str, est_display), tags=(tag_fila,))
 
     def dibujar_mes(self, y, m):
         nombres = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
@@ -321,11 +339,11 @@ class VistaCronograma(ctk.CTkFrame):
                     evs_sede = self.obtener_eventos_sede(f_iter)
                     if evs_sede:
                         est = [e['estado'] for e in evs_sede]
-                        if "Vencido" in est: bg, text_c = C_RED, "white"
-                        elif "Pendiente Este Mes" in est: bg, text_c = C_YELLOW, "black"
-                        elif "Realizado a Tiempo" in est: bg, text_c = C_GREEN, "white"
-                        elif "Realizado Fuera de Fecha" in est: bg, text_c = C_PURPLE, "white"
-                        elif "Futuro" in est: bg, text_c = C_BLUE, "white"
+                        if "Vencido" in est: bg, text_c = C_RED, "#FFFFFF"
+                        elif "Pendiente Este Mes" in est: bg, text_c = C_YELLOW, "#1C1C1E"
+                        elif "Realizado a Tiempo" in est: bg, text_c = C_GREEN, "#FFFFFF"
+                        elif "Realizado Fuera de Fecha" in est: bg, text_c = C_ORANGE, "#FFFFFF"
+                        elif "Futuro" in est: bg, text_c = C_BLUE, "#FFFFFF"
                         
                     btn.configure(text=str(dia), fg_color=bg, text_color=text_c, state="normal", command=lambda fdt=f_iter: self.click_dia(fdt))
                 else:
@@ -350,11 +368,11 @@ class VistaCronograma(ctk.CTkFrame):
                         evs_sede = self.obtener_eventos_sede(f_iter)
                         if evs_sede:
                             est = [e['estado'] for e in evs_sede]
-                            if "Vencido" in est: bg, text_c = C_RED, "white"
-                            elif "Pendiente Este Mes" in est: bg, text_c = C_YELLOW, "black"
-                            elif "Realizado a Tiempo" in est: bg, text_c = C_GREEN, "white"
-                            elif "Realizado Fuera de Fecha" in est: bg, text_c = C_PURPLE, "white"
-                            elif "Futuro" in est: bg, text_c = C_BLUE, "white"
+                            if "Vencido" in est: bg, text_c = C_RED, "#FFFFFF"
+                            elif "Pendiente Este Mes" in est: bg, text_c = C_YELLOW, "#1C1C1E"
+                            elif "Realizado a Tiempo" in est: bg, text_c = C_GREEN, "#FFFFFF"
+                            elif "Realizado Fuera de Fecha" in est: bg, text_c = C_ORANGE, "#FFFFFF"
+                            elif "Futuro" in est: bg, text_c = C_BLUE, "#FFFFFF"
                             
                         btn.configure(text=str(dia), bg=bg, fg=text_c, cursor="hand2")
                         btn.bind("<Button-1>", lambda event, fdt=f_iter: self.click_dia_anio(fdt))
@@ -372,7 +390,7 @@ class VistaCronograma(ctk.CTkFrame):
                 if ev['estado'] == "Vencido": sim = "🔴"
                 elif ev['estado'] == "Pendiente Este Mes": sim = "🟡"
                 elif ev['estado'] == "Realizado a Tiempo": sim = "🟢"
-                elif ev['estado'] == "Realizado Fuera de Fecha": sim = "🟣"
+                elif ev['estado'] == "Realizado Fuera de Fecha": sim = "🟠"
                 else: sim = "🔵"
                 self.txt_det.insert("end", f"{sim} ID: {ev['id']} ({ev['estado']})\n{ev['eq']}\n\n")
         else:
