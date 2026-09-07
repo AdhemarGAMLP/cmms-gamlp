@@ -287,11 +287,13 @@ class VentanaLogin(ctk.CTk):
         marco = ctk.CTkFrame(self, fg_color=C_CARD, corner_radius=CORNER_CARD, border_width=1, border_color=C_BORDER)
         marco.pack(padx=25, pady=5, fill="both", expand=True)
 
-        from config import CONFIG, PERFILES_BD
-        perfil_actual = CONFIG.get("perfil_activo", "🟢 Nueva Base (Relevamiento 2026)")
+        from config import CONFIG, PERFILES_DB
+        perfil_key = CONFIG.get("perfil_activo", "relevamiento_2026")
+        perfil_info = PERFILES_DB.get(perfil_key)
+        perfil_nombre = perfil_info["nombre"] if perfil_info else (CONFIG.get("perfil_nombre") or "🟢 Nueva Base (Relevamiento 2026)")
         self.lbl_perfil_bd = ctk.CTkLabel(
             marco, 
-            text=f"Base Conectada: {perfil_actual}", 
+            text=f"Base Conectada: {perfil_nombre}", 
             font=ctk.CTkFont(size=11, weight="bold"), 
             text_color=C_BLUE,
             fg_color=C_BG,
@@ -331,7 +333,7 @@ class VentanaLogin(ctk.CTk):
             messagebox.showerror("Acceso Denegado", "Usuario o contraseña incorrectos.\n\n(Verifique las credenciales o la conexión al servidor en ⚙️ Cambiar Base de Datos / Servidor)")
 
     def abrir_config_servidor(self):
-        from config import CONFIG, PERFILES_BD, guardar_config
+        from config import CONFIG, PERFILES_DB, guardar_config, cambiar_perfil_activo
         import psycopg2
         
         v_cfg = ctk.CTkToplevel(self)
@@ -349,10 +351,11 @@ class VentanaLogin(ctk.CTk):
 
         # 1. Selector de Perfil Predefinido
         ctk.CTkLabel(f_campos, text="Perfil / Base de Datos:", font=ctk.CTkFont(weight="bold", size=12), text_color=C_TEXT).pack(anchor="w", padx=15, pady=(10, 2))
-        opciones_perfil = list(PERFILES_BD.keys()) + ["⚙️ Personalizada / Servidor Local"]
+        opciones_perfil = [p["nombre"] for p in PERFILES_DB.values()] + ["⚙️ Personalizada / Servidor Local"]
         combo_perfil = ctk.CTkComboBox(f_campos, values=opciones_perfil, width=420, height=36, corner_radius=8, fg_color=C_BG, border_color=C_BORDER)
         combo_perfil.pack(padx=15, pady=(0, 12))
-        perfil_actual = CONFIG.get("perfil_activo", "🟢 Nueva Base (Relevamiento 2026)")
+        perfil_key = CONFIG.get("perfil_activo", "relevamiento_2026")
+        perfil_actual = PERFILES_DB.get(perfil_key, {}).get("nombre", CONFIG.get("perfil_nombre", perfil_key))
         if perfil_actual in opciones_perfil:
             combo_perfil.set(perfil_actual)
         else:
@@ -389,18 +392,19 @@ class VentanaLogin(ctk.CTk):
         e_db_pass.pack(padx=15, pady=(0, 10))
 
         def _al_cambiar_perfil(seleccion):
-            if seleccion in PERFILES_BD:
-                p = PERFILES_BD[seleccion]
-                e_host.delete(0, "end")
-                e_host.insert(0, p["db_host"])
-                e_port.delete(0, "end")
-                e_port.insert(0, p["db_port"])
-                e_name.delete(0, "end")
-                e_name.insert(0, p["db_name"])
-                e_db_user.delete(0, "end")
-                e_db_user.insert(0, p["db_user"])
-                e_db_pass.delete(0, "end")
-                e_db_pass.insert(0, p["db_password"])
+            for k, p in PERFILES_DB.items():
+                if p["nombre"] == seleccion:
+                    e_host.delete(0, "end")
+                    e_host.insert(0, p["db_host"])
+                    e_port.delete(0, "end")
+                    e_port.insert(0, str(p["db_port"]))
+                    e_name.delete(0, "end")
+                    e_name.insert(0, p["db_name"])
+                    e_db_user.delete(0, "end")
+                    e_db_user.insert(0, p["db_user"])
+                    e_db_pass.delete(0, "end")
+                    e_db_pass.insert(0, p["db_password"])
+                    break
 
         combo_perfil.configure(command=_al_cambiar_perfil)
         

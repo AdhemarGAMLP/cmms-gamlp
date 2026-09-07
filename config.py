@@ -1,8 +1,10 @@
 import os
 import json
 
-PERFILES_BD = {
-    "🟢 Nueva Base (Relevamiento 2026)": {
+PERFILES_DB = {
+    "relevamiento_2026": {
+        "nombre": "🟢 Nueva Base (Relevamiento 2026)",
+        "descripcion": "Base de datos limpia en Supabase para el relevamiento 2026.",
         "db_host": "aws-0-us-east-2.pooler.supabase.com",
         "db_port": "5432",
         "db_name": "postgres",
@@ -10,7 +12,9 @@ PERFILES_BD = {
         "db_password": "Ademarz123$",
         "db_sslmode": "require"
     },
-    "🔵 Base Histórica (Producción Anterior)": {
+    "historica": {
+        "nombre": "🔵 Base Histórica (Producción Anterior)",
+        "descripcion": "Base de datos con todo el historial de equipos y mantenimientos anteriores.",
         "db_host": "aws-0-us-west-2.pooler.supabase.com",
         "db_port": "5432",
         "db_name": "postgres",
@@ -19,6 +23,34 @@ PERFILES_BD = {
         "db_sslmode": "require"
     }
 }
+
+PERFILES_BD = PERFILES_DB
+
+def cambiar_perfil_activo(clave_o_nombre):
+    """Cambia el perfil activo de base de datos y guarda la configuración."""
+    cfg = cargar_config()
+    perfil = None
+    clave = "relevamiento_2026"
+    if clave_o_nombre in PERFILES_DB:
+        perfil = PERFILES_DB[clave_o_nombre]
+        clave = clave_o_nombre
+    else:
+        for k, v in PERFILES_DB.items():
+            if v["nombre"] == clave_o_nombre:
+                perfil = v
+                clave = k
+                break
+    if perfil:
+        cfg["perfil_activo"] = clave
+        cfg["perfil_nombre"] = perfil["nombre"]
+        cfg["db_host"] = perfil["db_host"]
+        cfg["db_port"] = perfil["db_port"]
+        cfg["db_name"] = perfil["db_name"]
+        cfg["db_user"] = perfil["db_user"]
+        cfg["db_password"] = perfil["db_password"]
+        cfg["db_sslmode"] = perfil.get("db_sslmode", "require")
+        return guardar_config(cfg)
+    return False
 
 def _obtener_ruta_config():
     return os.path.join(os.path.expanduser("~"), "GAMLP_config.json")
