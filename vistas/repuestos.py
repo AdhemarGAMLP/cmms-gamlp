@@ -83,13 +83,13 @@ class VistaRepuestos(ctk.CTkFrame):
         self.tabla_stock = ttk.Treeview(f_tree_stock, columns=cols_stock, show="headings")
         self.tabla_stock.tag_configure("fila_par", background="#FFFFFF", foreground=C_TEXT)
         self.tabla_stock.tag_configure("fila_impar", background="#F8FAFC", foreground=C_TEXT)
-        scrollbar_stock = ttk.Scrollbar(f_tree_stock, orient="vertical", command=self.tabla_stock.yview, style="Vertical.TScrollbar")
+        scrollbar_stock = ctk.CTkScrollbar(f_tree_stock, orientation="vertical", command=self.tabla_stock.yview, width=12)
         self.tabla_stock.configure(yscrollcommand=scrollbar_stock.set)
         for c in cols_stock:
             self.tabla_stock.heading(c, text=c)
             self.tabla_stock.column(c, anchor="center")
         self.tabla_stock.pack(side="left", fill="both", expand=True)
-        scrollbar_stock.pack(side="right", fill="y", padx=(5, 0))
+        scrollbar_stock.pack(side="right", fill="y", padx=(4, 0))
         
         f_bot_stock = ctk.CTkFrame(self.tab_stock, fg_color="transparent")
         f_bot_stock.pack(pady=(5, 15), padx=10, fill="x")
@@ -130,13 +130,13 @@ class VistaRepuestos(ctk.CTkFrame):
         self.tabla_req = ttk.Treeview(f_tree_req, columns=cols_req, show="headings")
         self.tabla_req.tag_configure("fila_par", background="#FFFFFF", foreground=C_TEXT)
         self.tabla_req.tag_configure("fila_impar", background="#F8FAFC", foreground=C_TEXT)
-        scrollbar_req = ttk.Scrollbar(f_tree_req, orient="vertical", command=self.tabla_req.yview, style="Vertical.TScrollbar")
+        scrollbar_req = ctk.CTkScrollbar(f_tree_req, orientation="vertical", command=self.tabla_req.yview, width=12)
         self.tabla_req.configure(yscrollcommand=scrollbar_req.set)
         for c in cols_req:
             self.tabla_req.heading(c, text=c)
             self.tabla_req.column(c, anchor="center")
         self.tabla_req.pack(side="left", fill="both", expand=True)
-        scrollbar_req.pack(side="right", fill="y", padx=(5, 0))
+        scrollbar_req.pack(side="right", fill="y", padx=(4, 0))
         
         f_bot_req = ctk.CTkFrame(self.tab_req, fg_color="transparent")
         f_bot_req.pack(pady=(5, 15), padx=10, fill="x")
@@ -172,13 +172,13 @@ class VistaRepuestos(ctk.CTkFrame):
         f_tree_hist = ctk.CTkFrame(marco_hist, fg_color="transparent")
         f_tree_hist.pack(pady=10, padx=10, fill="both", expand=True)
         self.tabla_hist_rep = ttk.Treeview(f_tree_hist, columns=cols_hist, show="headings")
-        scrollbar_hist = ttk.Scrollbar(f_tree_hist, orient="vertical", command=self.tabla_hist_rep.yview, style="Vertical.TScrollbar")
+        scrollbar_hist = ctk.CTkScrollbar(f_tree_hist, orientation="vertical", command=self.tabla_hist_rep.yview, width=12)
         self.tabla_hist_rep.configure(yscrollcommand=scrollbar_hist.set)
         for c in cols_hist:
             self.tabla_hist_rep.heading(c, text=c)
             self.tabla_hist_rep.column(c, anchor="center")
         self.tabla_hist_rep.pack(side="left", fill="both", expand=True)
-        scrollbar_hist.pack(side="right", fill="y", padx=(5, 0))
+        scrollbar_hist.pack(side="right", fill="y", padx=(4, 0))
 
         # Mostrar por defecto Tab 1
         self.cambiar_tab("stock")

@@ -73,7 +73,7 @@ class VistaHistorial(ctk.CTkFrame):
         f_tree_todo.pack(pady=10, padx=10, fill="both", expand=True)
         
         self.tabla_hist_todo = ttk.Treeview(f_tree_todo, columns=cols, show="headings", displaycolumns=("Fecha", "Hora", "ID Equipo", "Nombre Equipo", "Tipo Mantenimiento", "Responsable", "Detalle de Trabajo"))
-        scrollbar_todo = ttk.Scrollbar(f_tree_todo, orient="vertical", command=self.tabla_hist_todo.yview, style="Vertical.TScrollbar")
+        scrollbar_todo = ctk.CTkScrollbar(f_tree_todo, orientation="vertical", command=self.tabla_hist_todo.yview, width=12)
         self.tabla_hist_todo.configure(yscrollcommand=scrollbar_todo.set)
         self.tabla_hist_todo.tag_configure("fila_par", background="#FFFFFF")
         self.tabla_hist_todo.tag_configure("fila_impar", background="#F8FAFC")
@@ -95,7 +95,7 @@ class VistaHistorial(ctk.CTkFrame):
 
         self.tabla_hist_todo.bind("<Double-1>", lambda e: abrir_ficha_desde_hist(e, self.tabla_hist_todo))
         self.tabla_hist_todo.pack(side="left", fill="both", expand=True)
-        scrollbar_todo.pack(side="right", fill="y")
+        scrollbar_todo.pack(side="right", fill="y", padx=(4, 0))
         
         # --- PESTAÑA 2: HISTORIAL MENSUAL ---
         marco_mes = ctk.CTkFrame(self.tab_mensual, fg_color="transparent")
@@ -131,7 +131,7 @@ class VistaHistorial(ctk.CTkFrame):
         f_tree_mes.pack(pady=10, padx=10, fill="both", expand=True)
         
         self.tabla_hist_mes = ttk.Treeview(f_tree_mes, columns=cols, show="headings", displaycolumns=("Fecha", "Hora", "ID Equipo", "Nombre Equipo", "Tipo Mantenimiento", "Responsable", "Detalle de Trabajo"))
-        scrollbar_mes = ttk.Scrollbar(f_tree_mes, orient="vertical", command=self.tabla_hist_mes.yview, style="Vertical.TScrollbar")
+        scrollbar_mes = ctk.CTkScrollbar(f_tree_mes, orientation="vertical", command=self.tabla_hist_mes.yview, width=12)
         self.tabla_hist_mes.configure(yscrollcommand=scrollbar_mes.set)
         self.tabla_hist_mes.tag_configure("fila_par", background="#FFFFFF")
         self.tabla_hist_mes.tag_configure("fila_impar", background="#F8FAFC")
@@ -145,7 +145,7 @@ class VistaHistorial(ctk.CTkFrame):
                 self.tabla_hist_mes.column(c, anchor="w", width=300)
                 
         self.tabla_hist_mes.pack(side="left", fill="both", expand=True)
-        scrollbar_mes.pack(side="right", fill="y")
+        scrollbar_mes.pack(side="right", fill="y", padx=(4, 0))
 
         # Botones de Acción
         f_bot_hist = ctk.CTkFrame(self, fg_color="transparent")

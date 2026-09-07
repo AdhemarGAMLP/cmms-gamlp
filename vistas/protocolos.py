@@ -53,13 +53,13 @@ class VistaProtocolos(ctk.CTkFrame):
         self.tabla_prot = ttk.Treeview(f_tree_prot, columns=cols, show="headings")
         self.tabla_prot.tag_configure("fila_par", background="#FFFFFF", foreground=C_TEXT)
         self.tabla_prot.tag_configure("fila_impar", background="#F8FAFC", foreground=C_TEXT)
-        scrollbar_prot = ttk.Scrollbar(f_tree_prot, orient="vertical", command=self.tabla_prot.yview, style="Vertical.TScrollbar")
+        scrollbar_prot = ctk.CTkScrollbar(f_tree_prot, orientation="vertical", command=self.tabla_prot.yview, width=12)
         self.tabla_prot.configure(yscrollcommand=scrollbar_prot.set)
         for c in cols:
             self.tabla_prot.heading(c, text=c)
             self.tabla_prot.column(c, anchor="center")
         self.tabla_prot.pack(side="left", fill="both", expand=True)
-        scrollbar_prot.pack(side="right", fill="y", padx=(5, 0))
+        scrollbar_prot.pack(side="right", fill="y", padx=(4, 0))
 
         f_bot = ctk.CTkFrame(self, fg_color="transparent")
         f_bot.pack(pady=(10, 25), padx=30, fill="x")

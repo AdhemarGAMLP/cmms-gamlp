@@ -73,7 +73,7 @@ class VistaInventario(ctk.CTkFrame):
         f_tree_inv = ctk.CTkFrame(marco_tabla, fg_color="transparent")
         f_tree_inv.pack(pady=12, padx=12, fill="both", expand=True)
         self.tabla_inv = ttk.Treeview(f_tree_inv, columns=cols, show="headings")
-        scrollbar_inv = ttk.Scrollbar(f_tree_inv, orient="vertical", command=self.tabla_inv.yview, style="Vertical.TScrollbar")
+        scrollbar_inv = ctk.CTkScrollbar(f_tree_inv, orientation="vertical", command=self.tabla_inv.yview, width=12)
         self.tabla_inv.configure(yscrollcommand=scrollbar_inv.set)
         self.tabla_inv.tag_configure("fila_par", background="#FFFFFF", foreground=C_TEXT)
         self.tabla_inv.tag_configure("fila_impar", background="#F8FAFC", foreground=C_TEXT)
@@ -91,7 +91,7 @@ class VistaInventario(ctk.CTkFrame):
             self.tabla_inv.heading(c, text=c, command=lambda _c=c: self.ordenar_columna(_c, False))
             self.tabla_inv.column(c, anchor="center", width=widths.get(c, 110))
         self.tabla_inv.pack(side="left", fill="both", expand=True)
-        scrollbar_inv.pack(side="right", fill="y", padx=(5, 0))
+        scrollbar_inv.pack(side="right", fill="y", padx=(4, 0))
         self.tabla_inv.bind("<Double-1>", lambda e: self.app.abrir_hoja_vida_click(e))
 
         f_bot = ctk.CTkFrame(self, fg_color="transparent")

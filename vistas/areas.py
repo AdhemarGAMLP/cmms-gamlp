@@ -21,7 +21,7 @@ class VistaAreas(ctk.CTkFrame):
         f_tree_areas = ctk.CTkFrame(marco, fg_color="transparent")
         f_tree_areas.pack(pady=12, padx=12, fill="both", expand=True)
         self.tabla_areas = ttk.Treeview(f_tree_areas, columns=cols, show="headings")
-        scrollbar_areas = ttk.Scrollbar(f_tree_areas, orient="vertical", command=self.tabla_areas.yview, style="Vertical.TScrollbar")
+        scrollbar_areas = ctk.CTkScrollbar(f_tree_areas, orientation="vertical", command=self.tabla_areas.yview, width=12)
         self.tabla_areas.configure(yscrollcommand=scrollbar_areas.set)
         for c in cols:
             self.tabla_areas.heading(c, text=c)
@@ -29,7 +29,7 @@ class VistaAreas(ctk.CTkFrame):
         self.tabla_areas.pack(side="left", fill="both", expand=True)
         self.tabla_areas.tag_configure("fila_par", background="#FFFFFF", foreground=C_TEXT)
         self.tabla_areas.tag_configure("fila_impar", background="#F8FAFC", foreground=C_TEXT)
-        scrollbar_areas.pack(side="right", fill="y", padx=(5, 0))
+        scrollbar_areas.pack(side="right", fill="y", padx=(4, 0))
         
         f_bot = ctk.CTkFrame(self, fg_color="transparent")
         f_bot.pack(pady=(10, 25), padx=30, fill="x")

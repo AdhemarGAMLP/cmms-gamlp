@@ -119,11 +119,11 @@ class VistaMapa(ctk.CTkFrame):
         self.tree_centros.column("alto_riesgo", width=115, anchor="center")
         self.tree_centros.column("coords", width=130, anchor="center")
 
-        scroll_y = ttk.Scrollbar(self, orient="vertical", command=self.tree_centros.yview)
+        scroll_y = ctk.CTkScrollbar(self, orientation="vertical", command=self.tree_centros.yview, width=12)
         self.tree_centros.configure(yscrollcommand=scroll_y.set)
 
         self.tree_centros.pack(side="left", fill="both", expand=True, padx=(25, 0), pady=(0, 20))
-        scroll_y.pack(side="right", fill="y", padx=(0, 25), pady=(0, 20))
+        scroll_y.pack(side="right", fill="y", padx=(4, 25), pady=(0, 20))
 
     def crear_kpi_card(self, parent, col, titulo, valor_ini, bg_col, text_col):
         f = ctk.CTkFrame(parent, fg_color=bg_col, corner_radius=CORNER_CARD, border_width=1, border_color=C_BORDER)

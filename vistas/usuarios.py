@@ -88,7 +88,7 @@ class VistaUsuarios(ctk.CTkFrame):
         f_tree_users.pack(pady=12, padx=12, fill="both", expand=True)
         
         self.tabla_users = ttk.Treeview(f_tree_users, columns=cols, show="headings", selectmode="browse")
-        scrollbar_users = ttk.Scrollbar(f_tree_users, orient="vertical", command=self.tabla_users.yview, style="Vertical.TScrollbar")
+        scrollbar_users = ctk.CTkScrollbar(f_tree_users, orientation="vertical", command=self.tabla_users.yview, width=12)
         self.tabla_users.configure(yscrollcommand=scrollbar_users.set)
 
         col_w = {

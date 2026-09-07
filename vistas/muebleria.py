@@ -403,8 +403,8 @@ class VistaMuebleria(ctk.CTkFrame):
         f_tree.pack(pady=10, padx=10, fill="both", expand=True)
 
         self.tabla = ttk.Treeview(f_tree, columns=cols, show="headings", selectmode="browse")
-        scroll_y = ttk.Scrollbar(f_tree, orient="vertical", command=self.tabla.yview, style="Vertical.TScrollbar")
-        scroll_x = ttk.Scrollbar(f_tree, orient="horizontal", command=self.tabla.xview)
+        scroll_y = ctk.CTkScrollbar(f_tree, orientation="vertical", command=self.tabla.yview, width=12)
+        scroll_x = ctk.CTkScrollbar(f_tree, orientation="horizontal", command=self.tabla.xview, height=12)
         self.tabla.configure(yscrollcommand=scroll_y.set, xscrollcommand=scroll_x.set)
 
         ancho_columnas = {
@@ -434,8 +434,8 @@ class VistaMuebleria(ctk.CTkFrame):
         self.tabla.tag_configure("fila_par", background="#FFFFFF", foreground=C_TEXT)
         self.tabla.tag_configure("fila_impar", background="#F8FAFC", foreground=C_TEXT)
         self.tabla.grid(row=0, column=0, sticky="nsew")
-        scroll_y.grid(row=0, column=1, sticky="ns")
-        scroll_x.grid(row=1, column=0, sticky="ew")
+        scroll_y.grid(row=0, column=1, sticky="ns", padx=(4, 0))
+        scroll_x.grid(row=1, column=0, sticky="ew", pady=(4, 0))
 
         f_tree.grid_rowconfigure(0, weight=1)
         f_tree.grid_columnconfigure(0, weight=1)

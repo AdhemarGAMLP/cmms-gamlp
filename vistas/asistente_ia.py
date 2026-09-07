@@ -372,11 +372,11 @@ class VistaAsistenteIA(ctk.CTkFrame):
         self.tree_pred.column("estado", width=160, anchor="w")
         self.tree_pred.column("recomendacion", width=260, anchor="w")
 
-        scroll_y = ttk.Scrollbar(self.tab_pred, orient="vertical", command=self.tree_pred.yview)
+        scroll_y = ctk.CTkScrollbar(self.tab_pred, orientation="vertical", command=self.tree_pred.yview, width=12)
         self.tree_pred.configure(yscrollcommand=scroll_y.set)
         
         self.tree_pred.pack(side="left", fill="both", expand=True, padx=(15, 0), pady=(0, 15))
-        scroll_y.pack(side="right", fill="y", padx=(0, 15), pady=(0, 15))
+        scroll_y.pack(side="right", fill="y", padx=(4, 15), pady=(0, 15))
 
     def crear_kpi_card(self, parent, col, titulo, valor_ini, bg_col, text_col):
         f = ctk.CTkFrame(parent, fg_color=bg_col, corner_radius=CORNER_CARD, border_width=1, border_color=C_BORDER)
@@ -524,11 +524,11 @@ class VistaAsistenteIA(ctk.CTkFrame):
         self.tree_pres.column("total", width=135, anchor="e")
         self.tree_pres.column("prioridad", width=140, anchor="center")
 
-        scroll_y_pres = ttk.Scrollbar(self.tab_pres, orient="vertical", command=self.tree_pres.yview)
+        scroll_y_pres = ctk.CTkScrollbar(self.tab_pres, orientation="vertical", command=self.tree_pres.yview, width=12)
         self.tree_pres.configure(yscrollcommand=scroll_y_pres.set)
 
         self.tree_pres.pack(side="left", fill="both", expand=True, padx=(15, 0), pady=(0, 15))
-        scroll_y_pres.pack(side="right", fill="y", padx=(0, 15), pady=(0, 15))
+        scroll_y_pres.pack(side="right", fill="y", padx=(4, 15), pady=(0, 15))
 
     def actualizar_presupuestador(self):
         for i in self.tree_pres.get_children():

@@ -71,13 +71,13 @@ class VistaCronograma(ctk.CTkFrame):
         f_tree_crono = ctk.CTkFrame(tab_lista, fg_color="transparent")
         f_tree_crono.pack(pady=(5, 15), padx=15, fill="both", expand=True)
         self.t_cro_lista = ttk.Treeview(f_tree_crono, columns=("ID", "Equipo", "Criticidad", "Prox", "Estado"), show="headings")
-        scrollbar_crono = ttk.Scrollbar(f_tree_crono, orient="vertical", command=self.t_cro_lista.yview, style="Vertical.TScrollbar")
+        scrollbar_crono = ctk.CTkScrollbar(f_tree_crono, orientation="vertical", command=self.t_cro_lista.yview, width=12)
         self.t_cro_lista.configure(yscrollcommand=scrollbar_crono.set)
         for c in ("ID", "Equipo", "Criticidad", "Prox", "Estado"):
             self.t_cro_lista.heading(c, text=c)
             self.t_cro_lista.column(c, anchor="center")
         self.t_cro_lista.pack(side="left", fill="both", expand=True)
-        scrollbar_crono.pack(side="right", fill="y", padx=(5, 0))
+        scrollbar_crono.pack(side="right", fill="y", padx=(4, 0))
         
         # Filas limpias con contraste accesible (Apple HIG zebra)
         self.t_cro_lista.tag_configure("fila_par", background="#FFFFFF", foreground=C_TEXT)

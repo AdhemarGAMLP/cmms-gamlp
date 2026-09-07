@@ -111,7 +111,7 @@ class VistaSedes(ctk.CTkFrame):
         self.tabla_centros = ttk.Treeview(f_tab_box, columns=cols, show="headings", selectmode="browse")
         self.tabla_centros.tag_configure("fila_par", background="#FFFFFF", foreground=C_TEXT)
         self.tabla_centros.tag_configure("fila_impar", background="#F8FAFC", foreground=C_TEXT)
-        sb = ttk.Scrollbar(f_tab_box, orient="vertical", command=self.tabla_centros.yview, style="Vertical.TScrollbar")
+        sb = ctk.CTkScrollbar(f_tab_box, orientation="vertical", command=self.tabla_centros.yview, width=12)
         self.tabla_centros.configure(yscrollcommand=sb.set)
 
         col_w = {
@@ -205,7 +205,7 @@ class VistaSedes(ctk.CTkFrame):
         self.tabla_redes = ttk.Treeview(f_tab_box, columns=cols, show="headings", selectmode="browse")
         self.tabla_redes.tag_configure("fila_par", background="#FFFFFF", foreground=C_TEXT)
         self.tabla_redes.tag_configure("fila_impar", background="#F8FAFC", foreground=C_TEXT)
-        sb = ttk.Scrollbar(f_tab_box, orient="vertical", command=self.tabla_redes.yview, style="Vertical.TScrollbar")
+        sb = ctk.CTkScrollbar(f_tab_box, orientation="vertical", command=self.tabla_redes.yview, width=12)
         self.tabla_redes.configure(yscrollcommand=sb.set)
 
         col_w = {

@@ -48,13 +48,13 @@ class VistaCatalogo(ctk.CTkFrame):
         self.tabla_cat = ttk.Treeview(f_tree_cat, columns=("Nombre", "Marca", "Modelo", "Área", "Piso"), show="headings")
         self.tabla_cat.tag_configure("fila_par", background="#FFFFFF", foreground=C_TEXT)
         self.tabla_cat.tag_configure("fila_impar", background="#F8FAFC", foreground=C_TEXT)
-        scrollbar_cat = ttk.Scrollbar(f_tree_cat, orient="vertical", command=self.tabla_cat.yview, style="Vertical.TScrollbar")
+        scrollbar_cat = ctk.CTkScrollbar(f_tree_cat, orientation="vertical", command=self.tabla_cat.yview, width=12)
         self.tabla_cat.configure(yscrollcommand=scrollbar_cat.set)
         for c in ("Nombre", "Marca", "Modelo", "Área", "Piso"):
             self.tabla_cat.heading(c, text=c)
             self.tabla_cat.column(c, anchor="center")
         self.tabla_cat.pack(side="left", fill="both", expand=True)
-        scrollbar_cat.pack(side="right", fill="y", padx=(5, 0))
+        scrollbar_cat.pack(side="right", fill="y", padx=(4, 0))
         
         f_bot_cat = ctk.CTkFrame(self, fg_color="transparent")
         f_bot_cat.pack(pady=(10, 25), padx=30, fill="x")

@@ -539,7 +539,7 @@ class VistaAnalisis(ctk.CTkFrame):
 
         cols = ("Red", "Centro de Salud", "Área/Servicio", "Equipo Médico", "Marca", "Modelo", "Cod. AF", "Estado")
         tree = ttk.Treeview(f_tab_box, columns=cols, show="headings", height=8, selectmode="browse")
-        sb = ttk.Scrollbar(f_tab_box, orient="vertical", command=tree.yview, style="Vertical.TScrollbar")
+        sb = ctk.CTkScrollbar(f_tab_box, orientation="vertical", command=tree.yview, width=12)
         tree.configure(yscrollcommand=sb.set)
         tree.tag_configure("fila_par", background="#FFFFFF")
         tree.tag_configure("fila_impar", background="#F8FAFC")
@@ -550,7 +550,7 @@ class VistaAnalisis(ctk.CTkFrame):
             tree.column(c, anchor="center", width=col_w.get(c, 100))
 
         tree.pack(side="left", fill="x", expand=True)
-        sb.pack(side="right", fill="y")
+        sb.pack(side="right", fill="y", padx=(4, 0))
 
         def _poblar_tabla_inline():
             for i in tree.get_children():
@@ -630,7 +630,7 @@ class VistaAnalisis(ctk.CTkFrame):
 
         cols = ("Red", "Centro de Salud", "Área/Servicio", "Equipo Médico", "Marca", "Modelo", "Cod. AF", "Estado")
         tree = ttk.Treeview(f_tabla, columns=cols, show="headings", selectmode="browse")
-        sb = ttk.Scrollbar(f_tabla, orient="vertical", command=tree.yview, style="Vertical.TScrollbar")
+        sb = ctk.CTkScrollbar(f_tabla, orientation="vertical", command=tree.yview, width=12)
         tree.configure(yscrollcommand=sb.set)
         tree.tag_configure("fila_par", background="#FFFFFF")
         tree.tag_configure("fila_impar", background="#F8FAFC")
@@ -641,7 +641,7 @@ class VistaAnalisis(ctk.CTkFrame):
             tree.column(c, anchor="center", width=col_w.get(c, 100))
 
         tree.pack(side="left", fill="both", expand=True)
-        sb.pack(side="right", fill="y")
+        sb.pack(side="right", fill="y", padx=(4, 0))
 
         def _poblar_tabla():
             for i in tree.get_children():
