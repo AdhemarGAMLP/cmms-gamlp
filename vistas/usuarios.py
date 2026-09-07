@@ -12,6 +12,7 @@ from estilos import *
 MODULOS_SISTEMA = [
     ("Inventario", "📦 Inventario de Equipos"),
     ("Catalogo", "🩺 Equipos Médicos (Catálogo)"),
+    ("Muebleria", "🛋️ Mueblería y Computadoras"),
     ("Repuestos", "🔧 Gestión de Repuestos"),
     ("Cronograma", "📅 Cronograma y Calendario"),
     ("Historial", "📋 Mantenimientos e Intervenciones"),
@@ -39,7 +40,7 @@ def obtener_permisos_por_defecto_rol(rol_nombre):
             else:
                 permisos[mod_key] = {"ver": True, "agregar": True, "cambiar": True, "eliminar": False}
         elif rol_clean == "relevamiento":
-            if mod_key in ["Inventario", "Catalogo", "Areas", "Sedes"]:
+            if mod_key in ["Inventario", "Catalogo", "Muebleria", "Areas", "Sedes"]:
                 permisos[mod_key] = {"ver": True, "agregar": True, "cambiar": True, "eliminar": False}
             elif mod_key in ["Cronograma", "Analisis"]:
                 permisos[mod_key] = {"ver": True, "agregar": False, "cambiar": False, "eliminar": False}

@@ -52,6 +52,7 @@ from excel_utils import obtener_ruta_plantilla, escribir_en_celda_segura, export
 # Importar las vistas modulares del subpaquete vistas
 from vistas.inventario import VistaInventario
 from vistas.catalogo import VistaCatalogo
+from vistas.muebleria import VistaMuebleria
 from vistas.repuestos import VistaRepuestos
 from vistas.cronograma import VistaCronograma
 from vistas.historial import VistaHistorial
@@ -800,7 +801,7 @@ class SistemaMantenimiento(ctk.CTk):
                 self._procesar_calendario_y_alertas()
                 return
 
-        self.datos = {"catalogo": [], "repuestos": [], "equipos": [], "protocolos": [], "areas": []}
+        self.datos = {"catalogo": [], "repuestos": [], "equipos": [], "protocolos": [], "areas": [], "muebleria": []}
         conn = obtener_conexion()
         if not conn: 
             cache_datos = cargar_cache_local_datos()
@@ -829,6 +830,14 @@ class SistemaMantenimiento(ctk.CTk):
 
             cur.execute("SELECT * FROM areas ORDER BY piso DESC, nombre ASC")
             self.datos["areas"] = [dict(r) for r in cur.fetchall()]
+
+            try:
+                cur.execute("SELECT * FROM muebleria WHERE estado = 'Activo' ORDER BY id DESC")
+                self.datos["muebleria"] = [dict(r) for r in cur.fetchall()]
+            except Exception as e_mueb:
+                print("[WARN] Error cargando mueblería:", e_mueb)
+                conn.rollback()
+                self.datos["muebleria"] = []
 
             try:
                 cur.execute("SELECT * FROM protocolos ORDER BY fecha DESC, turno ASC")
@@ -930,6 +939,11 @@ class SistemaMantenimiento(ctk.CTk):
         if self.tiene_permiso("Catalogo", "ver"):
             self.btn_nav_cat.pack(pady=1, padx=8, fill="x")
             self.botones_nav.append(self.btn_nav_cat)
+
+        self.btn_nav_mueb = ctk.CTkButton(self.scroll_sidebar, text="🛋️ Mueblería y TI", command=lambda: self.mostrar_vista("Muebleria"), **btn_estilo)
+        if self.tiene_permiso("Muebleria", "ver"):
+            self.btn_nav_mueb.pack(pady=1, padx=8, fill="x")
+            self.botones_nav.append(self.btn_nav_mueb)
         
         self.btn_nav_rep = ctk.CTkButton(self.scroll_sidebar, text="🔧 Repuestos", command=lambda: self.mostrar_vista("Repuestos"), **btn_estilo)
         if self.tiene_permiso("Repuestos", "ver"):
@@ -1024,6 +1038,7 @@ class SistemaMantenimiento(ctk.CTk):
     def crear_vistas_modulares(self):
         self.vistas["Inventario"] = VistaInventario(self.contenedor_principal, self)
         self.vistas["Catalogo"] = VistaCatalogo(self.contenedor_principal, self)
+        self.vistas["Muebleria"] = VistaMuebleria(self.contenedor_principal, self)
         self.vistas["Repuestos"] = VistaRepuestos(self.contenedor_principal, self)
         self.vistas["Cronograma"] = VistaCronograma(self.contenedor_principal, self)
         self.vistas["Historial"] = VistaHistorial(self.contenedor_principal, self)
@@ -1052,6 +1067,7 @@ class SistemaMantenimiento(ctk.CTk):
         mapa_botones = {
             "Inventario": self.btn_nav_inv,
             "Catalogo": self.btn_nav_cat,
+            "Muebleria": getattr(self, "btn_nav_mueb", None),
             "Repuestos": self.btn_nav_rep,
             "Cronograma": self.btn_nav_cro,
             "Historial": self.btn_nav_hist,

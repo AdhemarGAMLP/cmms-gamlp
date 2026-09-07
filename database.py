@@ -286,6 +286,35 @@ def inicializar_bd():
     cur.execute("ALTER TABLE historial_intervenciones ADD COLUMN IF NOT EXISTS hora_entrega VARCHAR(10);")
     cur.execute("ALTER TABLE historial_intervenciones ADD COLUMN IF NOT EXISTS tiempo_reparacion NUMERIC DEFAULT 0;")
 
+    # 9. Mueblería y Computadoras (Equipos de Computación, TI y Enseres)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS muebleria (
+            id SERIAL PRIMARY KEY,
+            sector_actual VARCHAR(100),
+            direccion_administrativa VARCHAR(255),
+            unidad_organizacional VARCHAR(255),
+            fecha_asignacion VARCHAR(50),
+            tecnico_inventareador VARCHAR(200),
+            persona_asignada VARCHAR(200),
+            ci_asignado VARCHAR(50),
+            tipo_activo VARCHAR(150),
+            descripcion TEXT,
+            modelo VARCHAR(150),
+            serie VARCHAR(150),
+            detalle_transaccion VARCHAR(100),
+            codigo_sispam VARCHAR(100),
+            bertin VARCHAR(100),
+            sapm VARCHAR(100),
+            observaciones_de_asignacion TEXT,
+            ubicacion VARCHAR(255),
+            fecha_incorporacion VARCHAR(50),
+            red_salud_id INTEGER REFERENCES redes_salud(id) ON DELETE SET NULL,
+            centro_salud_id INTEGER REFERENCES centros_salud(id) ON DELETE SET NULL,
+            estado VARCHAR(50) DEFAULT 'Activo',
+            fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+    """)
+
     # 10. Índices de optimización en PostgreSQL
     cur.execute("CREATE INDEX IF NOT EXISTS idx_equipos_nombre ON equipos(nombre);")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_equipos_servicio ON equipos(servicio);")
@@ -298,6 +327,13 @@ def inicializar_bd():
     cur.execute("CREATE INDEX IF NOT EXISTS idx_repuestos_tipo_equipo ON repuestos(tipo_equipo);")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_protocolos_fecha ON protocolos(fecha);")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_papelera_tabla ON papelera(tabla_origen, fecha_eliminacion DESC);")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_muebleria_sispam ON muebleria(codigo_sispam);")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_muebleria_bertin ON muebleria(bertin);")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_muebleria_sapm ON muebleria(sapm);")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_muebleria_unidad ON muebleria(unidad_organizacional);")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_muebleria_tipo ON muebleria(tipo_activo);")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_muebleria_red ON muebleria(red_salud_id);")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_muebleria_centro ON muebleria(centro_salud_id);")
     conn.commit()
 
     
@@ -448,7 +484,7 @@ def inicializar_bd():
 
 
     # 11. Sincronizar secuencias de auto-incremento (SERIAL) para evitar colisiones de ID
-    tablas_serial = ["departamentos", "municipios", "redes_salud", "centros_salud", "areas", "catalogo", "repuestos", "historial_intervenciones", "protocolos", "usuarios", "papelera"]
+    tablas_serial = ["departamentos", "municipios", "redes_salud", "centros_salud", "areas", "catalogo", "repuestos", "historial_intervenciones", "protocolos", "usuarios", "papelera", "muebleria"]
     for ts in tablas_serial:
         try:
             cur.execute(f"SELECT setval(pg_get_serial_sequence('{ts}', 'id'), COALESCE((SELECT MAX(id) FROM \"{ts}\"), 1));")
@@ -839,6 +875,175 @@ def guardar_departamento_db(datos):
             conn.close()
         return False, str(e)
 
+def guardar_mueble_db(datos):
+    """Inserta o actualiza un activo de Mueblería / Computación en la base de datos."""
+    conn = obtener_conexion()
+    if not conn:
+        return False, "Error al conectar con la base de datos"
+    try:
+        cur = conn.cursor()
+        m_id = datos.get("id")
+        sector_actual = str(datos.get("sector_actual") or "SALUD").strip()
+        direccion_administrativa = str(datos.get("direccion_administrativa") or "").strip()
+        unidad_organizacional = str(datos.get("unidad_organizacional") or "").strip()
+        fecha_asignacion = str(datos.get("fecha_asignacion") or "").strip()
+        tecnico_inventareador = str(datos.get("tecnico_inventareador") or "").strip()
+        persona_asignada = str(datos.get("persona_asignada") or "").strip()
+        ci_asignado = str(datos.get("ci_asignado") or "").strip()
+        tipo_activo = str(datos.get("tipo_activo") or "COMPUTADORA").strip()
+        descripcion = str(datos.get("descripcion") or "").strip()
+        modelo = str(datos.get("modelo") or "").strip()
+        serie = str(datos.get("serie") or "").strip()
+        detalle_transaccion = str(datos.get("detalle_transaccion") or "ASIGNACION").strip()
+        codigo_sispam = str(datos.get("codigo_sispam") or "").strip()
+        bertin = str(datos.get("bertin") or "").strip()
+        sapm = str(datos.get("sapm") or "").strip()
+        observaciones_de_asignacion = str(datos.get("observaciones_de_asignacion") or "").strip()
+        ubicacion = str(datos.get("ubicacion") or "").strip()
+        fecha_incorporacion = str(datos.get("fecha_incorporacion") or "").strip()
+        red_salud_id = datos.get("red_salud_id")
+        centro_salud_id = datos.get("centro_salud_id")
+        estado = str(datos.get("estado") or "Activo").strip()
+
+        if m_id:
+            cur.execute("""
+                UPDATE muebleria
+                SET sector_actual = %s, direccion_administrativa = %s, unidad_organizacional = %s,
+                    fecha_asignacion = %s, tecnico_inventareador = %s, persona_asignada = %s,
+                    ci_asignado = %s, tipo_activo = %s, descripcion = %s, modelo = %s,
+                    serie = %s, detalle_transaccion = %s, codigo_sispam = %s, bertin = %s,
+                    sapm = %s, observaciones_de_asignacion = %s, ubicacion = %s,
+                    fecha_incorporacion = %s, red_salud_id = %s, centro_salud_id = %s, estado = %s
+                WHERE id = %s;
+            """, (
+                sector_actual, direccion_administrativa, unidad_organizacional,
+                fecha_asignacion, tecnico_inventareador, persona_asignada,
+                ci_asignado, tipo_activo, descripcion, modelo,
+                serie, detalle_transaccion, codigo_sispam, bertin,
+                sapm, observaciones_de_asignacion, ubicacion,
+                fecha_incorporacion, red_salud_id, centro_salud_id, estado, m_id
+            ))
+            ret_id = m_id
+        else:
+            cur.execute("""
+                INSERT INTO muebleria (
+                    sector_actual, direccion_administrativa, unidad_organizacional,
+                    fecha_asignacion, tecnico_inventareador, persona_asignada,
+                    ci_asignado, tipo_activo, descripcion, modelo,
+                    serie, detalle_transaccion, codigo_sispam, bertin,
+                    sapm, observaciones_de_asignacion, ubicacion,
+                    fecha_incorporacion, red_salud_id, centro_salud_id, estado
+                ) VALUES (
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                ) RETURNING id;
+            """, (
+                sector_actual, direccion_administrativa, unidad_organizacional,
+                fecha_asignacion, tecnico_inventareador, persona_asignada,
+                ci_asignado, tipo_activo, descripcion, modelo,
+                serie, detalle_transaccion, codigo_sispam, bertin,
+                sapm, observaciones_de_asignacion, ubicacion,
+                fecha_incorporacion, red_salud_id, centro_salud_id, estado
+            ))
+            ret_id = cur.fetchone()[0]
+
+        conn.commit()
+        cur.close()
+        conn.close()
+        return True, ret_id
+    except Exception as e:
+        if conn:
+            conn.rollback()
+            conn.close()
+        return False, str(e)
+
+def eliminar_mueble_db(mueble_id, usuario="Sistema", eliminacion_fisica=False):
+    """Elimina o mueve a papelera un activo de mueblería / computación."""
+    conn = obtener_conexion()
+    if not conn:
+        return False, "Error al conectar con la base de datos"
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute("SELECT * FROM muebleria WHERE id = %s;", (mueble_id,))
+        mueble_row = cur.fetchone()
+        if not mueble_row:
+            cur.close()
+            conn.close()
+            return False, "El activo no fue encontrado."
+
+        mueble_dict = dict(mueble_row)
+        mover_a_papelera(cur, "muebleria", mueble_id, mueble_dict, usuario=usuario)
+
+        if eliminacion_fisica:
+            cur.execute("DELETE FROM muebleria WHERE id = %s;", (mueble_id,))
+        else:
+            cur.execute("UPDATE muebleria SET estado = 'Inactivo' WHERE id = %s;", (mueble_id,))
+
+        conn.commit()
+        cur.close()
+        conn.close()
+        return True, "Activo eliminado correctamente"
+    except Exception as e:
+        if conn:
+            conn.rollback()
+            conn.close()
+        return False, str(e)
+
+def importar_muebleria_db(lista_muebles):
+    """Inserta en bloque una lista de activos importados desde Excel."""
+    if not lista_muebles:
+        return 0, "No hay registros para importar."
+    conn = obtener_conexion()
+    if not conn:
+        return 0, "Error de conexión a la base de datos."
+    try:
+        cur = conn.cursor()
+        insertados = 0
+        for m in lista_muebles:
+            cur.execute("""
+                INSERT INTO muebleria (
+                    sector_actual, direccion_administrativa, unidad_organizacional,
+                    fecha_asignacion, tecnico_inventareador, persona_asignada,
+                    ci_asignado, tipo_activo, descripcion, modelo,
+                    serie, detalle_transaccion, codigo_sispam, bertin,
+                    sapm, observaciones_de_asignacion, ubicacion,
+                    fecha_incorporacion, red_salud_id, centro_salud_id, estado
+                ) VALUES (
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                );
+            """, (
+                m.get("sector_actual", "SALUD"),
+                m.get("direccion_administrativa", ""),
+                m.get("unidad_organizacional", ""),
+                m.get("fecha_asignacion", ""),
+                m.get("tecnico_inventareador", ""),
+                m.get("persona_asignada", ""),
+                m.get("ci_asignado", ""),
+                m.get("tipo_activo", "COMPUTADORA"),
+                m.get("descripcion", ""),
+                m.get("modelo", ""),
+                m.get("serie", ""),
+                m.get("detalle_transaccion", "ASIGNACION"),
+                m.get("codigo_sispam", ""),
+                m.get("bertin", ""),
+                m.get("sapm", ""),
+                m.get("observaciones_de_asignacion", ""),
+                m.get("ubicacion", ""),
+                m.get("fecha_incorporacion", ""),
+                m.get("red_salud_id"),
+                m.get("centro_salud_id"),
+                m.get("estado", "Activo")
+            ))
+            insertados += 1
+        conn.commit()
+        cur.close()
+        conn.close()
+        return insertados, f"Se importaron {insertados} registros de muebles y computación exitosamente."
+    except Exception as e:
+        if conn:
+            conn.rollback()
+            conn.close()
+        return 0, str(e)
+
 def mover_a_papelera(cur, tabla_origen, id_original, datos_dict, usuario="desconocido"):
     """
     Guarda una copia del registro como snapshot JSON antes de ser eliminado de la BD.
@@ -880,7 +1085,7 @@ def crear_backup_json(destino_path):
     try:
         import psycopg2.extras
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        tablas = ["areas", "catalogo", "equipos", "historial_intervenciones", "protocolos", "repuestos", "usuarios", "papelera"]
+        tablas = ["areas", "catalogo", "equipos", "historial_intervenciones", "protocolos", "repuestos", "usuarios", "papelera", "muebleria"]
         datos = {}
         for t in tablas:
             cur.execute(f'SELECT * FROM "{t}"')
@@ -937,6 +1142,7 @@ def restaurar_backup_json(filepath):
         # 2. Orden correcto de vaciado: primero tablas dependientes/secundarias
         tablas_orden_borrado = [
             "papelera",
+            "muebleria",
             "historial_intervenciones",
             "protocolos",
             "equipos",
@@ -960,6 +1166,7 @@ def restaurar_backup_json(filepath):
             "equipos",
             "historial_intervenciones",
             "protocolos",
+            "muebleria",
             "papelera",
         ]
 
@@ -1024,7 +1231,7 @@ def restaurar_backup_json(filepath):
             total_filas_restauradas += filas_insertadas_tabla
 
         # 4. Resetear y sincronizar secuencias de auto-incremento
-        tablas_con_serial = ["usuarios", "areas", "catalogo", "repuestos", "historial_intervenciones", "protocolos", "papelera"]
+        tablas_con_serial = ["usuarios", "areas", "catalogo", "repuestos", "historial_intervenciones", "protocolos", "papelera", "muebleria"]
         for t in tablas_con_serial:
             try:
                 cur.execute(f"SELECT setval(pg_get_serial_sequence('{t}', 'id'), COALESCE((SELECT MAX(id) FROM \"{t}\"), 1));")
@@ -1373,7 +1580,8 @@ def obtener_firma_datos_db():
                 (SELECT COALESCE(SUM(cantidad), 0) FROM repuestos)::text || ':' ||
                 (SELECT COUNT(*) FROM catalogo)::text || ':' ||
                 (SELECT COUNT(*) FROM areas)::text || ':' ||
-                (SELECT COUNT(*) FROM protocolos)::text;
+                (SELECT COUNT(*) FROM protocolos)::text || ':' ||
+                (SELECT COUNT(*) FROM muebleria)::text;
         """)
         row = cur.fetchone()
         cur.close()
