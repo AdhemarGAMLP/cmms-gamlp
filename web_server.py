@@ -390,6 +390,36 @@ HTML_INVENTARIO = """
             font-weight: 600;
             display: none;
         }
+        .asset-filters-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+        .asset-pill-btn {
+            background: #FFFFFF;
+            border: 1.5px solid #CBD5E1;
+            color: #334155;
+            padding: 8px 18px;
+            border-radius: 20px;
+            font-size: 13.5px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .asset-pill-btn:hover {
+            border-color: #005691;
+            color: #005691;
+        }
+        .asset-pill-btn.active {
+            background: #005691;
+            border-color: #005691;
+            color: #FFFFFF;
+            box-shadow: 0 2px 8px rgba(0, 86, 145, 0.3);
+        }
         .nav-tabs {
             display: flex;
             justify-content: center;
@@ -465,23 +495,36 @@ HTML_INVENTARIO = """
             </div>
         </div>
 
+        <!-- Píldoras de Filtro Rápido (Ver Todo, Equipos, Muebles) -->
+        <div class="asset-filters-bar">
+            <button type="button" class="asset-pill-btn active" data-tipo="TODO" onclick="filtrarTipoActivo('TODO')">
+                🌐 Ver Todo (<span id="cnt-pills-todo">{{ cnt_todo }}</span>)
+            </button>
+            <button type="button" class="asset-pill-btn" data-tipo="EQUIPO" onclick="filtrarTipoActivo('EQUIPO')">
+                🩺 Solo Equipos Médicos (<span id="cnt-pills-equipos">{{ cnt_equipos }}</span>)
+            </button>
+            <button type="button" class="asset-pill-btn" data-tipo="MUEBLE" onclick="filtrarTipoActivo('MUEBLE')">
+                🛋️ Solo Muebles y TI (<span id="cnt-pills-muebles">{{ cnt_muebles }}</span>)
+            </button>
+        </div>
+
         <!-- Tarjetas de Estadísticas -->
         <div class="stats-grid">
             <div class="stat-card">
                 <div class="stat-num" id="stat-total">{{ total }}</div>
-                <div class="stat-lbl">Total Equipos</div>
+                <div class="stat-lbl" id="lbl-stat-total">Total Activos</div>
             </div>
             <div class="stat-card">
                 <div class="stat-num" style="color: var(--success);" id="stat-op">{{ operativos }}</div>
-                <div class="stat-lbl">Operativos</div>
+                <div class="stat-lbl" id="lbl-stat-op">Operativos / Buen Estado</div>
             </div>
             <div class="stat-card">
                 <div class="stat-num" style="color: var(--warning);" id="stat-gar">{{ garantia }}</div>
-                <div class="stat-lbl">En Garantía</div>
+                <div class="stat-lbl" id="lbl-stat-gar">En Garantía / Regular</div>
             </div>
             <div class="stat-card">
                 <div class="stat-num" style="color: var(--danger);" id="stat-baj">{{ bajas }}</div>
-                <div class="stat-lbl">Bajas</div>
+                <div class="stat-lbl" id="lbl-stat-baj">Bajas / Fuera de Servicio</div>
             </div>
         </div>
 
@@ -493,49 +536,96 @@ HTML_INVENTARIO = """
                     <div class="area-title">
                         <span>🏥 Área: {{ area_nom }}</span>
                     </div>
-                    <span class="area-badge-count count-label">0 equipos</span>
+                    <span class="area-badge-count count-label">0 activos</span>
                 </div>
                 <div class="equipment-list">
-                    {% for eq in equipos %}
-                    {% if (eq['area'] or 'General') == area_nom %}
-                    <a href="/equipo/{{ eq['id'] }}" 
+                    {% for ac in activos %}
+                    {% if (ac['area'] or 'General') == area_nom %}
+                    {% if ac['_tipo'] == 'EQUIPO' %}
+                    <a href="/equipo/{{ ac['id'] }}" 
                        class="equipment-card" 
-                       data-red="{{ eq['red_salud_nombre'] or '' }}"
-                       data-centro="{{ eq['centro_salud_nombre'] or '' }}"
-                       data-area="{{ eq['area'] or '' }}"
-                       data-estado="{{ eq['estado'] or '' }}"
-                       data-garantia="{{ eq['garantia'] or '' }}"
-                       data-texto="{{ eq['nombre'] }} {{ eq['marca'] }} {{ eq['modelo'] }} {{ eq['id'] }} {{ eq['numero_serie'] }} {{ eq['servicio'] }} {{ eq['area'] }} {{ eq['red_salud_nombre'] }} {{ eq['centro_salud_nombre'] }}">
+                       data-tipo="EQUIPO"
+                       data-red="{{ ac['red_salud_nombre'] or '' }}"
+                       data-centro="{{ ac['centro_salud_nombre'] or '' }}"
+                       data-area="{{ ac['area'] or '' }}"
+                       data-estado="{{ ac['estado'] or '' }}"
+                       data-garantia="{{ ac['garantia'] or '' }}"
+                       data-texto="{{ ac['nombre'] }} {{ ac['marca'] }} {{ ac['modelo'] }} {{ ac['id'] }} {{ ac['numero_serie'] }} {{ ac['servicio'] }} {{ ac['area'] }} {{ ac['red_salud_nombre'] }} {{ ac['centro_salud_nombre'] }}">
                         <div class="eq-header">
                             <div style="display: flex; align-items: center; gap: 10px;">
-                                {% if eq['foto'] %}
-                                <img src="{{ eq['foto'] }}" alt="" style="width: 44px; height: 44px; border-radius: 8px; object-fit: cover; border: 1px solid #E2E8F0; flex-shrink: 0;">
+                                {% if ac['foto'] %}
+                                <img src="{{ ac['foto'] }}" alt="" style="width: 44px; height: 44px; border-radius: 8px; object-fit: cover; border: 1px solid #E2E8F0; flex-shrink: 0;">
+                                {% else %}
+                                <span style="font-size: 24px;">🩺</span>
                                 {% endif %}
-                                <div class="eq-title">{{ eq['nombre'] }}</div>
+                                <div class="eq-title">{{ ac['nombre'] }}</div>
                             </div>
-                            <span class="eq-code">{{ eq['id'] }}</span>
+                            <span class="eq-code">{{ ac['id'] }}</span>
                         </div>
-                        <div class="eq-detail">🏷️ <strong>{{ eq['marca'] }}</strong> - {{ eq['modelo'] }} {% if eq['numero_serie'] %}| S/N: {{ eq['numero_serie'] }}{% endif %}</div>
-                        <div class="eq-detail">📍 Servicio: <strong>{{ eq['servicio'] or eq['area'] }}</strong></div>
+                        <div class="eq-detail">🏷️ <strong>{{ ac['marca'] }}</strong> - {{ ac['modelo'] }} {% if ac['numero_serie'] and ac['numero_serie'] != 'S/N' %}| S/N: {{ ac['numero_serie'] }}{% endif %}</div>
+                        <div class="eq-detail">📍 Servicio: <strong>{{ ac['servicio'] or ac['area'] }}</strong></div>
                         <div class="eq-badges">
-                            {% if eq['red_salud_nombre'] %}
-                                <span class="badge badge-red">🌐 {{ eq['red_salud_nombre'] }}</span>
+                            <span class="badge" style="background: #EFF6FF; color: #1D4ED8; font-weight: 700;">🩺 Equipo Médico</span>
+                            {% if ac['red_salud_nombre'] %}
+                                <span class="badge badge-red">🌐 {{ ac['red_salud_nombre'] }}</span>
                             {% endif %}
-                            {% if eq['centro_salud_nombre'] %}
-                                <span class="badge badge-centro">🏥 {{ eq['centro_salud_nombre'] }}</span>
+                            {% if ac['centro_salud_nombre'] %}
+                                <span class="badge badge-centro">🏥 {{ ac['centro_salud_nombre'] }}</span>
                             {% endif %}
-                            {% if eq['garantia'] == 'Con Garantía' %}
+                            {% if ac['garantia'] == 'Con Garantía' %}
                                 <span class="badge badge-garantia">🛡️ Con Garantía</span>
                             {% endif %}
-                            {% if eq['f_prox'] %}
-                                <span class="badge badge-mtto">📅 Próx. Mtto: {{ eq['f_prox'] }}</span>
+                            {% if ac['f_prox'] %}
+                                <span class="badge badge-mtto">📅 Próx. Mtto: {{ ac['f_prox'] }}</span>
                             {% endif %}
-                            {% if eq['estado'] == 'Baja' %}
+                            {% if ac['estado'] == 'Baja' %}
                                 <span class="badge badge-danger">Dado de Baja</span>
                             {% endif %}
                         </div>
                         <div class="btn-view">Ver Ficha Técnica Completa →</div>
                     </a>
+                    {% else %}
+                    <!-- TARJETA DE MUEBLE / COMPUTADORA -->
+                    <a href="/mueble/{{ ac['id_db'] }}" 
+                       class="equipment-card" 
+                       data-tipo="MUEBLE"
+                       data-red="{{ ac['red_salud_nombre'] or '' }}"
+                       data-centro="{{ ac['centro_salud_nombre'] or '' }}"
+                       data-area="{{ ac['area'] or '' }}"
+                       data-estado="{{ ac['estado'] or '' }}"
+                       data-garantia=""
+                       data-texto="{{ ac['nombre'] }} {{ ac['tipo_activo'] }} {{ ac['marca'] }} {{ ac['modelo'] }} {{ ac['codigo_af'] }} {{ ac['numero_serie'] }} {{ ac['servicio'] }} {{ ac['area'] }} {{ ac['red_salud_nombre'] }} {{ ac['centro_salud_nombre'] }}">
+                        <div class="eq-header">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <span style="font-size: 24px;">{{ ac['_icono'] }}</span>
+                                <div class="eq-title">{{ ac['nombre'] }}</div>
+                            </div>
+                            <span class="eq-code" style="background: #FEF3C7; color: #92400E;">{{ ac['codigo_af'] }}</span>
+                        </div>
+                        <div class="eq-detail">🏷️ <strong>{{ ac['marca'] }}</strong> - {{ ac['modelo'] }} {% if ac['numero_serie'] and ac['numero_serie'] != 'S/C' and ac['numero_serie'] != 'S/N' %}| S/N: {{ ac['numero_serie'] }}{% endif %}</div>
+                        <div class="eq-detail">📍 Ubicación: <strong>{{ ac['servicio'] or ac['area'] }}</strong></div>
+                        <div class="eq-badges">
+                            <span class="badge" style="background: #FEF3C7; color: #92400E; font-weight: 700;">{{ ac['_icono'] }} {{ ac['tipo_activo'] or 'Mueble / TI' }}</span>
+                            {% if ac['red_salud_nombre'] %}
+                                <span class="badge badge-red">🌐 {{ ac['red_salud_nombre'] }}</span>
+                            {% endif %}
+                            {% if ac['centro_salud_nombre'] %}
+                                <span class="badge badge-centro">🏥 {{ ac['centro_salud_nombre'] }}</span>
+                            {% endif %}
+                            {% if ac['estado'] == 'Baja' %}
+                                <span class="badge badge-danger">Dado de Baja</span>
+                            {% elif ac['estado'] == 'Regular' %}
+                                <span class="badge badge-mtto">Estado Regular</span>
+                            {% else %}
+                                <span class="badge badge-garantia">Operativo / Bueno</span>
+                            {% endif %}
+                            {% if ac['responsable'] %}
+                                <span class="badge" style="background: #F1F5F9; color: #475569;">👤 {{ ac['responsable'] }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="btn-view" style="color: #D97706;">Ver Ficha de Mueble / TI →</div>
+                    </a>
+                    {% endif %}
                     {% endif %}
                     {% endfor %}
                 </div>
@@ -544,7 +634,7 @@ HTML_INVENTARIO = """
         </div>
 
         <div id="no-results" class="no-results">
-            🔍 No se encontraron equipos con los filtros seleccionados.
+            🔍 No se encontraron activos con los filtros seleccionados.
         </div>
     </div>
 
@@ -555,6 +645,20 @@ HTML_INVENTARIO = """
             text: opt.text,
             redId: opt.getAttribute('data-red-id')
         }));
+
+        let TIPO_ACTIVO_FILTRO = 'TODO';
+
+        function filtrarTipoActivo(tipo) {
+            TIPO_ACTIVO_FILTRO = tipo;
+            document.querySelectorAll('.asset-pill-btn').forEach(btn => {
+                if (btn.getAttribute('data-tipo') === tipo) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+            filtrar();
+        }
 
         function alCambiarRed() {
             const selectRed = document.getElementById('filtro-red');
@@ -596,6 +700,7 @@ HTML_INVENTARIO = """
                 let tarjetasVisiblesEnArea = 0;
 
                 tarjetas.forEach(t => {
+                    const tTipo = t.getAttribute('data-tipo') || 'EQUIPO';
                     const tRed = (t.getAttribute('data-red') || '').toLowerCase();
                     const tCentro = (t.getAttribute('data-centro') || '').toLowerCase();
                     const tArea = (t.getAttribute('data-area') || '').toLowerCase();
@@ -603,18 +708,24 @@ HTML_INVENTARIO = """
                     const tGarantia = t.getAttribute('data-garantia') || '';
                     const tTexto = (t.getAttribute('data-texto') || '').toLowerCase();
 
+                    const matchTipo = (TIPO_ACTIVO_FILTRO === 'TODO') || (tTipo === TIPO_ACTIVO_FILTRO);
                     const matchRed = !redSel || tRed.includes(redSel);
                     const matchCentro = !centroSel || tCentro.includes(centroSel);
                     const matchArea = !areaSel || tArea.includes(areaSel);
                     const matchBusqueda = !busqueda || tTexto.includes(busqueda);
 
-                    if (matchRed && matchCentro && matchArea && matchBusqueda) {
+                    if (matchTipo && matchRed && matchCentro && matchArea && matchBusqueda) {
                         t.style.display = 'block';
                         tarjetasVisiblesEnArea++;
                         totalVisibles++;
-                        if (tEstado !== 'Baja') operativosVisibles++;
-                        if (tGarantia === 'Con Garantía') garantiaVisibles++;
-                        if (tEstado === 'Baja') bajasVisibles++;
+                        const estLow = tEstado.toLowerCase();
+                        if (estLow.includes('baja') || estLow.includes('mal')) {
+                            bajasVisibles++;
+                        } else if (estLow.includes('reg') || estLow.includes('man') || tGarantia === 'Con Garantía') {
+                            garantiaVisibles++;
+                        } else {
+                            operativosVisibles++;
+                        }
                     } else {
                         t.style.display = 'none';
                     }
@@ -622,7 +733,7 @@ HTML_INVENTARIO = """
 
                 const countLabel = section.querySelector('.count-label');
                 if (countLabel) {
-                    countLabel.textContent = `${tarjetasVisiblesEnArea} equipo${tarjetasVisiblesEnArea === 1 ? '' : 's'}`;
+                    countLabel.textContent = `${tarjetasVisiblesEnArea} activo${tarjetasVisiblesEnArea === 1 ? '' : 's'}`;
                 }
 
                 if (tarjetasVisiblesEnArea > 0) {
@@ -656,58 +767,204 @@ HTML_INVENTARIO = """
 </html>
 """
 
-@app_web.route('/')
-@app_web.route('/inventario')
-def vista_inventario_web():
+def obtener_activos_unificados_db(red_filtro=None, centro_filtro=None):
+    """
+    Carga de forma unificada los Equipos Médicos y Muebles/Computadoras de la base oficial (2026).
+    Normaliza campos territoriales (Red, Centro, Área) y atributos comunes para vistas web y censo.
+    """
     from database import calcular_proximos_mantenimientos
+    conn = obtener_conexion()
+    if not conn:
+        return [], [], [], [], [], []
     try:
-        conn = obtener_conexion()
-        if not conn:
-            return "Error al conectar con la base de datos", 500
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        cur.execute("SELECT * FROM equipos ORDER BY nombre ASC")
-        equipos_db = [dict(r) for r in cur.fetchall()]
         
-        # Redes y Centros de Salud oficiales
+        # 1. Catálogo oficial de redes y centros
         cur.execute("SELECT id, nombre, codigo FROM redes_salud ORDER BY id ASC")
         redes_db = [dict(r) for r in cur.fetchall()]
+        redes_dict = {r['id']: r['nombre'] for r in redes_db}
         
-        cur.execute("SELECT id, nombre, red_salud_id FROM centros_salud ORDER BY nombre ASC")
+        cur.execute("""
+            SELECT c.id, c.nombre, c.red_salud_id, r.nombre as red_nombre 
+            FROM centros_salud c
+            LEFT JOIN redes_salud r ON c.red_salud_id = r.id
+            ORDER BY c.nombre ASC
+        """)
         centros_db = [dict(r) for r in cur.fetchall()]
+
+        # 2. Cargar Equipos
+        cur.execute("SELECT * FROM equipos ORDER BY nombre ASC")
+        equipos_raw = [dict(r) for r in cur.fetchall()]
+        
+        # 3. Cargar Muebles y Computación
+        cur.execute("""
+            SELECT m.*, r.nombre as red_nombre_fk, c.nombre as centro_nombre_fk 
+            FROM muebleria m 
+            LEFT JOIN redes_salud r ON m.red_salud_id = r.id 
+            LEFT JOIN centros_salud c ON m.centro_salud_id = c.id
+            WHERE m.estado != 'Inactivo'
+            ORDER BY m.id DESC
+        """)
+        muebles_raw = [dict(r) for r in cur.fetchall()]
         cur.close()
         conn.close()
 
-        total = len(equipos_db)
-        operativos = sum(1 for e in equipos_db if e.get('estado') != 'Baja')
-        garantia = sum(1 for e in equipos_db if e.get('garantia') == 'Con Garantía')
-        bajas = sum(1 for e in equipos_db if e.get('estado') == 'Baja')
-
-        # Obtener lista de áreas presentes en equipos
-        areas_set = set()
-        for e in equipos_db:
-            a = e.get('area')
-            if a and a.strip():
-                areas_set.add(a.strip())
-            else:
-                areas_set.add('General')
-        areas_lista = sorted(list(areas_set))
-
         hoy = date.today()
-        for eq in equipos_db:
-            if not eq.get('area'):
-                eq['area'] = 'General'
+        todos_equipos = []
+        for eq in equipos_raw:
+            a_nom = (eq.get('area') or eq.get('servicio') or 'General').strip()
+            if not a_nom:
+                a_nom = 'General'
+            eq['area'] = a_nom
+            eq['servicio'] = eq.get('servicio') or a_nom
+            eq['_tipo'] = 'EQUIPO'
+            eq['_tipo_label'] = 'Equipo Médico'
+            eq['_icono'] = '🩺'
+            eq['id_db'] = eq['id']
+            eq['codigo_af'] = str(eq['id'])
+            
+            # Próximo mantenimiento
             if eq.get('estado') != 'Baja':
                 proximos = calcular_proximos_mantenimientos(eq, cantidad=1, hoy=hoy)
                 if proximos:
                     eq['f_prox'] = proximos[0].strftime("%d/%m/%Y")
+            todos_equipos.append(eq)
+
+        todos_muebles = []
+        for m in muebles_raw:
+            # Resolver Centro de Salud
+            cen_nom = m.get('centro_nombre_fk') or m.get('unidad_organizacional') or ''
+            if not cen_nom:
+                ub = m.get('ubicacion') or ''
+                for c in centros_db:
+                    if c['nombre'].upper() in ub.upper():
+                        cen_nom = c['nombre']
+                        break
+            if not cen_nom:
+                cen_nom = 'Centro de Salud'
+
+            # Resolver Red de Salud
+            red_nom = m.get('red_nombre_fk') or m.get('direccion_administrativa') or ''
+            if not red_nom:
+                for c in centros_db:
+                    if c['nombre'].upper() == cen_nom.upper():
+                        red_nom = c.get('red_nombre') or redes_dict.get(c['red_salud_id'], '')
+                        break
+            if not red_nom:
+                red_nom = 'Red GAMLP'
+
+            # Resolver Área
+            ub = (m.get('ubicacion') or 'General').strip()
+            area_nom = ub
+            if ' - ' in ub:
+                partes = ub.split(' - ', 1)
+                area_nom = partes[1].strip()
+            if not area_nom:
+                area_nom = 'General'
+
+            # Icono según descripción o tipo
+            desc_lower = (str(m.get('descripcion') or '') + ' ' + str(m.get('tipo_activo') or '')).lower()
+            if any(w in desc_lower for w in ['compu', 'monitor', 'laptop', 'pc', 'teclado', 'cpu', 'servidor', 'impresora']):
+                icono = '💻'
+            elif any(w in desc_lower for w in ['desfib', 'desfrib', 'electro', 'aspirad', 'monitor de signos', 'tensio', 'oxim']):
+                icono = '🩺'
+            else:
+                icono = '🛋️'
+
+            cod_af = m.get('codigo_sispam')
+            if not cod_af or cod_af == 'S/C':
+                cod_af = m.get('bertin') or m.get('sapm') or f"MUE-{m['id']:03d}"
+
+            item_mueble = {
+                'id': f"MUE-{m['id']}",
+                'id_db': m['id'],
+                'codigo_af': cod_af,
+                'nombre': m.get('descripcion') or m.get('tipo_activo') or 'Mueble / Computación',
+                'tipo_activo': m.get('tipo_activo') or 'Mueble / TI',
+                'marca': m.get('marca') or 'S/M',
+                'modelo': m.get('modelo') or 'S/M',
+                'numero_serie': m.get('serie') or 'S/N',
+                'area': area_nom,
+                'servicio': area_nom,
+                'red_salud_nombre': red_nom,
+                'centro_salud_nombre': cen_nom,
+                'estado': m.get('estado_conservacion') or m.get('estado') or 'Bueno',
+                'garantia': '',
+                'responsable': m.get('persona_asignada') or '',
+                'cargo': m.get('cargo_asignado') or '',
+                'ci': m.get('ci_asignado') or '',
+                'tecnico': m.get('tecnico_inventareador') or '',
+                'fecha_asignacion': m.get('fecha_asignacion') or '',
+                'observaciones': m.get('observaciones_de_asignacion') or '',
+                'codigo_sispam': m.get('codigo_sispam') or '',
+                'bertin': m.get('bertin') or '',
+                'sapm': m.get('sapm') or '',
+                'foto': None,
+                '_tipo': 'MUEBLE',
+                '_tipo_label': 'Mueble / TI',
+                '_icono': icono
+            }
+            todos_muebles.append(item_mueble)
+
+        activos_unificados = todos_equipos + todos_muebles
+
+        # Filtrar si se solicitaron filtros territoriales
+        if red_filtro:
+            r_low = red_filtro.lower()
+            activos_unificados = [a for a in activos_unificados if r_low in str(a.get('red_salud_nombre', '')).lower()]
+            todos_equipos = [a for a in todos_equipos if r_low in str(a.get('red_salud_nombre', '')).lower()]
+            todos_muebles = [a for a in todos_muebles if r_low in str(a.get('red_salud_nombre', '')).lower()]
+
+        if centro_filtro:
+            c_low = centro_filtro.lower()
+            activos_unificados = [a for a in activos_unificados if c_low in str(a.get('centro_salud_nombre', '')).lower()]
+            todos_equipos = [a for a in todos_equipos if c_low in str(a.get('centro_salud_nombre', '')).lower()]
+            todos_muebles = [a for a in todos_muebles if c_low in str(a.get('centro_salud_nombre', '')).lower()]
+
+        # Áreas presentes
+        areas_set = set()
+        for a in activos_unificados:
+            ar = a.get('area')
+            if ar and ar.strip():
+                areas_set.add(ar.strip())
+        areas_lista = sorted(list(areas_set))
+        if not areas_lista:
+            areas_lista = ['General']
+
+        return activos_unificados, todos_equipos, todos_muebles, redes_db, centros_db, areas_lista
+    except Exception as e:
+        print(f"[ERROR] obtener_activos_unificados_db: {e}")
+        try: conn.close()
+        except: pass
+        return [], [], [], [], [], []
+
+@app_web.route('/')
+@app_web.route('/inventario')
+def vista_inventario_web():
+    try:
+        activos_db, eqs_db, mus_db, redes_db, centros_db, areas_lista = obtener_activos_unificados_db()
+
+        total = len(activos_db)
+        cnt_todo = len(activos_db)
+        cnt_equipos = len(eqs_db)
+        cnt_muebles = len(mus_db)
+
+        operativos = sum(1 for a in activos_db if 'baja' not in str(a.get('estado','')).lower() and 'mal' not in str(a.get('estado','')).lower())
+        garantia = sum(1 for a in activos_db if a.get('garantia') == 'Con Garantía' or 'reg' in str(a.get('estado','')).lower() or 'man' in str(a.get('estado','')).lower())
+        bajas = sum(1 for a in activos_db if 'baja' in str(a.get('estado','')).lower() or 'mal' in str(a.get('estado','')).lower())
 
         return render_template_string(
             HTML_INVENTARIO, 
-            equipos=equipos_db, 
+            activos=activos_db,
+            equipos=eqs_db,
+            muebles=mus_db,
             redes=redes_db,
             centros=centros_db,
             areas=areas_lista,
             total=total, 
+            cnt_todo=cnt_todo,
+            cnt_equipos=cnt_equipos,
+            cnt_muebles=cnt_muebles,
             operativos=operativos, 
             garantia=garantia, 
             bajas=bajas
@@ -805,6 +1062,31 @@ HTML_ANALISIS = """
             background: var(--primary);
             color: white;
             box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4);
+        }
+
+        .asset-tab {
+            padding: 8px 18px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 700;
+            text-decoration: none;
+            color: #475569;
+            background: #FFFFFF;
+            border: 1.5px solid #CBD5E1;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .asset-tab:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+        .asset-tab.active {
+            background: var(--primary);
+            color: #FFFFFF;
+            border-color: var(--primary);
+            box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
         }
 
         .container {
@@ -1105,6 +1387,19 @@ HTML_ANALISIS = """
     </div>
 
     <div class="container">
+        <!-- Selector Tipo de Activo en Análisis -->
+        <div style="display: flex; gap: 10px; margin-bottom: 18px; flex-wrap: wrap;">
+            <a href="javascript:void(0)" class="asset-tab {% if tipo_sel == 'TODO' %}active{% endif %}" onclick="cambiarTipoActivo('TODO')">
+                🌐 Ver Todo ({{ cnt_todo }})
+            </a>
+            <a href="javascript:void(0)" class="asset-tab {% if tipo_sel == 'EQUIPOS' %}active{% endif %}" onclick="cambiarTipoActivo('EQUIPOS')">
+                🩺 Solo Equipos Médicos ({{ cnt_equipos }})
+            </a>
+            <a href="javascript:void(0)" class="asset-tab {% if tipo_sel == 'MUEBLES' %}active{% endif %}" onclick="cambiarTipoActivo('MUEBLES')">
+                🛋️ Solo Muebles y TI ({{ cnt_muebles }})
+            </a>
+        </div>
+
         <!-- Filtros Territoriales -->
         <div class="filter-card">
             <div class="filter-grid">
@@ -1133,15 +1428,15 @@ HTML_ANALISIS = """
         <div class="stats-summary">
             <div class="stat-box">
                 <div class="val" id="stat-total">{{ total }}</div>
-                <div class="lbl">Total Equipos</div>
+                <div class="lbl">Total Activos</div>
             </div>
             <div class="stat-box">
                 <div class="val" style="color: var(--green);" id="stat-op">{{ operativos }}</div>
-                <div class="lbl">Operativos</div>
+                <div class="lbl">Operativos / Buen Estado</div>
             </div>
             <div class="stat-box">
                 <div class="val" style="color: var(--purple);" id="stat-gar">{{ garantia }}</div>
-                <div class="lbl">En Garantía</div>
+                <div class="lbl">En Garantía / Regular</div>
             </div>
             <div class="stat-box">
                 <div class="val" style="color: var(--red);" id="stat-baj">{{ bajas }}</div>
@@ -1160,7 +1455,7 @@ HTML_ANALISIS = """
             <div class="censo-card" onclick="inspeccionarGrupo('{{ item.nombre | escape }}')">
                 <div class="top-bar"></div>
                 <div class="card-title">{{ item.nombre_display }}</div>
-                <div class="card-count">{{ item.cantidad }} <span style="font-size: 13px; font-weight: 600; color: var(--muted);">equipos</span></div>
+                <div class="card-count">{{ item.cantidad }} <span style="font-size: 13px; font-weight: 600; color: var(--muted);">activos</span></div>
                 <a class="btn-inspect" href="javascript:void(0)">🔍 Ver {{ item.tipo_label }}</a>
             </div>
             {% endfor %}
@@ -1175,19 +1470,19 @@ HTML_ANALISIS = """
                 </div>
             </div>
             <div class="chart-box">
-                <h3>🩺 Tipos de Equipos Médicos más Frecuentes</h3>
+                <h3>📋 Tipos de Activos más Frecuentes</h3>
                 <div style="position: relative; height: 260px;">
                     <canvas id="chart-tipos"></canvas>
                 </div>
             </div>
         </div>
 
-        <!-- Tabla de Inventario de Equipos en la misma página -->
+        <!-- Tabla de Inventario de Activos en la misma página -->
         <div style="background: white; border: 1px solid var(--border); border-radius: 16px; padding: 18px; box-shadow: 0 2px 8px rgba(0,0,0,0.02); margin-bottom: 30px;">
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px;">
                 <div>
-                    <h3 style="font-size: 16px; font-weight: 800; margin: 0; color: var(--text);">📋 Inventario y Listado de Equipos Médicos</h3>
-                    <p style="font-size: 13px; color: var(--muted); margin: 3px 0 0;">{{ total }} equipos encontrados en este filtro territorial</p>
+                    <h3 style="font-size: 16px; font-weight: 800; margin: 0; color: var(--text);">📋 Inventario y Listado de Activos</h3>
+                    <p style="font-size: 13px; color: var(--muted); margin: 3px 0 0;">{{ total }} activos encontrados en este filtro territorial</p>
                 </div>
                 <input type="text" id="inline-buscar" class="select-input" style="max-width: 280px; padding: 8px 12px; font-size: 13px;" placeholder="🔍 Filtrar en esta tabla..." oninput="filtrarTablaInline()">
             </div>
@@ -1195,12 +1490,13 @@ HTML_ANALISIS = """
                 <table class="table-responsive">
                     <thead>
                         <tr>
-                            <th>Cod. AF</th>
-                            <th>Equipo Médico</th>
+                            <th>Tipo</th>
+                            <th>Cod. AF / SISFAM</th>
+                            <th>Descripción / Nombre</th>
                             <th>Marca</th>
                             <th>Modelo</th>
                             <th>Centro de Salud</th>
-                            <th>Área/Servicio</th>
+                            <th>Área / Ubicación</th>
                             <th>Estado</th>
                             <th>Ficha</th>
                         </tr>
@@ -1208,20 +1504,33 @@ HTML_ANALISIS = """
                     <tbody id="inline-tbody">
                         {% for eq in eqs_vista %}
                         <tr>
-                            <td><strong>{{ eq['id'] }}</strong></td>
-                            <td>{{ eq['nombre'] }}</td>
-                            <td>{{ eq['marca'] or '-' }}</td>
-                            <td>{{ eq['modelo'] or '-' }}</td>
-                            <td>{{ eq['centro_salud_nombre'] or '-' }}</td>
-                            <td>{{ eq['area'] or eq['servicio'] or 'General' }}</td>
                             <td>
-                                {% if eq['estado'] == 'Baja' %}
+                                <span style="font-size: 16px;">{{ eq.get('_icono', '🩺') }}</span>
+                                <span style="font-size: 11px; font-weight: 700; color: var(--muted);">{{ eq.get('_tipo_label', 'Activo') }}</span>
+                            </td>
+                            <td><strong>{{ eq.get('codigo_af') or eq['id'] }}</strong></td>
+                            <td>{{ eq['nombre'] }}</td>
+                            <td>{{ eq.get('marca') or '-' }}</td>
+                            <td>{{ eq.get('modelo') or '-' }}</td>
+                            <td>{{ eq.get('centro_salud_nombre') or '-' }}</td>
+                            <td>{{ eq.get('area') or eq.get('servicio') or 'General' }}</td>
+                            <td>
+                                {% set est = (eq.get('estado') or 'Bueno')|lower %}
+                                {% if 'baja' in est or 'mal' in est %}
                                 <span style="background: #FEE2E2; color: #991B1B; padding: 3px 8px; border-radius: 12px; font-weight: 700; font-size: 11px;">Baja</span>
+                                {% elif 'reg' in est or 'man' in est %}
+                                <span style="background: #FEF3C7; color: #92400E; padding: 3px 8px; border-radius: 12px; font-weight: 700; font-size: 11px;">Regular</span>
                                 {% else %}
                                 <span style="background: #ECFDF5; color: #065F46; padding: 3px 8px; border-radius: 12px; font-weight: 700; font-size: 11px;">Operativo</span>
                                 {% endif %}
                             </td>
-                            <td><a href="/equipo/{{ eq['id'] }}" class="btn-view-link" target="_blank">📄 Ver Ficha</a></td>
+                            <td>
+                                {% if eq.get('_tipo') == 'MUEBLE' %}
+                                <a href="/mueble/{{ eq.get('id_db', eq['id']) }}" class="btn-view-link" target="_blank" style="background: #FFFBEB; color: #B45309; border: 1px solid #FDE68A;">🛋️ Ficha Mueble</a>
+                                {% else %}
+                                <a href="/equipo/{{ eq['id'] }}" class="btn-view-link" target="_blank">🩺 Ficha Equipo</a>
+                                {% endif %}
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -1261,8 +1570,14 @@ HTML_ANALISIS = """
     </div>
 
     <script>
-        const todosEquipos = {{ equipos_json | safe }};
-        let equiposModalActual = [];
+        const todosActivos = {{ activos_json | safe }};
+        let activosModalActual = [];
+
+        function cambiarTipoActivo(tipo) {
+            const redSel = document.getElementById('filtro-red').value;
+            const centroSel = document.getElementById('filtro-centro').value;
+            window.location.href = `/analisis?tipo=${encodeURIComponent(tipo)}&red=${encodeURIComponent(redSel)}&centro=${encodeURIComponent(centroSel)}`;
+        }
 
         function filtrarTablaInline() {
             const query = document.getElementById('inline-buscar').value.toLowerCase().trim();
@@ -1276,6 +1591,7 @@ HTML_ANALISIS = """
         function alCambiarRedWeb() {
             const redSel = document.getElementById('filtro-red').value;
             const centroSelect = document.getElementById('filtro-centro');
+            const tipoActual = '{{ tipo_sel }}';
             
             const redOption = document.getElementById('filtro-red').selectedOptions[0];
             const redId = redOption ? redOption.getAttribute('data-id') : '';
@@ -1296,13 +1612,14 @@ HTML_ANALISIS = """
             }
 
             const centroVal = centroSelect.value;
-            window.location.href = `/analisis?red=${encodeURIComponent(redSel)}&centro=${encodeURIComponent(centroVal)}`;
+            window.location.href = `/analisis?tipo=${encodeURIComponent(tipoActual)}&red=${encodeURIComponent(redSel)}&centro=${encodeURIComponent(centroVal)}`;
         }
 
         function alCambiarCentroWeb() {
             const redSel = document.getElementById('filtro-red').value;
             const centroSel = document.getElementById('filtro-centro').value;
-            window.location.href = `/analisis?red=${encodeURIComponent(redSel)}&centro=${encodeURIComponent(centroSel)}`;
+            const tipoActual = '{{ tipo_sel }}';
+            window.location.href = `/analisis?tipo=${encodeURIComponent(tipoActual)}&red=${encodeURIComponent(redSel)}&centro=${encodeURIComponent(centroSel)}`;
         }
 
         function inspeccionarGrupo(nombreGrupo) {
@@ -1323,16 +1640,16 @@ HTML_ANALISIS = """
         function abrirModalArea(nombreArea) {
             const centroSel = document.getElementById('filtro-centro').value;
 
-            equiposModalActual = todosEquipos.filter(eq => {
-                const matchCen = !centroSel || (eq.centro_salud_nombre && eq.centro_salud_nombre.toLowerCase() === centroSel.toLowerCase());
-                const a = eq.area || eq.servicio || 'General';
-                const matchArea = a.toLowerCase() === nombreArea.toLowerCase();
+            activosModalActual = todosActivos.filter(a => {
+                const matchCen = !centroSel || (a.centro_salud_nombre && a.centro_salud_nombre.toLowerCase() === centroSel.toLowerCase());
+                const aNom = a.area || a.servicio || 'General';
+                const matchArea = aNom.toLowerCase() === nombreArea.toLowerCase();
                 return matchCen && matchArea;
             });
 
-            document.getElementById('modal-titulo').textContent = `Equipos en Área: ${nombreArea} (${equiposModalActual.length} equipos)`;
+            document.getElementById('modal-titulo').textContent = `Activos en Área: ${nombreArea} (${activosModalActual.length} activos)`;
             document.getElementById('modal-buscar').value = '';
-            renderizarTablaModal(equiposModalActual);
+            renderizarTablaModal(activosModalActual);
             document.getElementById('modal-detalle').style.display = 'flex';
         }
 
@@ -1340,19 +1657,22 @@ HTML_ANALISIS = """
             const tbody = document.getElementById('modal-tbody');
             tbody.innerHTML = '';
             if (lista.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--muted); padding: 20px;">No se encontraron equipos</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--muted); padding: 20px;">No se encontraron activos</td></tr>';
                 return;
             }
-            lista.forEach(eq => {
+            lista.forEach(a => {
                 const tr = document.createElement('tr');
+                const icono = a._icono || (a._tipo === 'MUEBLE' ? '🛋️' : '🩺');
+                const cod = a.codigo_af || a.id || '-';
+                const link = a._tipo === 'MUEBLE' ? `/mueble/${a.id_db || a.id}` : `/equipo/${encodeURIComponent(a.id)}`;
                 tr.innerHTML = `
-                    <td><strong>${eq.id || '-'}</strong></td>
-                    <td>${eq.nombre || '-'}</td>
-                    <td>${eq.marca || '-'}</td>
-                    <td>${eq.modelo || '-'}</td>
-                    <td>${eq.centro_salud_nombre || '-'}</td>
-                    <td>${eq.area || eq.servicio || 'General'}</td>
-                    <td><a href="/equipo/${encodeURIComponent(eq.id)}" class="btn-view-link" target="_blank">📄 Ver Ficha</a></td>
+                    <td><span style="font-size: 15px;">${icono}</span> <strong>${cod}</strong></td>
+                    <td>${a.nombre || '-'}</td>
+                    <td>${a.marca || '-'}</td>
+                    <td>${a.modelo || '-'}</td>
+                    <td>${a.centro_salud_nombre || '-'}</td>
+                    <td>${a.area || a.servicio || 'General'}</td>
+                    <td><a href="${link}" class="btn-view-link" target="_blank">📄 Ver Ficha</a></td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -1361,15 +1681,17 @@ HTML_ANALISIS = """
         function filtrarModal() {
             const query = document.getElementById('modal-buscar').value.toLowerCase().trim();
             if (!query) {
-                renderizarTablaModal(equiposModalActual);
+                renderizarTablaModal(activosModalActual);
                 return;
             }
-            const filtrados = equiposModalActual.filter(eq => {
+            const filtrados = activosModalActual.filter(a => {
                 return (
-                    (eq.id && String(eq.id).toLowerCase().includes(query)) ||
-                    (eq.nombre && eq.nombre.toLowerCase().includes(query)) ||
-                    (eq.marca && eq.marca.toLowerCase().includes(query)) ||
-                    (eq.modelo && eq.modelo.toLowerCase().includes(query))
+                    (a.codigo_af && String(a.codigo_af).toLowerCase().includes(query)) ||
+                    (a.id && String(a.id).toLowerCase().includes(query)) ||
+                    (a.nombre && a.nombre.toLowerCase().includes(query)) ||
+                    (a.marca && a.marca.toLowerCase().includes(query)) ||
+                    (a.modelo && a.modelo.toLowerCase().includes(query)) ||
+                    (a.numero_serie && a.numero_serie.toLowerCase().includes(query))
                 );
             });
             renderizarTablaModal(filtrados);
@@ -1398,7 +1720,7 @@ HTML_ANALISIS = """
                     data: {
                         labels: censoLabels,
                         datasets: [{
-                            label: 'Equipos Médicos',
+                            label: 'Activos Registrados',
                             data: censoData,
                             backgroundColor: ['#2563EB', '#059669', '#D97706', '#7C3AED', '#DC2626', '#0891B2', '#4F46E5', '#EA580C'],
                             borderRadius: 8
@@ -1470,52 +1792,58 @@ def simplificar_red_web(red_str):
 def vista_analisis_web():
     from collections import Counter
     import json
+    tipo_param = request.args.get('tipo', 'TODO').strip().upper()
+    if tipo_param not in ('TODO', 'EQUIPOS', 'MUEBLES'):
+        tipo_param = 'TODO'
     red_param = request.args.get('red', '').strip()
     centro_param = request.args.get('centro', '').strip()
 
     try:
-        conn = obtener_conexion()
-        if not conn:
-            return "Error al conectar con la base de datos", 500
-        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        cur.execute("SELECT id, nombre, red_salud_nombre, centro_salud_nombre, area, servicio, marca, modelo, estado, garantia FROM equipos ORDER BY nombre ASC")
-        equipos_db = [dict(r) for r in cur.fetchall()]
-        
-        cur.execute("SELECT id, nombre, codigo FROM redes_salud ORDER BY id ASC")
-        redes_db = [dict(r) for r in cur.fetchall()]
-        
-        cur.execute("""
-            SELECT c.id, c.nombre, c.red_salud_id, r.nombre as red_nombre 
-            FROM centros_salud c
-            LEFT JOIN redes_salud r ON c.red_salud_id = r.id
-            ORDER BY c.nombre ASC
-        """)
-        centros_db = [dict(r) for r in cur.fetchall()]
-        cur.close()
-        conn.close()
+        activos_unificados, todos_equipos, todos_muebles, redes_db, centros_db, areas_lista = obtener_activos_unificados_db()
 
-        # Filtrar equipos según los parámetros
-        eqs_contexto = list(equipos_db)
+        # Filtrar territorialmente
+        activos_en_red = activos_unificados
         if red_param:
-            eqs_contexto = [e for e in eqs_contexto if str(e.get('red_salud_nombre', '')).strip().lower() == red_param.lower()]
-        if centro_param:
-            eqs_contexto = [e for e in eqs_contexto if str(e.get('centro_salud_nombre', '')).strip().lower() == centro_param.lower()]
+            activos_en_red = [a for a in activos_unificados if str(a.get('red_salud_nombre', '')).strip().lower() == red_param.lower()]
 
-        total = len(eqs_contexto)
-        operativos = sum(1 for e in eqs_contexto if e.get('estado') != 'Baja')
-        garantia = sum(1 for e in eqs_contexto if e.get('garantia') == 'Con Garantía')
-        bajas = sum(1 for e in eqs_contexto if e.get('estado') == 'Baja')
+        activos_en_centro = activos_en_red
+        if centro_param:
+            activos_en_centro = [a for a in activos_en_red if str(a.get('centro_salud_nombre', '')).strip().lower() == centro_param.lower()]
+
+        # Conteos en el contexto territorial actual
+        cnt_todo = len(activos_en_centro)
+        cnt_equipos = sum(1 for a in activos_en_centro if a.get('_tipo') == 'EQUIPO')
+        cnt_muebles = sum(1 for a in activos_en_centro if a.get('_tipo') == 'MUEBLE')
+
+        # Filtrar por Tipo de Activo
+        if tipo_param == 'EQUIPOS':
+            activos_contexto = [a for a in activos_en_centro if a.get('_tipo') == 'EQUIPO']
+            tipo_label_censo = "Equipos Médicos"
+            activos_censo_gamlp = todos_equipos
+        elif tipo_param == 'MUEBLES':
+            activos_contexto = [a for a in activos_en_centro if a.get('_tipo') == 'MUEBLE']
+            tipo_label_censo = "Muebles y Computación"
+            activos_censo_gamlp = todos_muebles
+        else:
+            activos_contexto = list(activos_en_centro)
+            tipo_label_censo = "Activos y Equipamiento"
+            activos_censo_gamlp = activos_unificados
+
+        total = len(activos_contexto)
+        operativos = sum(1 for a in activos_contexto if 'baja' not in str(a.get('estado', '')).lower() and 'mal' not in str(a.get('estado', '')).lower())
+        garantia = sum(1 for a in activos_contexto if a.get('garantia') == 'Con Garantía' or 'reg' in str(a.get('estado', '')).lower() or 'man' in str(a.get('estado', '')).lower())
+        bajas = sum(1 for a in activos_contexto if 'baja' in str(a.get('estado', '')).lower() or 'mal' in str(a.get('estado', '')).lower())
 
         # Determinar Censo Jerárquico
         censo_items = []
         if not red_param and not centro_param:
             # Nivel 1: Todas las redes
-            censo_titulo = "🌐 Censo de Equipamiento Médico por Red de Salud"
-            censo_subtitulo = f"Total en GAMLP: {total:,} equipos | Haz clic en una Red para explorar sus Centros de Salud"
+            censo_titulo = f"🌐 Censo de {tipo_label_censo} por Red de Salud"
+            censo_subtitulo = f"Total en GAMLP: {total:,} registros | Haz clic en una Red para explorar sus Centros de Salud"
             grupos = {}
-            for eq in equipos_db:
-                r_nom = eq.get('red_salud_nombre') or 'Sin Red'
-                grupos.setdefault(r_nom, []).append(eq)
+            for a in activos_censo_gamlp:
+                r_nom = a.get('red_salud_nombre') or 'Sin Red'
+                grupos.setdefault(r_nom, []).append(a)
             for r_nom, lista in sorted(grupos.items(), key=lambda x: str(x[0])):
                 censo_items.append({
                     "nombre": r_nom,
@@ -1526,12 +1854,12 @@ def vista_analisis_web():
         elif red_param and not centro_param:
             # Nivel 2: Red específica -> Centros de Salud
             r_corta = simplificar_red_web(red_param)
-            censo_titulo = f"🏥 Distribución de Equipos por Centro de Salud — {r_corta}"
-            censo_subtitulo = f"Total en esta Red: {total:,} equipos | Haz clic en un Centro para ver sus Áreas"
+            censo_titulo = f"🏥 Distribución de {tipo_label_censo} por Centro de Salud — {r_corta}"
+            censo_subtitulo = f"Total en esta Red: {total:,} registros | Haz clic en un Centro para ver sus Áreas"
             grupos = {}
-            for eq in eqs_contexto:
-                c_nom = eq.get('centro_salud_nombre') or 'Sin Centro'
-                grupos.setdefault(c_nom, []).append(eq)
+            for a in activos_contexto:
+                c_nom = a.get('centro_salud_nombre') or 'Sin Centro'
+                grupos.setdefault(c_nom, []).append(a)
             for c_nom, lista in sorted(grupos.items(), key=lambda x: len(x[1]), reverse=True):
                 censo_items.append({
                     "nombre": c_nom,
@@ -1541,22 +1869,22 @@ def vista_analisis_web():
                 })
         else:
             # Nivel 3: Centro de Salud específico -> Áreas
-            censo_titulo = f"📍 Distribución de Equipos por Área / Servicio — {centro_param}"
-            censo_subtitulo = f"Total en este Centro: {total:,} equipos | Haz clic en un Área para listar sus equipos"
+            censo_titulo = f"📍 Distribución de {tipo_label_censo} por Área / Servicio — {centro_param}"
+            censo_subtitulo = f"Total en este Centro: {total:,} registros | Haz clic en un Área para listar sus activos"
             grupos = {}
-            for eq in eqs_contexto:
-                a_nom = eq.get('area') or eq.get('servicio') or 'General'
-                grupos.setdefault(a_nom, []).append(eq)
+            for a in activos_contexto:
+                a_nom = a.get('area') or a.get('servicio') or 'General'
+                grupos.setdefault(a_nom, []).append(a)
             for a_nom, lista in sorted(grupos.items(), key=lambda x: len(x[1]), reverse=True):
                 censo_items.append({
                     "nombre": a_nom,
                     "nombre_display": a_nom,
                     "cantidad": len(lista),
-                    "tipo_label": "Lista de Equipos"
+                    "tipo_label": "Lista de Activos"
                 })
 
         # Datos para gráficas Chart.js
-        conteo_tipos = Counter([eq.get("nombre", "Equipo").strip() for eq in eqs_contexto if eq.get("nombre")])
+        conteo_tipos = Counter([a.get("nombre", "Activo").strip() for a in activos_contexto if a.get("nombre")])
         top_tipos = conteo_tipos.most_common(8)
         chart_tipos_labels = json.dumps([k for k, v in top_tipos])
         chart_tipos_data = json.dumps([v for k, v in top_tipos])
@@ -1564,7 +1892,7 @@ def vista_analisis_web():
         chart_censo_labels = json.dumps([item["nombre_display"] for item in censo_items[:8]])
         chart_censo_data = json.dumps([item["cantidad"] for item in censo_items[:8]])
 
-        equipos_json = json.dumps(equipos_db)
+        activos_json = json.dumps(activos_contexto)
 
         return render_template_string(
             HTML_ANALISIS,
@@ -1572,6 +1900,10 @@ def vista_analisis_web():
             centros=centros_db,
             red_sel=red_param,
             centro_sel=centro_param,
+            tipo_sel=tipo_param,
+            cnt_todo=cnt_todo,
+            cnt_equipos=cnt_equipos,
+            cnt_muebles=cnt_muebles,
             total=total,
             operativos=operativos,
             garantia=garantia,
@@ -1583,8 +1915,8 @@ def vista_analisis_web():
             chart_censo_data=chart_censo_data,
             chart_tipos_labels=chart_tipos_labels,
             chart_tipos_data=chart_tipos_data,
-            eqs_vista=eqs_contexto,
-            equipos_json=equipos_json
+            eqs_vista=activos_contexto,
+            activos_json=activos_json
         )
     except Exception as e:
         return f"Error en análisis: {e}", 500
@@ -1922,6 +2254,424 @@ def descargar_qr_web(id_equipo):
         return send_file(img_io, mimetype='image/png', as_attachment=True, download_name=f"QR_{id_sanitizado}.png")
     except Exception as e:
         return f"Error al generar QR: {e}", 500
+
+HTML_FICHA_MUEBLE = """<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ mueble['descripcion'] or 'Ficha de Mueble y TI' }} - SGEM GAMLP</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2563EB;
+            --primary-dark: #1D4ED8;
+            --bg: #F8FAFC;
+            --card-bg: #FFFFFF;
+            --text: #0F172A;
+            --muted: #64748B;
+            --border: #E2E8F0;
+            --green: #10B981;
+            --orange: #F59E0B;
+            --red: #EF4444;
+        }
+
+        body {
+            font-family: 'Segoe UI', -apple-system, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
+            color: white;
+            padding: 24px 20px 20px;
+            text-align: center;
+            border-bottom: 1px solid #334155;
+        }
+
+        .badge-gamlp {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.1);
+            color: #93C5FD;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 20px;
+            margin-bottom: 8px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .header h1 {
+            font-size: 20px;
+            font-weight: 800;
+            margin: 0 0 4px;
+        }
+
+        .header p {
+            font-size: 13px;
+            color: #94A3B8;
+            margin: 0;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 24px 16px 60px;
+        }
+
+        .top-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .btn-nav {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            background: white;
+            color: var(--text);
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 700;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .btn-nav:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .btn-nav.primary {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .main-card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 24px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+            margin-bottom: 24px;
+        }
+
+        .title-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+        }
+
+        .title-icon {
+            font-size: 40px;
+            background: #F1F5F9;
+            width: 64px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 14px;
+            flex-shrink: 0;
+        }
+
+        .title-info h2 {
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--text);
+            margin: 0 0 8px;
+            line-height: 1.3;
+        }
+
+        .badges-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .badge-bueno { background: #ECFDF5; color: #065F46; border: 1px solid #A7F3D0; }
+        .badge-regular { background: #FEF3C7; color: #92400E; border: 1px solid #FDE68A; }
+        .badge-baja { background: #FEE2E2; color: #991B1B; border: 1px solid #FECACA; }
+        .badge-tag { background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE; }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+            gap: 20px;
+        }
+
+        .section-box {
+            background: #F8FAFC;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 16px 18px;
+        }
+
+        .section-box h3 {
+            font-size: 14px;
+            font-weight: 800;
+            color: #334155;
+            margin: 0 0 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            border-bottom: 1px solid #E2E8F0;
+            padding-bottom: 8px;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .data-table tr {
+            border-bottom: 1px dashed #E2E8F0;
+        }
+
+        .data-table tr:last-child {
+            border-bottom: none;
+        }
+
+        .data-table td {
+            padding: 8px 4px;
+            vertical-align: top;
+        }
+
+        .data-table td.label {
+            font-weight: 700;
+            color: #64748B;
+            width: 42%;
+        }
+
+        .data-table td.value {
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .obs-box {
+            background: #FFFBEB;
+            border: 1px solid #FDE68A;
+            border-radius: 12px;
+            padding: 14px 16px;
+            font-size: 13px;
+            color: #78350F;
+            line-height: 1.5;
+            margin-top: 10px;
+        }
+
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white; color: black; }
+            .container { max-width: 100%; padding: 0; }
+            .main-card { border: 1px solid #333; box-shadow: none; border-radius: 0; padding: 15px; }
+            .section-box { border: 1px solid #888; background: #fafafa; border-radius: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header no-print">
+        <span class="badge-gamlp">GAMLP • SGEM v1.1</span>
+        <h1>Ficha Técnica de Bien y Mueblería</h1>
+        <p>Gobierno Autónomo Municipal de La Paz</p>
+    </div>
+
+    <div class="container">
+        <div class="top-nav no-print">
+            <div style="display: flex; gap: 8px;">
+                <a href="/inventario" class="btn-nav">📦 Volver al Inventario</a>
+                <a href="/analisis" class="btn-nav">📊 Censo y Análisis</a>
+            </div>
+            <button onclick="window.print()" class="btn-nav primary">🖨️ Imprimir / Guardar PDF</button>
+        </div>
+
+        <div class="main-card">
+            <div class="title-row">
+                <div class="title-icon">{{ icono }}</div>
+                <div class="title-info" style="flex: 1;">
+                    <h2>{{ mueble['descripcion'] or 'Activo / Bien Municipal' }}</h2>
+                    <div class="badges-row">
+                        {% set est = (mueble['estado_conservacion'] or mueble['estado'] or 'Bueno')|lower %}
+                        {% if 'baja' in est or 'mal' in est %}
+                        <span class="badge badge-baja">🛑 {{ mueble['estado_conservacion'] or 'Baja' }}</span>
+                        {% elif 'reg' in est or 'man' in est %}
+                        <span class="badge badge-regular">⚠️ {{ mueble['estado_conservacion'] or 'Regular' }}</span>
+                        {% else %}
+                        <span class="badge badge-bueno">✅ {{ mueble['estado_conservacion'] or 'Bueno' }}</span>
+                        {% endif %}
+
+                        <span class="badge badge-tag">🏷️ {{ mueble['tipo_activo'] or 'Mueble / TI' }}</span>
+                        <span class="badge badge-tag">🆔 Cod. AF: {{ codigo_principal }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-grid">
+                <!-- Tarjeta 1: Especificaciones Técnicas -->
+                <div class="section-box">
+                    <h3>⚙️ Datos Técnicos y Códigos</h3>
+                    <table class="data-table">
+                        <tr><td class="label">Código SISFAM:</td><td class="value"><strong>{{ mueble['codigo_sispam'] or 'S/C' }}</strong></td></tr>
+                        <tr><td class="label">Código Bertin:</td><td class="value">{{ mueble['bertin'] or '-' }}</td></tr>
+                        <tr><td class="label">Código SAPM:</td><td class="value">{{ mueble['sapm'] or '-' }}</td></tr>
+                        <tr><td class="label">Tipo de Activo:</td><td class="value">{{ mueble['tipo_activo'] or 'Mueble / TI' }}</td></tr>
+                        <tr><td class="label">Marca:</td><td class="value">{{ mueble['marca'] or 'Sin Marca' }}</td></tr>
+                        <tr><td class="label">Modelo:</td><td class="value">{{ mueble['modelo'] or 'Sin Modelo' }}</td></tr>
+                        <tr><td class="label">N° Serie:</td><td class="value">{{ mueble['serie'] or 'Sin Serie' }}</td></tr>
+                        <tr><td class="label">Estado de Conservación:</td><td class="value">{{ mueble['estado_conservacion'] or 'Bueno' }}</td></tr>
+                    </table>
+                </div>
+
+                <!-- Tarjeta 2: Asignación y Responsabilidad -->
+                <div class="section-box">
+                    <h3>👤 Asignación y Custodia</h3>
+                    <table class="data-table">
+                        <tr><td class="label">Persona Responsable:</td><td class="value"><strong>{{ mueble['persona_asignada'] or 'No asignado' }}</strong></td></tr>
+                        <tr><td class="label">C.I. Asignado:</td><td class="value">{{ mueble['ci_asignado'] or '-' }}</td></tr>
+                        <tr><td class="label">Cargo:</td><td class="value">{{ mueble['cargo_asignado'] or '-' }}</td></tr>
+                        <tr><td class="label">Técnico Inventariador:</td><td class="value">{{ mueble['tecnico_inventareador'] or '-' }}</td></tr>
+                        <tr><td class="label">Fecha Asignación:</td><td class="value">{{ mueble['fecha_asignacion'] or '-' }}</td></tr>
+                        <tr><td class="label">Detalle Transacción:</td><td class="value">{{ mueble['detalle_transaccion'] or '-' }}</td></tr>
+                    </table>
+                </div>
+
+                <!-- Tarjeta 3: Ubicación y Territorio -->
+                <div class="section-box">
+                    <h3>📍 Ubicación y Territorio</h3>
+                    <table class="data-table">
+                        <tr><td class="label">Red de Salud:</td><td class="value"><strong>{{ red_nombre }}</strong></td></tr>
+                        <tr><td class="label">Centro de Salud:</td><td class="value"><strong>{{ centro_nombre }}</strong></td></tr>
+                        <tr><td class="label">Unidad Organizacional:</td><td class="value">{{ mueble['unidad_organizacional'] or '-' }}</td></tr>
+                        <tr><td class="label">Sector Actual:</td><td class="value">{{ mueble['sector_actual'] or '-' }}</td></tr>
+                        <tr><td class="label">Ubicación / Área:</td><td class="value">{{ mueble['ubicacion'] or '-' }}</td></tr>
+                    </table>
+                </div>
+
+                <!-- Tarjeta 4: Registro y Observaciones -->
+                <div class="section-box">
+                    <h3>📋 Registro y Notas</h3>
+                    <table class="data-table">
+                        <tr><td class="label">Fecha Incorporación:</td><td class="value">{{ mueble['fecha_incorporacion'] or '-' }}</td></tr>
+                        <tr><td class="label">Fecha Registro:</td><td class="value">{{ mueble['fecha_registro'] or '-' }}</td></tr>
+                    </table>
+                    <div style="margin-top: 10px;">
+                        <span style="font-size: 12px; font-weight: 700; color: #64748B;">Observaciones:</span>
+                        <div class="obs-box">
+                            {{ mueble['observaciones_de_asignacion'] or 'Sin observaciones registradas.' }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+"""
+
+@app_web.route('/mueble/<path:mueble_id>')
+def ver_mueble(mueble_id):
+    clean_id = str(mueble_id).strip()
+    if clean_id.upper().startswith("MUE-"):
+        clean_id = clean_id[4:].strip()
+    try:
+        mid = int(clean_id)
+    except ValueError:
+        return "<h1>❌ ID de mueble inválido</h1>", 400
+
+    try:
+        conn = obtener_conexion()
+        if not conn:
+            return "<h1>❌ Error al conectar a la base de datos</h1>", 500
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute("""
+            SELECT m.*, r.nombre as red_nombre_fk, c.nombre as centro_nombre_fk
+            FROM muebleria m
+            LEFT JOIN redes_salud r ON m.red_salud_id = r.id
+            LEFT JOIN centros_salud c ON m.centro_salud_id = c.id
+            WHERE m.id = %s
+        """, (mid,))
+        m = cur.fetchone()
+        
+        cur.execute("SELECT id, nombre FROM redes_salud")
+        redes_db = {r['id']: r['nombre'] for r in cur.fetchall()}
+        
+        cur.execute("SELECT id, nombre, red_salud_id FROM centros_salud")
+        centros_db = [dict(r) for r in cur.fetchall()]
+        cur.close()
+        conn.close()
+
+        if not m:
+            return "<h1>❌ Registro de Mueble / TI no encontrado</h1>", 404
+
+        mueble = dict(m)
+
+        # Resolver centro y red si son nulos en la tabla
+        cen_nom = mueble.get('centro_nombre_fk') or mueble.get('unidad_organizacional') or ''
+        if not cen_nom:
+            ub = mueble.get('ubicacion') or ''
+            for c in centros_db:
+                if c['nombre'].upper() in ub.upper():
+                    cen_nom = c['nombre']
+                    break
+        if not cen_nom:
+            cen_nom = 'Centro de Salud GAMLP'
+
+        red_nom = mueble.get('red_nombre_fk') or mueble.get('direccion_administrativa') or ''
+        if not red_nom:
+            for c in centros_db:
+                if c['nombre'].upper() == cen_nom.upper():
+                    red_nom = redes_db.get(c['red_salud_id'], '')
+                    break
+        if not red_nom:
+            red_nom = 'Red GAMLP'
+
+        desc_lower = (str(mueble.get('descripcion') or '') + ' ' + str(mueble.get('tipo_activo') or '')).lower()
+        if any(w in desc_lower for w in ['compu', 'monitor', 'laptop', 'pc', 'teclado', 'cpu', 'servidor', 'impresora']):
+            icono = '💻'
+        elif any(w in desc_lower for w in ['desfib', 'desfrib', 'electro', 'aspirad', 'monitor de signos', 'tensio', 'oxim']):
+            icono = '🩺'
+        else:
+            icono = '🛋️'
+
+        cod_af = mueble.get('codigo_sispam')
+        if not cod_af or cod_af == 'S/C':
+            cod_af = mueble.get('bertin') or mueble.get('sapm') or f"MUE-{mueble['id']:03d}"
+
+        return render_template_string(
+            HTML_FICHA_MUEBLE,
+            mueble=mueble,
+            centro_nombre=cen_nom,
+            red_nombre=red_nom,
+            icono=icono,
+            codigo_principal=cod_af
+        )
+    except Exception as e:
+        return f"<h1>Error al cargar ficha de mueble: {e}</h1>", 500
 
 @app_web.route('/equipo/<path:id_equipo>')
 def ver_equipo(id_equipo):
