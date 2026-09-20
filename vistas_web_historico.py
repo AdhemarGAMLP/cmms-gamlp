@@ -216,6 +216,49 @@ HTML_HISTORICO_WEB = """<!DOCTYPE html>
             white-space: nowrap;
         }
 
+        /* SECCIONES AGRUPADAS POR ÁREA */
+        .area-section {
+            background: #FFFFFF;
+            border-radius: var(--radius-card);
+            border: 1px solid var(--border);
+            padding: 16px 18px;
+            margin-bottom: 22px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+        }
+        .area-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 12px;
+            border-bottom: 1.5px solid #F1F5F9;
+            margin-bottom: 14px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .area-title {
+            font-size: 16px;
+            font-weight: 800;
+            color: #0F172A;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .area-badge-count {
+            background: #EFF6FF;
+            color: #1D4ED8;
+            font-size: 12px;
+            font-weight: 800;
+            padding: 4px 12px;
+            border-radius: 20px;
+            border: 1px solid #DBEAFE;
+        }
+
+        .areas-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
         /* GRID DE TARJETAS DE ACTIVOS */
         .cards-grid {
             display: grid;
@@ -470,8 +513,8 @@ HTML_HISTORICO_WEB = """<!DOCTYPE html>
             </div>
         </div>
 
-        <!-- GRID DE TARJETAS -->
-        <div id="grid_activos" class="cards-grid">
+        <!-- CONTENEDOR DE SECCIONES POR ÁREA -->
+        <div id="grid_activos" class="areas-wrapper">
             <div class="empty-state">
                 <span>⏳</span>
                 Cargando registros históricos...
@@ -590,7 +633,8 @@ HTML_HISTORICO_WEB = """<!DOCTYPE html>
                 LISTA_TOTAL_MUEBLES = await resMu.json();
 
                 actualizarContadores();
-                LIMITE_MOSTRAR = 60;
+                const cenSelVal = document.getElementById('sel_centro').value;
+                LIMITE_MOSTRAR = cenSelVal ? 200 : 60;
                 filtrarListaActivos();
             } catch (e) {
                 console.error("Error cargando activos:", e);
@@ -621,7 +665,8 @@ HTML_HISTORICO_WEB = """<!DOCTYPE html>
             if (tipo === 'TODO') document.getElementById('btn_tipo_todo').classList.add('active');
             if (tipo === 'EQUIPOS') document.getElementById('btn_tipo_equipos').classList.add('active');
             if (tipo === 'MUEBLES') document.getElementById('btn_tipo_muebles').classList.add('active');
-            LIMITE_MOSTRAR = 60;
+            const cenSelVal = document.getElementById('sel_centro').value;
+            LIMITE_MOSTRAR = cenSelVal ? 200 : 60;
             filtrarListaActivos();
         }
 
@@ -672,56 +717,90 @@ HTML_HISTORICO_WEB = """<!DOCTYPE html>
 
             const rebanada = lista.slice(0, LIMITE_MOSTRAR);
             grid.innerHTML = '';
+
+            // Agrupar activos por Área / Servicio
+            const grupos = {};
             rebanada.forEach((item) => {
-                const esEquipo = item._tipo === 'EQUIPO';
-                const icono = esEquipo ? '🩺' : '🛋️';
-                const titulo = esEquipo ? (item.nombre || 'Equipo Médico') : (item.descripcion || item.tipo_activo || 'Mueble / TI');
-                const codigoAF = esEquipo ? item.id : (item.codigo_sispam || `MUE-${item.id}`);
-                const area = esEquipo ? (item.area || 'General') : (item.ubicacion || 'General');
-                const centroNom = item.centro_salud_nombre || item.ubicacion || 'Centro de Salud';
-                const marca = item.marca || 'S/M';
-                const modelo = item.modelo || 'S/M';
-                const serie = item.numero_serie || item.serie || 'S/N';
-                const estado = item.estado || item.estado_conservacion || 'Operativo';
+                let areaRaw = (item.area || item.ubicacion || 'GENERAL / SIN ÁREA').trim();
+                if (!areaRaw) areaRaw = 'GENERAL / SIN ÁREA';
+                const areaKey = areaRaw.toUpperCase();
+                if (!grupos[areaKey]) {
+                    grupos[areaKey] = { nombre: areaRaw, items: [] };
+                }
+                grupos[areaKey].items.push(item);
+            });
 
-                let claseEstado = 'st-bueno';
-                const estLower = estado.toLowerCase();
-                if (estLower.includes('reg') || estLower.includes('man')) claseEstado = 'st-regular';
-                else if (estLower.includes('mal') || estLower.includes('baja') || estLower.includes('inop')) claseEstado = 'st-malo';
+            // Ordenar alfabéticamente las áreas
+            const clavesOrdenadas = Object.keys(grupos).sort((a, b) => a.localeCompare(b));
 
-                const card = document.createElement('div');
-                card.className = 'card-asset';
-                card.onclick = () => abrirModalDetalle(item);
-
-                card.innerHTML = `
-                    <div>
-                        <div class="card-asset-header">
-                            <div class="asset-icon-title">
-                                <span class="asset-icon">${icono}</span>
-                                <div class="asset-title">${escaparHtml(titulo)}</div>
-                            </div>
-                            <span class="badge-af">${escaparHtml(codigoAF)}</span>
+            clavesOrdenadas.forEach((key) => {
+                const grp = grupos[key];
+                const sec = document.createElement('div');
+                sec.className = 'area-section';
+                sec.innerHTML = `
+                    <div class="area-header">
+                        <div class="area-title">
+                            <span>🏥 Área: ${escaparHtml(grp.nombre)}</span>
                         </div>
-                        <div class="asset-meta">
-                            <div>🏥 Centro: <strong>${escaparHtml(centroNom)}</strong></div>
-                            <div>📍 Área: <span>${escaparHtml(area)}</span></div>
-                            <div>🏷️ Marca/Mod: <span>${escaparHtml(marca)} / ${escaparHtml(modelo)}</span></div>
-                            <div>🔢 Serie: <span>${escaparHtml(serie)}</span></div>
-                        </div>
+                        <span class="area-badge-count">${grp.items.length} ${grp.items.length === 1 ? 'activo' : 'activos'}</span>
                     </div>
-                    <div class="card-asset-footer">
-                        <span class="badge-estado ${claseEstado}">${escaparHtml(estado)}</span>
-                        <span class="btn-ver-detalle">👁️ Ver Ficha</span>
-                    </div>
+                    <div class="cards-grid"></div>
                 `;
-                grid.appendChild(card);
+                const subGrid = sec.querySelector('.cards-grid');
+
+                grp.items.forEach((item) => {
+                    const esEquipo = item._tipo === 'EQUIPO';
+                    const icono = esEquipo ? '🩺' : '🛋️';
+                    const titulo = esEquipo ? (item.nombre || 'Equipo Médico') : (item.descripcion || item.tipo_activo || 'Mueble / TI');
+                    const codigoAF = esEquipo ? item.id : (item.codigo_sispam || `MUE-${item.id}`);
+                    const area = esEquipo ? (item.area || 'General') : (item.ubicacion || 'General');
+                    const centroNom = item.centro_salud_nombre || item.ubicacion || 'Centro de Salud';
+                    const marca = item.marca || 'S/M';
+                    const modelo = item.modelo || 'S/M';
+                    const serie = item.numero_serie || item.serie || 'S/N';
+                    const estado = item.estado || item.estado_conservacion || 'Operativo';
+
+                    let claseEstado = 'st-bueno';
+                    const estLower = estado.toLowerCase();
+                    if (estLower.includes('reg') || estLower.includes('man')) claseEstado = 'st-regular';
+                    else if (estLower.includes('mal') || estLower.includes('baja') || estLower.includes('inop')) claseEstado = 'st-malo';
+
+                    const card = document.createElement('div');
+                    card.className = 'card-asset';
+                    card.onclick = () => abrirModalDetalle(item);
+
+                    card.innerHTML = `
+                        <div>
+                            <div class="card-asset-header">
+                                <div class="asset-icon-title">
+                                    <span class="asset-icon">${icono}</span>
+                                    <div class="asset-title">${escaparHtml(titulo)}</div>
+                                </div>
+                                <span class="badge-af">${escaparHtml(codigoAF)}</span>
+                            </div>
+                            <div class="asset-meta">
+                                <div>🏥 Centro: <strong>${escaparHtml(centroNom)}</strong></div>
+                                <div>📍 Área: <span>${escaparHtml(area)}</span></div>
+                                <div>🏷️ Marca/Mod: <span>${escaparHtml(marca)} / ${escaparHtml(modelo)}</span></div>
+                                <div>🔢 Serie: <span>${escaparHtml(serie)}</span></div>
+                            </div>
+                        </div>
+                        <div class="card-asset-footer">
+                            <span class="badge-estado ${claseEstado}">${escaparHtml(estado)}</span>
+                            <span class="btn-ver-detalle">👁️ Ver Ficha</span>
+                        </div>
+                    `;
+                    subGrid.appendChild(card);
+                });
+
+                grid.appendChild(sec);
             });
 
             if (lista.length > LIMITE_MOSTRAR) {
                 const btnMas = document.createElement('div');
-                btnMas.style.gridColumn = '1 / -1';
                 btnMas.style.textAlign = 'center';
-                btnMas.style.marginTop = '15px';
+                btnMas.style.marginTop = '10px';
+                btnMas.style.marginBottom = '25px';
                 btnMas.innerHTML = `
                     <button type="button" class="btn-ir-actual" style="background:#0284C7; font-size:13.5px; padding:12px 28px; cursor:pointer;" onclick="cargarMasTarjetas()">
                         ⬇️ Cargar más activos (mostrando ${rebanada.length} de ${lista.length})
@@ -732,7 +811,7 @@ HTML_HISTORICO_WEB = """<!DOCTYPE html>
         }
 
         function cargarMasTarjetas() {
-            LIMITE_MOSTRAR += 60;
+            LIMITE_MOSTRAR += 100;
             renderizarTarjetas(ULTIMA_LISTA_FILTRADA);
         }
 
