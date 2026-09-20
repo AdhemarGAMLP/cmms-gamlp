@@ -704,14 +704,14 @@ class SistemaMantenimiento(ctk.CTk):
                   background=[('selected', C_BLUE)], 
                   foreground=[('selected', '#FFFFFF')])
         style.configure("Treeview.Heading", 
-                        background="#F2F2F7", 
-                        foreground="#48484A", 
+                        background="#F1F5F9", 
+                        foreground="#334155", 
                         font=('Segoe UI', 10, 'bold'), 
                         borderwidth=0, 
                         relief="flat")
         style.layout("Treeview", [('Treeview.treearea', {'sticky': 'nswe'})])
 
-        # Diseño y comportamiento de Scrollbar minimalista ultra delgado (6px Apple style)
+        # Diseño y comportamiento de Scrollbar minimalista ultra delgado (6px Slate style)
         style.layout("Vertical.TScrollbar", [
             ('Vertical.Scrollbar.trough', {
                 'children': [
@@ -721,13 +721,13 @@ class SistemaMantenimiento(ctk.CTk):
             })
         ])
         style.configure("Vertical.TScrollbar", 
-                        background="#C7C7CC", 
+                        background=C_GRAY, 
                         troughcolor=C_CARD, 
                         bordercolor=C_CARD, 
                         thickness=6, 
                         relief="flat")
         style.map("Vertical.TScrollbar", 
-                  background=[('pressed', '#8E8E93'), ('active', '#AEAEB2')])
+                  background=[('pressed', C_SUBTEXT), ('active', '#64748B')])
 
         style.layout("Horizontal.TScrollbar", [
             ('Horizontal.Scrollbar.trough', {

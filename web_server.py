@@ -69,15 +69,18 @@ def login_requerido(f):
 # Pantalla de éxito responsiva con enlace de descarga Excel
 HTML_EXITO = """
 <!DOCTYPE html><html lang="es"><head><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Éxito</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #F2F2F7; margin: 0; padding: 20px; display: flex; align-items: center; justify-content: center; min-height: 100vh; text-align: center; }
-    .tarjeta { background: white; padding: 30px; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.06); max-width: 450px; width: 100%; box-sizing: border-box; }
-    .icono { font-size: 50px; color: #34C759; margin-bottom: 15px; }
-    .btn { display: block; color: white; text-decoration: none; padding: 14px 25px; border-radius: 10px; font-weight: bold; margin-top: 12px; font-size: 15px; text-align: center; }
-    .btn-download-xlsx { background: #2563EB; }
-    .btn-download-xlsx:active { background: #1D4ED8; }
-    .btn-back { background: #8E8E93; }
-    .btn-back:active { background: #7a7a7d; }
+    * { box-sizing: border-box; }
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #F8FAFC; margin: 0; padding: 20px; display: flex; align-items: center; justify-content: center; min-height: 100vh; text-align: center; color: #0F172A; -webkit-font-smoothing: antialiased; }
+    .tarjeta { background: white; padding: 32px 24px; border-radius: 14px; border: 1px solid #E2E8F0; box-shadow: 0 1px 4px rgba(0,0,0,0.04); max-width: 450px; width: 100%; }
+    .icono { font-size: 46px; color: #10B981; margin-bottom: 15px; }
+    .btn { display: block; text-decoration: none; padding: 12px 20px; border-radius: 8px; font-weight: 700; margin-top: 10px; font-size: 14px; text-align: center; transition: all 0.2s; }
+    .btn-download-xlsx { background: #0F172A; color: white; }
+    .btn-download-xlsx:hover { background: #1E293B; }
+    .btn-back { background: #FFFFFF; color: #0F172A; border: 1.5px solid #E2E8F0; }
+    .btn-back:hover { border-color: #0F172A; }
 </style>
 <script>
     window.addEventListener('DOMContentLoaded', () => {
@@ -92,8 +95,8 @@ HTML_EXITO = """
 </head><body>
     <div class="tarjeta">
         <div class="icono">✓</div>
-        <h2 style="margin-top:0;">¡Mantenimiento Guardado!</h2>
-        <p style="color: #666; font-size: 14px; margin-bottom: 25px;">La intervención se registró correctamente y la Hoja de Trabajo se generó en la planilla oficial de Excel.</p>
+        <h2 style="margin-top:0; font-size: 20px; font-weight: 800;">¡Mantenimiento Guardado!</h2>
+        <p style="color: #64748B; font-size: 13.5px; margin-bottom: 24px; line-height: 1.5;">La intervención se registró correctamente y la Hoja de Trabajo se generó en la planilla oficial de Excel.</p>
         
         {% if xlsx_file %}
         <a id="btn-auto-dl" href="/descargar/{{ xlsx_file }}" class="btn btn-download-xlsx">📥 Descargar Hoja de Trabajo (.xlsx)</a>
@@ -224,41 +227,46 @@ HTML_INVENTARIO = """
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inventario Biomédico | SGEM GAMLP</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #007AFF;
-            --primary-dark: #0056b3;
+            --primary: #0F172A;
+            --primary-dark: #020617;
+            --primary-hover: #1E293B;
             --bg: #F8FAFC;
             --card: #FFFFFF;
             --text: #0F172A;
             --muted: #64748B;
             --border: #E2E8F0;
+            --border-hover: #CBD5E1;
             --success: #10B981;
             --warning: #F59E0B;
             --danger: #EF4444;
             --purple: #8B5CF6;
         }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
-        body { background: var(--bg); color: var(--text); padding-bottom: 50px; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        body { background: var(--bg); color: var(--text); padding-bottom: 50px; -webkit-font-smoothing: antialiased; }
         
         .header {
-            background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+            background: #0F172A;
             color: white;
-            padding: 26px 20px;
+            padding: 24px 20px 20px;
             text-align: center;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            border-bottom: 1px solid #1E293B;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
-        .header h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; letter-spacing: -0.5px; }
+        .header h1 { font-size: 22px; font-weight: 800; margin-bottom: 4px; letter-spacing: -0.5px; }
         .header p { font-size: 13px; color: #94A3B8; }
-        .badge-gamlp { display: inline-block; background: rgba(255,255,255,0.15); padding: 3px 12px; border-radius: 20px; font-size: 11px; margin-bottom: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+        .badge-gamlp { display: inline-block; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14); color: #CBD5E1; padding: 3px 12px; border-radius: 20px; font-size: 11px; margin-bottom: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
 
         .container { max-width: 960px; margin: -15px auto 0; padding: 0 16px; }
         
         .filter-card {
             background: var(--card);
-            border-radius: 16px;
+            border-radius: 14px;
             padding: 18px;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
             border: 1px solid var(--border);
             margin-bottom: 20px;
         }
@@ -276,13 +284,13 @@ HTML_INVENTARIO = """
         }
 
         .filter-group { display: flex; flex-direction: column; gap: 4px; }
-        .filter-label { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+        .filter-label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
         
         .select-input, .search-input {
             width: 100%;
             padding: 11px 14px;
-            border-radius: 10px;
-            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            border: 1px solid var(--border);
             font-size: 14px;
             outline: none;
             background: #F8FAFC;
@@ -290,7 +298,7 @@ HTML_INVENTARIO = """
             font-weight: 500;
             transition: all 0.2s;
         }
-        .select-input:focus, .search-input:focus { border-color: var(--primary); background: #FFFFFF; box-shadow: 0 0 0 3px rgba(0,122,255,0.12); }
+        .select-input:focus, .search-input:focus { border-color: var(--border-hover); background: #FFFFFF; box-shadow: 0 0 0 3px rgba(15,23,42,0.08); }
         
         .search-input { background: #FFFFFF; }
 
@@ -305,82 +313,84 @@ HTML_INVENTARIO = """
         }
         .stat-card {
             background: var(--card);
-            padding: 12px 14px;
+            padding: 14px 16px;
             border-radius: 12px;
             border: 1px solid var(--border);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
             text-align: center;
         }
-        .stat-num { font-size: 22px; font-weight: 700; color: var(--primary); }
+        .stat-num { font-size: 26px; font-weight: 800; color: var(--text); letter-spacing: -0.5px; }
         .stat-lbl { font-size: 11px; color: var(--muted); font-weight: 600; margin-top: 2px; }
 
         .area-section {
             background: var(--card);
-            border-radius: 16px;
+            border-radius: 14px;
             padding: 18px;
             border: 1px solid var(--border);
             margin-bottom: 16px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
         }
         .area-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             padding-bottom: 12px;
-            border-bottom: 1.5px solid #F1F5F9;
+            border-bottom: 1px solid var(--border);
             margin-bottom: 14px;
         }
         .area-title {
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 700;
-            color: #1E293B;
+            color: var(--text);
             display: flex;
             align-items: center;
             gap: 8px;
         }
         .area-badge-count {
-            background: #EFF6FF;
-            color: #1D4ED8;
-            font-size: 12px;
+            background: #F1F5F9;
+            color: #334155;
+            font-size: 11px;
             font-weight: 700;
             padding: 3px 10px;
             border-radius: 20px;
+            border: 1px solid #E2E8F0;
         }
 
         .equipment-list { display: flex; flex-direction: column; gap: 10px; }
         .equipment-card {
             background: #FFFFFF;
-            border-radius: 12px;
+            border-radius: 10px;
             padding: 14px 16px;
             border: 1px solid var(--border);
-            box-shadow: 0 1px 4px rgba(0,0,0,0.02);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
             transition: all 0.15s ease-in-out;
             text-decoration: none;
             color: inherit;
             display: block;
         }
-        .equipment-card:hover { border-color: #CBD5E1; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .equipment-card:hover { border-color: #CBD5E1; box-shadow: 0 3px 10px rgba(0,0,0,0.04); }
         .equipment-card:active { transform: scale(0.99); }
         
         .eq-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 6px; }
-        .eq-title { font-size: 15px; font-weight: 700; color: var(--text); }
-        .eq-code { background: #EEF2FF; color: #4338CA; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 6px; white-space: nowrap; }
+        .eq-title { font-size: 14.5px; font-weight: 700; color: var(--text); }
+        .eq-code { background: #F1F5F9; color: #334155; border: 1px solid #E2E8F0; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 6px; white-space: nowrap; }
         
         .eq-detail { font-size: 13px; color: var(--muted); margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
         .eq-badges { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
         .badge { font-size: 11px; font-weight: 600; padding: 3px 7px; border-radius: 6px; }
-        .badge-red { background: #F1F5F9; color: #0284C7; }
-        .badge-centro { background: #F1F5F9; color: #334155; }
+        .badge-red { background: #F8FAFC; color: #0284C7; border: 1px solid #E2E8F0; }
+        .badge-centro { background: #F8FAFC; color: #334155; border: 1px solid #E2E8F0; }
         .badge-area { background: #F8FAFC; color: #475569; border: 1px solid #E2E8F0; }
-        .badge-garantia { background: #ECFDF5; color: #065F46; }
-        .badge-mtto { background: #FEF3C7; color: #92400E; }
-        .badge-danger { background: #FEE2E2; color: #991B1B; }
+        .badge-garantia { background: #ECFDF5; color: #065F46; border: 1px solid #A7F3D0; }
+        .badge-mtto { background: #FEF3C7; color: #92400E; border: 1px solid #FDE68A; }
+        .badge-danger { background: #FEE2E2; color: #991B1B; border: 1px solid #FECACA; }
 
         .btn-view {
             display: inline-block;
             margin-top: 8px;
             font-size: 12px;
             font-weight: 700;
-            color: var(--primary);
+            color: #0F172A;
         }
         .no-results {
             text-align: center;
@@ -398,11 +408,11 @@ HTML_INVENTARIO = """
         }
         .asset-pill-btn {
             background: #FFFFFF;
-            border: 1.5px solid #CBD5E1;
+            border: 1.5px solid #E2E8F0;
             color: #334155;
-            padding: 8px 18px;
+            padding: 7px 16px;
             border-radius: 20px;
-            font-size: 13.5px;
+            font-size: 13px;
             font-weight: 700;
             cursor: pointer;
             transition: all 0.2s;
@@ -411,35 +421,41 @@ HTML_INVENTARIO = """
             gap: 6px;
         }
         .asset-pill-btn:hover {
-            border-color: #005691;
-            color: #005691;
+            border-color: #0F172A;
+            color: #0F172A;
         }
         .asset-pill-btn.active {
-            background: #005691;
-            border-color: #005691;
+            background: #0F172A;
+            border-color: #0F172A;
             color: #FFFFFF;
-            box-shadow: 0 2px 8px rgba(0, 86, 145, 0.3);
+            box-shadow: 0 2px 6px rgba(15, 23, 42, 0.25);
         }
         .nav-tabs {
             display: flex;
             justify-content: center;
-            gap: 10px;
+            gap: 8px;
             margin-top: 15px;
         }
         .nav-tab {
-            color: white;
+            color: #94A3B8;
             text-decoration: none;
-            padding: 7px 16px;
+            padding: 6px 14px;
             border-radius: 20px;
-            font-size: 13px;
+            font-size: 12.5px;
             font-weight: 600;
-            background: rgba(255, 255, 255, 0.12);
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             transition: all 0.2s;
         }
+        .nav-tab:hover {
+            color: #FFFFFF;
+            border-color: rgba(255, 255, 255, 0.25);
+        }
         .nav-tab.active {
-            background: var(--primary);
-            color: white;
-            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4);
+            background: #FFFFFF;
+            color: #0F172A;
+            font-weight: 700;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
         }
     </style>
 </head>
@@ -980,17 +996,19 @@ HTML_ANALISIS = """
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SGEM GAMLP - Análisis y Censo de Equipamiento</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            --primary: #2563EB;
-            --primary-dark: #1D4ED8;
+            --primary: #0F172A;
+            --primary-dark: #020617;
+            --primary-hover: #1E293B;
             --bg: #F8FAFC;
             --card-bg: #FFFFFF;
             --text: #0F172A;
             --muted: #64748B;
             --border: #E2E8F0;
+            --border-hover: #CBD5E1;
             --green: #10B981;
             --orange: #F59E0B;
             --purple: #8B5CF6;
@@ -998,7 +1016,7 @@ HTML_ANALISIS = """
         }
 
         body {
-            font-family: 'Segoe UI', -apple-system, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background-color: var(--bg);
             color: var(--text);
             margin: 0;
@@ -1007,20 +1025,22 @@ HTML_ANALISIS = """
         }
 
         .header {
-            background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
+            background: #0F172A;
             color: white;
             padding: 24px 20px 20px;
             text-align: center;
-            border-bottom: 1px solid #334155;
+            border-bottom: 1px solid #1E293B;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
 
         .badge-gamlp {
             display: inline-block;
-            background: rgba(255, 255, 255, 0.1);
-            color: #93C5FD;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            color: #CBD5E1;
             font-size: 11px;
             font-weight: 700;
-            padding: 4px 10px;
+            padding: 3px 12px;
             border-radius: 20px;
             margin-bottom: 8px;
             letter-spacing: 0.5px;
@@ -1043,50 +1063,57 @@ HTML_ANALISIS = """
         .nav-tabs {
             display: flex;
             justify-content: center;
-            gap: 10px;
+            gap: 8px;
             margin-top: 15px;
         }
 
         .nav-tab {
-            color: white;
+            color: #94A3B8;
             text-decoration: none;
-            padding: 7px 16px;
+            padding: 6px 14px;
             border-radius: 20px;
-            font-size: 13px;
+            font-size: 12.5px;
             font-weight: 600;
-            background: rgba(255, 255, 255, 0.12);
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             transition: all 0.2s;
         }
 
+        .nav-tab:hover {
+            color: #FFFFFF;
+            border-color: rgba(255, 255, 255, 0.25);
+        }
+
         .nav-tab.active {
-            background: var(--primary);
-            color: white;
-            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4);
+            background: #FFFFFF;
+            color: #0F172A;
+            font-weight: 700;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
         }
 
         .asset-tab {
-            padding: 8px 18px;
+            padding: 7px 16px;
             border-radius: 20px;
             font-size: 13px;
             font-weight: 700;
             text-decoration: none;
             color: #475569;
             background: #FFFFFF;
-            border: 1.5px solid #CBD5E1;
+            border: 1.5px solid #E2E8F0;
             transition: all 0.2s;
             display: inline-flex;
             align-items: center;
             gap: 6px;
         }
         .asset-tab:hover {
-            border-color: var(--primary);
-            color: var(--primary);
+            border-color: #0F172A;
+            color: #0F172A;
         }
         .asset-tab.active {
-            background: var(--primary);
+            background: #0F172A;
             color: #FFFFFF;
-            border-color: var(--primary);
-            box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
+            border-color: #0F172A;
+            box-shadow: 0 2px 6px rgba(15, 23, 42, 0.25);
         }
 
         .container {
@@ -1722,7 +1749,7 @@ HTML_ANALISIS = """
                         datasets: [{
                             label: 'Activos Registrados',
                             data: censoData,
-                            backgroundColor: ['#2563EB', '#059669', '#D97706', '#7C3AED', '#DC2626', '#0891B2', '#4F46E5', '#EA580C'],
+                            backgroundColor: ['#0F172A', '#334155', '#475569', '#64748B', '#10B981', '#F59E0B', '#EF4444', '#0284C7'],
                             borderRadius: 8
                         }]
                     },
@@ -1752,7 +1779,7 @@ HTML_ANALISIS = """
                         datasets: [{
                             label: 'Cantidad',
                             data: tiposData,
-                            backgroundColor: '#059669',
+                            backgroundColor: '#334155',
                             borderRadius: 8
                         }]
                     },
@@ -1931,52 +1958,55 @@ HTML_ENLACES_PORTAL = """<!DOCTYPE html>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SGEM GAMLP • Enlaces y Accesos del Sistema</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #003B64;
-            --primary-light: #005691;
-            --accent: #2563EB;
-            --bg: #F4F6F9;
+            --primary: #0F172A;
+            --primary-light: #1E293B;
+            --accent: #0284C7;
+            --bg: #F8FAFC;
             --card: #FFFFFF;
             --text: #0F172A;
             --muted: #64748B;
             --border: #E2E8F0;
             --radius: 12px;
         }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
-        body { background-color: var(--bg); color: var(--text); padding-bottom: 50px; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        body { background-color: var(--bg); color: var(--text); padding-bottom: 50px; -webkit-font-smoothing: antialiased; }
         .header {
-            background: linear-gradient(135deg, #00223D 0%, #003B64 50%, #005691 100%);
+            background: #0F172A;
             color: #FFFFFF;
-            padding: 25px 20px 20px;
+            padding: 24px 20px 20px;
             text-align: center;
+            border-bottom: 1px solid #1E293B;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
-        .badge-gamlp { display: inline-block; background: rgba(255,255,255,0.15); padding: 3px 12px; border-radius: 20px; font-size: 11px; margin-bottom: 8px; font-weight: 600; text-transform: uppercase; }
-        .header h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+        .badge-gamlp { display: inline-block; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14); padding: 3px 12px; border-radius: 20px; font-size: 11px; margin-bottom: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+        .header h1 { font-size: 22px; font-weight: 800; margin-bottom: 4px; letter-spacing: -0.5px; }
         .header p { font-size: 13px; color: #94A3B8; }
         .nav-tabs { display: flex; justify-content: center; gap: 8px; margin-top: 15px; flex-wrap: wrap; }
         .nav-tab {
-            color: #CBD5E1;
+            color: #94A3B8;
             text-decoration: none;
-            padding: 7px 16px;
+            padding: 6px 14px;
             border-radius: 20px;
-            font-size: 13px;
+            font-size: 12.5px;
             font-weight: 600;
-            background: rgba(255,255,255,0.08);
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.1);
             transition: all 0.2s;
         }
-        .nav-tab:hover { background: rgba(255,255,255,0.18); color: #FFFFFF; }
-        .nav-tab.active { background: #FFFFFF; color: var(--primary); font-weight: 700; }
+        .nav-tab:hover { border-color: rgba(255,255,255,0.25); color: #FFFFFF; }
+        .nav-tab.active { background: #FFFFFF; color: #0F172A; font-weight: 700; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
         .container { max-width: 860px; margin: 20px auto 0; padding: 0 16px; }
         .banner {
-            background: linear-gradient(135deg, #003B64, #005691);
+            background: #0F172A;
+            border: 1px solid #1E293B;
             color: white;
             padding: 20px;
             border-radius: var(--radius);
             margin-bottom: 20px;
-            box-shadow: 0 4px 14px rgba(0,59,100,0.15);
+            box-shadow: 0 2px 8px rgba(15,23,42,0.1);
         }
         .link-card {
             background: var(--card);
@@ -2262,23 +2292,25 @@ HTML_FICHA_MUEBLE = """<!DOCTYPE html>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ mueble['descripcion'] or 'Ficha de Mueble y TI' }} - SGEM GAMLP</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #2563EB;
-            --primary-dark: #1D4ED8;
+            --primary: #0F172A;
+            --primary-dark: #020617;
+            --primary-hover: #1E293B;
             --bg: #F8FAFC;
             --card-bg: #FFFFFF;
             --text: #0F172A;
             --muted: #64748B;
             --border: #E2E8F0;
+            --border-hover: #CBD5E1;
             --green: #10B981;
             --orange: #F59E0B;
             --red: #EF4444;
         }
 
         body {
-            font-family: 'Segoe UI', -apple-system, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background-color: var(--bg);
             color: var(--text);
             margin: 0;
@@ -2287,20 +2319,22 @@ HTML_FICHA_MUEBLE = """<!DOCTYPE html>
         }
 
         .header {
-            background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
+            background: #0F172A;
             color: white;
             padding: 24px 20px 20px;
             text-align: center;
-            border-bottom: 1px solid #334155;
+            border-bottom: 1px solid #1E293B;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
 
         .badge-gamlp {
             display: inline-block;
-            background: rgba(255, 255, 255, 0.1);
-            color: #93C5FD;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            color: #CBD5E1;
             font-size: 11px;
             font-weight: 700;
-            padding: 4px 10px;
+            padding: 3px 12px;
             border-radius: 20px;
             margin-bottom: 8px;
             letter-spacing: 0.5px;
@@ -2311,6 +2345,7 @@ HTML_FICHA_MUEBLE = """<!DOCTYPE html>
             font-size: 20px;
             font-weight: 800;
             margin: 0 0 4px;
+            letter-spacing: -0.5px;
         }
 
         .header p {
@@ -2771,54 +2806,61 @@ def ver_equipo(id_equipo):
                     garantia_str = f"Activa (Vence el {f_venc} - Resta: {duracion})"
 
         html_web = """
-        <!DOCTYPE html><html lang="es"><head><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Hoja de Vida</title>
+        <!DOCTYPE html><html lang="es"><head><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Ficha Técnica | {{ eq['nombre'] }}</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
         <style>
-            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #F2F2F7; margin: 0; padding: 15px; color: #1C1C1E;}
-            .tarjeta { background: #fff; border-radius: 16px; padding: 25px; box-shadow: 0 4px 24px rgba(0,0,0,0.06); max-width: 600px; margin: auto; }
-            .cabecera { background: #007AFF; color: white; padding: 15px; border-radius: 12px; text-align: center; margin-bottom: 20px; }
-            .estado { display: inline-block; padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 13px; background: #34C759; color: white; margin-right: 5px; }
-            .estado.baja { background: #FF3B30; }
-            .estado.espera { background: #FF9500; }
-            .estado.inoperante { background: #8E8E93; }
-            .btn-action { display: block; text-align: center; background: #007AFF; color: white; text-decoration: none; padding: 14px; border-radius: 10px; font-weight: bold; margin-top: 20px; font-size: 15px; }
-            .btn-action:active { background: #0056B3; }
-            table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px;}
-            th, td { border-bottom: 1px solid #E5E5EA; padding: 12px; text-align: left; } th { color: #8E8E93;}
+            * { box-sizing: border-box; }
+            body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #F8FAFC; margin: 0; padding: 20px 15px; color: #0F172A; -webkit-font-smoothing: antialiased; }
+            .tarjeta { background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 14px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); max-width: 650px; margin: auto; }
+            .cabecera { background: #0F172A; color: white; padding: 14px 18px; border-radius: 10px; text-align: center; margin-bottom: 20px; }
+            .cabecera h3 { margin: 0; font-size: 14px; font-weight: 700; letter-spacing: 0.3px; }
+            .estado { display: inline-block; padding: 4px 10px; border-radius: 6px; font-weight: 700; font-size: 12px; background: #ECFDF5; color: #065F46; border: 1px solid #A7F3D0; }
+            .estado.baja { background: #FEE2E2; color: #991B1B; border: 1px solid #FECACA; }
+            .estado.espera { background: #FEF3C7; color: #92400E; border: 1px solid #FDE68A; }
+            .estado.inoperante { background: #F1F5F9; color: #475569; border: 1px solid #E2E8F0; }
+            .btn-action { display: block; text-align: center; background: #0F172A; color: white; text-decoration: none; padding: 12px; border-radius: 8px; font-weight: 700; font-size: 13.5px; transition: all 0.2s; }
+            .btn-action:hover { background: #1E293B; }
+            .btn-action-sec { display: block; text-align: center; background: #FFFFFF; color: #0F172A; border: 1.5px solid #E2E8F0; text-decoration: none; padding: 11px; border-radius: 8px; font-weight: 700; font-size: 13.5px; transition: all 0.2s; }
+            .btn-action-sec:hover { border-color: #0F172A; }
+            table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }
+            th, td { border-bottom: 1px solid #E2E8F0; padding: 10px 12px; text-align: left; }
+            th { color: #64748B; font-size: 11px; font-weight: 700; text-transform: uppercase; background: #F8FAFC; }
         </style></head><body>
-            <div id="sync-banner" style="display:none; background: #FF9500; color: white; padding: 12px; text-align: center; font-weight: bold; font-size: 14px; border-radius: 8px; margin: 10px auto; max-width: 600px;">
+            <div id="sync-banner" style="display:none; background: #F59E0B; color: white; padding: 12px; text-align: center; font-weight: bold; font-size: 14px; border-radius: 8px; margin: 10px auto; max-width: 600px;">
                 ⚠️ Tienes <span id="sync-count">0</span> reporte(s) guardado(s) offline. 
                 <a href="#" onclick="intentarSincronizarAhora(); return false;" style="color: white; text-decoration: underline; margin-left: 10px;">Sincronizar ahora</a>
             </div>
-            <div class="tarjeta"><div class="cabecera"><h3 style="margin:0;">SGEM GAMLP - Sistema de Gestión de Equipamiento Médico</h3></div>
-                <h2 style="margin:0;">{{ eq['nombre'] }}</h2>
-                <div style="margin-top: 5px;">
+            <div class="tarjeta"><div class="cabecera"><h3>SGEM GAMLP • Sistema de Gestión de Equipamiento Médico</h3></div>
+                <h2 style="margin:0; font-size: 20px; font-weight: 800;">{{ eq['nombre'] }}</h2>
+                <div style="margin-top: 6px;">
                     <div class="estado {% if eq['estado'] == 'Baja' %}baja{% elif eq['estado'] == 'En Espera de Repuesto' %}espera{% elif eq['estado'] == 'Fuera de Servicio' %}inoperante{% endif %}">{{ eq['estado'] }}</div>
                 </div>
                 
                 {% if eq['foto'] %}
                 <div style="text-align: center; margin: 15px 0;">
-                    <img src="{{ eq['foto'] }}" alt="{{ eq['nombre'] }}" style="max-width: 100%; max-height: 250px; border-radius: 12px; object-fit: contain; box-shadow: 0 4px 16px rgba(0,0,0,0.08); border: 1px solid #E5E5EA;">
+                    <img src="{{ eq['foto'] }}" alt="{{ eq['nombre'] }}" style="max-width: 100%; max-height: 250px; border-radius: 10px; object-fit: contain; box-shadow: 0 1px 3px rgba(0,0,0,0.04); border: 1px solid #E2E8F0;">
                 </div>
                 {% endif %}
 
-                <div style="margin-top: 20px; font-size: 15px; line-height: 1.6;">
-                    <p><strong>ID:</strong> {{ eq['id'] }}</p>
-                    <p><strong>Red de Salud:</strong> {{ eq['red_salud_nombre'] or 'GAMLP' }}</p>
-                    <p><strong>Centro de Salud:</strong> {{ eq['centro_salud_nombre'] or 'Centro de Salud' }}</p>
-                    <p><strong>S/N:</strong> {{ eq['numero_serie'] or 'Sin Serie' }}</p>
-                    <p><strong>Modelo:</strong> {{ eq['marca'] }} / {{ eq['modelo'] }}</p>
-                    <p><strong>Área / Servicio:</strong> {{ eq['servicio'] }} - {{ eq['area'] }}</p>
-                    <p><strong>Garantía:</strong> {{ garantia_str }}</p>
-                    <p style="color: #FF9500;"><strong>Criticidad:</strong> {{ eq['criticidad'] }}</p>
+                <div style="margin-top: 20px; font-size: 14px; line-height: 1.7; color: #334155;">
+                    <p style="margin: 4px 0;"><strong style="color: #0F172A;">ID:</strong> {{ eq['id'] }}</p>
+                    <p style="margin: 4px 0;"><strong style="color: #0F172A;">Red de Salud:</strong> {{ eq['red_salud_nombre'] or 'GAMLP' }}</p>
+                    <p style="margin: 4px 0;"><strong style="color: #0F172A;">Centro de Salud:</strong> {{ eq['centro_salud_nombre'] or 'Centro de Salud' }}</p>
+                    <p style="margin: 4px 0;"><strong style="color: #0F172A;">S/N:</strong> {{ eq['numero_serie'] or 'Sin Serie' }}</p>
+                    <p style="margin: 4px 0;"><strong style="color: #0F172A;">Modelo:</strong> {{ eq['marca'] }} / {{ eq['modelo'] }}</p>
+                    <p style="margin: 4px 0;"><strong style="color: #0F172A;">Área / Servicio:</strong> {{ eq['servicio'] }} - {{ eq['area'] }}</p>
+                    <p style="margin: 4px 0;"><strong style="color: #0F172A;">Garantía:</strong> {{ garantia_str }}</p>
+                    <p style="margin: 4px 0; color: #D97706;"><strong style="color: #0F172A;">Criticidad:</strong> {{ eq['criticidad'] }}</p>
                 </div>
                 
-                <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;">
+                <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 20px;">
                     <a href="/equipo/{{ eq['id'] }}/mantenimiento" class="btn-action" style="margin:0;">🛠️ Registrar Mantenimiento</a>
-                    <a href="/equipo/{{ eq['id'] }}/descargar_ficha" class="btn-action" style="background: #2563EB; margin:0;">📥 Descargar Ficha Técnica (.xlsx)</a>
-                    <a href="/equipo/{{ eq['id'] }}/descargar_qr" class="btn-action" style="background: #34C759; margin:0;">📥 Descargar Código QR (Etiqueta)</a>
+                    <a href="/equipo/{{ eq['id'] }}/descargar_ficha" class="btn-action-sec" style="margin:0;">📥 Descargar Ficha Técnica (.xlsx)</a>
+                    <a href="/equipo/{{ eq['id'] }}/descargar_qr" class="btn-action-sec" style="margin:0;">📥 Descargar Código QR (Etiqueta)</a>
                 </div>
                 
-                <h3 style="margin-top:25px; border-bottom: 2px solid #F2F2F7; padding-bottom: 5px;">Historial de Mantenimientos</h3>
+                <h3 style="margin-top:25px; border-bottom: 1px solid #E2E8F0; padding-bottom: 6px; font-size: 15px; font-weight: 700;">Historial de Mantenimientos</h3>
                 <table><tr><th>Fecha</th><th>Tipo</th><th>Realizado Por</th><th>Trabajo Realizado</th><th>Ficha</th></tr>
                 {% for m in hist %}<tr>
                     <td>{{ m['fecha'] }}</td>

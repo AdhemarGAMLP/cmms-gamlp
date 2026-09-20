@@ -10,49 +10,53 @@ HTML_MOVIL_LOGIN = """<!DOCTYPE html>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SGEM GAMLP • Acceso Móvil</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #005691;
-            --primary-dark: #003B64;
-            --accent: #2563EB;
+            --primary: #0F172A;
+            --primary-dark: #020617;
+            --accent: #0284C7;
             --bg: #F8FAFC;
             --card-bg: #FFFFFF;
             --text-main: #0F172A;
             --text-muted: #64748B;
             --border: #E2E8F0;
             --danger: #EF4444;
-            --radius: 16px;
+            --radius: 14px;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background: linear-gradient(135deg, #003B64 0%, #005691 50%, #0284C7 100%);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0F172A;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 20px;
+            -webkit-font-smoothing: antialiased;
         }
         .login-card {
             background: var(--card-bg);
             border-radius: var(--radius);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+            border: 1px solid #E2E8F0;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
             width: 100%;
-            max-width: 440px;
+            max-width: 420px;
             padding: 35px 25px;
             text-align: center;
         }
         .escudo-badge {
             display: inline-block;
-            background: #EFF6FF;
-            color: var(--primary);
-            padding: 6px 14px;
+            background: #F1F5F9;
+            color: #0F172A;
+            padding: 5px 12px;
             border-radius: 20px;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 700;
             letter-spacing: 0.5px;
             margin-bottom: 12px;
-            border: 1px solid #BFDBFE;
+            border: 1px solid #E2E8F0;
         }
         .login-card h1 {
             color: var(--text-main);
@@ -191,34 +195,39 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SGEM GAMLP • Suite Móvil y Tablet</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #005691;
-            --primary-dark: #003B64;
-            --accent: #2563EB;
-            --success: #16A34A;
-            --warning: #D97706;
-            --danger: #DC2626;
-            --bg: #F1F5F9;
+            --primary: #0F172A;
+            --primary-dark: #020617;
+            --accent: #0284C7;
+            --success: #10B981;
+            --warning: #F59E0B;
+            --danger: #EF4444;
+            --bg: #F8FAFC;
             --card-bg: #FFFFFF;
             --text-main: #0F172A;
             --text-muted: #64748B;
-            --border: #CBD5E1;
-            --radius-card: 14px;
-            --radius-btn: 10px;
+            --border: #E2E8F0;
+            --border-hover: #CBD5E1;
+            --radius-card: 12px;
+            --radius-btn: 8px;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: var(--bg);
             color: var(--text-main);
             min-height: 100vh;
             padding-bottom: 70px;
+            -webkit-font-smoothing: antialiased;
         }
 
         /* BARRA SUPERIOR */
         .top-navbar {
-            background: linear-gradient(135deg, #003B64 0%, #005691 100%);
+            background: #0F172A;
+            border-bottom: 1px solid #1E293B;
             color: white;
             padding: 12px 20px;
             position: sticky;
@@ -227,7 +236,7 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             display: flex;
             align-items: center;
             justify-content: space-between;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
         .brand-info h1 { font-size: 17px; font-weight: 800; letter-spacing: 0.3px; }
         .brand-info span { font-size: 11px; opacity: 0.85; }
