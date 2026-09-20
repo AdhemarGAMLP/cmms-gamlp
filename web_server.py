@@ -1758,53 +1758,6 @@ HTML_ENLACES_PORTAL = """<!DOCTYPE html>
             </div>
         </div>
 
-        <!-- 4. SUPABASE POSTGRESQL -->
-        <div class="link-card" style="border-left: 5px solid #3ECF8E;">
-            <div class="card-header">
-                <div class="card-title">🗄️ Base de Datos PostgreSQL (Supabase Cloud)</div>
-                <span class="badge" style="background: #D1FAE5; color: #065F46;">🟢 NUEVA BASE 2026</span>
-            </div>
-            <div class="card-desc">
-                Base de datos PostgreSQL en la nube (Proyecto: Nueva Base Relevamiento 2026). Almacena equipos, inventarios, muebles, repuestos y mantenimientos con pooler de alto rendimiento.
-            </div>
-            <div class="url-box" style="color: #059669;">https://supabase.com/dashboard</div>
-            <div class="btn-group">
-                <button class="btn" style="background: #059669; color: white;" onclick="copiarTexto('https://supabase.com/dashboard', this)">📋 Copiar Enlace</button>
-                <a href="https://supabase.com/dashboard" target="_blank" class="btn btn-open">🚀 Abrir Supabase</a>
-            </div>
-        </div>
-
-        <!-- 5. RENDER CLOUD HOSTING -->
-        <div class="link-card" style="border-left: 5px solid #6366F1;">
-            <div class="card-header">
-                <div class="card-title">☁️ Panel Servidor Cloud 24/7 (Render Dashboard)</div>
-                <span class="badge" style="background: #EEF2FF; color: #3730A3;">☁️ HOSTING 24/7</span>
-            </div>
-            <div class="card-desc">
-                Panel administrativo en la nube donde corre el servicio web Gunicorn/Flask con despliegue automático continuo y monitor de estado.
-            </div>
-            <div class="url-box" style="color: #4F46E5;">https://dashboard.render.com/</div>
-            <div class="btn-group">
-                <button class="btn" style="background: #4F46E5; color: white;" onclick="copiarTexto('https://dashboard.render.com/', this)">📋 Copiar Enlace</button>
-                <a href="https://dashboard.render.com/" target="_blank" class="btn btn-open">🚀 Abrir Render</a>
-            </div>
-        </div>
-
-        <!-- 6. REPOSITORIO GITHUB -->
-        <div class="link-card" style="border-left: 5px solid #1E293B;">
-            <div class="card-header">
-                <div class="card-title">🐙 Repositorio Oficial del Proyecto (GitHub)</div>
-                <span class="badge" style="background: #F1F5F9; color: #334155;">💻 CÓDIGO FUENTE</span>
-            </div>
-            <div class="card-desc">
-                Repositorio oficial de control de versiones Git con ramas de desarrollo y sincronización directa con Render para despliegues instantáneos.
-            </div>
-            <div class="url-box" style="color: #1E293B;">https://github.com/AdhemarGAMLP/cmms-gamlp</div>
-            <div class="btn-group">
-                <button class="btn" style="background: #1E293B; color: white;" onclick="copiarTexto('https://github.com/AdhemarGAMLP/cmms-gamlp', this)">📋 Copiar Enlace</button>
-                <a href="https://github.com/AdhemarGAMLP/cmms-gamlp" target="_blank" class="btn btn-open">🚀 Abrir GitHub</a>
-            </div>
-        </div>
     </div>
 
     <script>

@@ -143,44 +143,6 @@ class VistaEnlaces(ctk.CTkFrame):
             ]
         )
 
-        # ----------------------------------------------------
-        # TARJETA 4: SERVICIOS Y PLATAFORMAS EN LA NUBE
-        # ----------------------------------------------------
-        card_servicios = ctk.CTkFrame(scroll, fg_color=C_CARD, corner_radius=CORNER_CARD, border_width=1, border_color=C_BORDER)
-        card_servicios.pack(fill="x", pady=(0, 15))
-
-        f_inner_s = ctk.CTkFrame(card_servicios, fg_color="transparent")
-        f_inner_s.pack(padx=20, pady=16, fill="x")
-
-        ctk.CTkLabel(f_inner_s, text="⚙️ Servicios de Infraestructura y Administración", font=ctk.CTkFont(size=16, weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(0, 4))
-        ctk.CTkLabel(f_inner_s, text="Accesos directos a la base de datos central en la nube, panel de hosting y repositorio.", font=ctk.CTkFont(size=11), text_color=C_SUBTEXT).pack(anchor="w", pady=(0, 14))
-
-        f_grid_servicios = ctk.CTkFrame(f_inner_s, fg_color="transparent")
-        f_grid_servicios.pack(fill="x")
-        f_grid_servicios.columnconfigure(0, weight=1)
-        f_grid_servicios.columnconfigure(1, weight=1)
-        f_grid_servicios.columnconfigure(2, weight=1)
-
-        # Botón Supabase
-        f_sup = ctk.CTkFrame(f_grid_servicios, fg_color=C_BG, corner_radius=8, border_width=1, border_color=C_BORDER)
-        f_sup.grid(row=0, column=0, padx=5, sticky="ew")
-        ctk.CTkLabel(f_sup, text="🗄️ Supabase PostgreSQL", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(pady=(8, 2))
-        ctk.CTkLabel(f_sup, text="Base de Datos Central", font=ctk.CTkFont(size=10), text_color=C_SUBTEXT).pack(pady=(0, 6))
-        ctk.CTkButton(f_sup, text="Abrir Dashboard", height=30, fg_color=C_BLUE_LIGHT, text_color=C_BLUE, hover_color="#D8E8FC", font=ctk.CTkFont(size=11, weight="bold"), command=lambda: webbrowser.open(self.url_supabase)).pack(pady=(0, 8), padx=10, fill="x")
-
-        # Botón Render
-        f_ren = ctk.CTkFrame(f_grid_servicios, fg_color=C_BG, corner_radius=8, border_width=1, border_color=C_BORDER)
-        f_ren.grid(row=0, column=1, padx=5, sticky="ew")
-        ctk.CTkLabel(f_ren, text="☁️ Render Dashboard", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(pady=(8, 2))
-        ctk.CTkLabel(f_ren, text="Servidor Web Móvil 24/7", font=ctk.CTkFont(size=10), text_color=C_SUBTEXT).pack(pady=(0, 6))
-        ctk.CTkButton(f_ren, text="Abrir Render", height=30, fg_color=C_BLUE_LIGHT, text_color=C_BLUE, hover_color="#D8E8FC", font=ctk.CTkFont(size=11, weight="bold"), command=lambda: webbrowser.open(self.url_render)).pack(pady=(0, 8), padx=10, fill="x")
-
-        # Botón GitHub
-        f_git = ctk.CTkFrame(f_grid_servicios, fg_color=C_BG, corner_radius=8, border_width=1, border_color=C_BORDER)
-        f_git.grid(row=0, column=2, padx=5, sticky="ew")
-        ctk.CTkLabel(f_git, text="🐙 GitHub Repositorio", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(pady=(8, 2))
-        ctk.CTkLabel(f_git, text="Código Fuente Oficial", font=ctk.CTkFont(size=10), text_color=C_SUBTEXT).pack(pady=(0, 6))
-        ctk.CTkButton(f_git, text="Abrir GitHub", height=30, fg_color=C_BLUE_LIGHT, text_color=C_BLUE, hover_color="#D8E8FC", font=ctk.CTkFont(size=11, weight="bold"), command=lambda: webbrowser.open(self.url_github)).pack(pady=(0, 8), padx=10, fill="x")
 
     def _crear_tarjeta_enlace(self, parent, icono, titulo, badge, badge_color, descripcion, url, acciones, destacada=False):
         borde_color = "#3B82F6" if destacada else C_BORDER
