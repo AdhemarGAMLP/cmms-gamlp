@@ -704,6 +704,16 @@ def obtener_jerarquia_sedes_db(forzar_recarga=False, perfil=None):
         
         cur.execute("SELECT id, red_salud_id, nombre, nivel, direccion, telefono, responsable, estado FROM centros_salud WHERE estado = 'Activo' ORDER BY nombre ASC;")
         centros = [dict(r) for r in cur.fetchall()]
+
+        if perfil == 'historica':
+            try:
+                cur.execute("SELECT UPPER(TRIM(centro_salud_nombre)), COUNT(*) FROM equipos GROUP BY UPPER(TRIM(centro_salud_nombre));")
+                conteo_map = {r[0]: r[1] for r in cur.fetchall() if r[0]}
+                for c in centros:
+                    c_nom = c['nombre'].strip().upper()
+                    c['total_equipos'] = conteo_map.get(c_nom, 0)
+            except Exception as ec:
+                print(f"[WARN] Error calculando conteo por centro histórico: {ec}")
         
         cur.close()
         conn.close()

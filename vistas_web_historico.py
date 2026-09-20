@@ -501,6 +501,8 @@ HTML_HISTORICO_WEB = """<!DOCTYPE html>
         let LISTA_TOTAL_EQUIPOS = [];
         let LISTA_TOTAL_MUEBLES = [];
         let TIPO_ACTIVO_FILTRO = 'TODO'; // 'TODO', 'EQUIPOS', 'MUEBLES'
+        let LIMITE_MOSTRAR = 60;
+        let ULTIMA_LISTA_FILTRADA = [];
 
         window.addEventListener('DOMContentLoaded', async () => {
             await cargarSedesHistoricas();
@@ -513,7 +515,7 @@ HTML_HISTORICO_WEB = """<!DOCTYPE html>
                 SEDES_HISTORICAS = await res.json();
 
                 const selRed = document.getElementById('sel_red');
-                selRed.innerHTML = '<option value="">-- Seleccionar Red de Salud --</option>';
+                selRed.innerHTML = '<option value="">-- Todas las Redes de Salud (GAMLP - 2.938 Equipos) --</option>';
 
                 (SEDES_HISTORICAS.redes || []).forEach(r => {
                     const opt = document.createElement('option');
@@ -523,10 +525,9 @@ HTML_HISTORICO_WEB = """<!DOCTYPE html>
                     selRed.appendChild(opt);
                 });
 
-                if ((SEDES_HISTORICAS.redes || []).length > 0) {
-                    selRed.selectedIndex = 1;
-                    alCambiarRed();
-                }
+                selRed.selectedIndex = 0;
+                actualizarSelectorCentros();
+                await alCambiarCentro();
             } catch (e) {
                 console.error("Error cargando sedes:", e);
                 document.getElementById('grid_activos').innerHTML = `
@@ -538,8 +539,8 @@ HTML_HISTORICO_WEB = """<!DOCTYPE html>
             }
         }
 
-        // 2. Al cambiar Red de Salud
-        function alCambiarRed() {
+        // 2. Actualizar lista de centros según red seleccionada
+        function actualizarSelectorCentros() {
             const redSel = document.getElementById('sel_red').value;
             const redes = SEDES_HISTORICAS.redes || [];
             const rObj = redes.find(r => r.nombre === redSel);
@@ -547,34 +548,36 @@ HTML_HISTORICO_WEB = """<!DOCTYPE html>
 
             const centros = (SEDES_HISTORICAS.centros || []).filter(c => !rId || c.red_salud_id === rId);
             const selCen = document.getElementById('sel_centro');
-            selCen.innerHTML = '<option value="">-- Todos los Centros de la Red --</option>';
+            selCen.innerHTML = '<option value="">-- Todos los Centros de Salud (Ver Todo) --</option>';
 
             centros.forEach(c => {
                 const opt = document.createElement('option');
                 opt.value = c.nombre;
-                opt.textContent = c.nombre;
+                const cnt = (c.total_equipos !== undefined) ? ` (${c.total_equipos} equipos)` : '';
+                opt.textContent = `${c.nombre}${cnt}`;
                 selCen.appendChild(opt);
             });
 
-            if (centros.length > 0) {
-                selCen.selectedIndex = 1;
-            }
+            selCen.selectedIndex = 0;
+        }
 
+        function alCambiarRed() {
+            actualizarSelectorCentros();
             alCambiarCentro();
         }
 
         // 3. Al cambiar Centro de Salud -> Cargar Equipos y Muebles
         async function alCambiarCentro() {
+            const redSel = document.getElementById('sel_red').value;
             const cenSel = document.getElementById('sel_centro').value;
             const grid = document.getElementById('grid_activos');
             grid.innerHTML = `
                 <div class="empty-state">
                     <span>⏳</span>
-                    Cargando activos históricos de ${cenSel || 'la red seleccionada'}...
+                    Cargando activos históricos de ${cenSel || redSel || 'toda la red GAMLP'}...
                 </div>
             `;
 
-            const redSel = document.getElementById('sel_red').value;
             try {
                 // Cargar equipos históricos
                 const urlEq = `/api/historico/equipos?centro=${encodeURIComponent(cenSel)}&red=${encodeURIComponent(redSel)}`;
@@ -587,6 +590,7 @@ HTML_HISTORICO_WEB = """<!DOCTYPE html>
                 LISTA_TOTAL_MUEBLES = await resMu.json();
 
                 actualizarContadores();
+                LIMITE_MOSTRAR = 60;
                 filtrarListaActivos();
             } catch (e) {
                 console.error("Error cargando activos:", e);
@@ -617,6 +621,7 @@ HTML_HISTORICO_WEB = """<!DOCTYPE html>
             if (tipo === 'TODO') document.getElementById('btn_tipo_todo').classList.add('active');
             if (tipo === 'EQUIPOS') document.getElementById('btn_tipo_equipos').classList.add('active');
             if (tipo === 'MUEBLES') document.getElementById('btn_tipo_muebles').classList.add('active');
+            LIMITE_MOSTRAR = 60;
             filtrarListaActivos();
         }
 
@@ -642,7 +647,8 @@ HTML_HISTORICO_WEB = """<!DOCTYPE html>
                     const marStr = String(item.marca || '').toLowerCase();
                     const serStr = String(item.numero_serie || item.serie || '').toLowerCase();
                     const areStr = String(item.area || item.ubicacion || '').toLowerCase();
-                    return idStr.includes(q) || nomStr.includes(q) || modStr.includes(q) || marStr.includes(q) || serStr.includes(q) || areStr.includes(q);
+                    const cenStr = String(item.centro_salud_nombre || '').toLowerCase();
+                    return idStr.includes(q) || nomStr.includes(q) || modStr.includes(q) || marStr.includes(q) || serStr.includes(q) || areStr.includes(q) || cenStr.includes(q);
                 });
             }
 
@@ -650,6 +656,7 @@ HTML_HISTORICO_WEB = """<!DOCTYPE html>
         }
 
         function renderizarTarjetas(lista) {
+            ULTIMA_LISTA_FILTRADA = lista;
             const grid = document.getElementById('grid_activos');
             document.getElementById('lbl_visibles').textContent = lista.length;
 
@@ -663,13 +670,15 @@ HTML_HISTORICO_WEB = """<!DOCTYPE html>
                 return;
             }
 
+            const rebanada = lista.slice(0, LIMITE_MOSTRAR);
             grid.innerHTML = '';
-            lista.forEach((item, idx) => {
+            rebanada.forEach((item) => {
                 const esEquipo = item._tipo === 'EQUIPO';
                 const icono = esEquipo ? '🩺' : '🛋️';
                 const titulo = esEquipo ? (item.nombre || 'Equipo Médico') : (item.descripcion || item.tipo_activo || 'Mueble / TI');
                 const codigoAF = esEquipo ? item.id : (item.codigo_sispam || `MUE-${item.id}`);
                 const area = esEquipo ? (item.area || 'General') : (item.ubicacion || 'General');
+                const centroNom = item.centro_salud_nombre || item.ubicacion || 'Centro de Salud';
                 const marca = item.marca || 'S/M';
                 const modelo = item.modelo || 'S/M';
                 const serie = item.numero_serie || item.serie || 'S/N';
@@ -694,6 +703,7 @@ HTML_HISTORICO_WEB = """<!DOCTYPE html>
                             <span class="badge-af">${escaparHtml(codigoAF)}</span>
                         </div>
                         <div class="asset-meta">
+                            <div>🏥 Centro: <strong>${escaparHtml(centroNom)}</strong></div>
                             <div>📍 Área: <span>${escaparHtml(area)}</span></div>
                             <div>🏷️ Marca/Mod: <span>${escaparHtml(marca)} / ${escaparHtml(modelo)}</span></div>
                             <div>🔢 Serie: <span>${escaparHtml(serie)}</span></div>
@@ -706,6 +716,24 @@ HTML_HISTORICO_WEB = """<!DOCTYPE html>
                 `;
                 grid.appendChild(card);
             });
+
+            if (lista.length > LIMITE_MOSTRAR) {
+                const btnMas = document.createElement('div');
+                btnMas.style.gridColumn = '1 / -1';
+                btnMas.style.textAlign = 'center';
+                btnMas.style.marginTop = '15px';
+                btnMas.innerHTML = `
+                    <button type="button" class="btn-ir-actual" style="background:#0284C7; font-size:13.5px; padding:12px 28px; cursor:pointer;" onclick="cargarMasTarjetas()">
+                        ⬇️ Cargar más activos (mostrando ${rebanada.length} de ${lista.length})
+                    </button>
+                `;
+                grid.appendChild(btnMas);
+            }
+        }
+
+        function cargarMasTarjetas() {
+            LIMITE_MOSTRAR += 60;
+            renderizarTarjetas(ULTIMA_LISTA_FILTRADA);
         }
 
         // 7. Modal de Ficha Técnica
