@@ -436,6 +436,54 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
         }
         .btn-add-action:active { transform: scale(0.97); }
 
+        /* FILTRO RÁPIDO DE ACTIVOS (TODO / EQUIPOS / MUEBLES) */
+        .asset-filters-bar {
+            display: flex;
+            gap: 8px;
+            margin: 10px 0 14px 0;
+            overflow-x: auto;
+            padding-bottom: 4px;
+            -webkit-overflow-scrolling: touch;
+        }
+        .asset-filters-bar::-webkit-scrollbar { display: none; }
+        .btn-filter-pill {
+            padding: 7px 14px;
+            border-radius: 20px;
+            border: 1.5px solid var(--border);
+            background: #FFFFFF;
+            color: var(--text-muted);
+            font-size: 12.5px;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-filter-pill:hover {
+            border-color: #94A3B8;
+            color: var(--text-main);
+            background: #F8FAFC;
+        }
+        .btn-filter-pill.active {
+            background: var(--primary);
+            color: #FFFFFF;
+            border-color: var(--primary);
+            box-shadow: 0 2px 8px rgba(0,59,100,0.25);
+        }
+        .pill-count {
+            background: rgba(0,0,0,0.08);
+            padding: 1px 7px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 800;
+        }
+        .btn-filter-pill.active .pill-count {
+            background: rgba(255,255,255,0.25);
+            color: #FFFFFF;
+        }
+
         /* TARJETAS DE CONTENIDO */
         .card-item {
             background: var(--card-bg);
@@ -999,13 +1047,25 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
         {% if es_admin or perms.get('Inventario', {}).get('ver', True) %}
         <section id="pane_inventario" class="tab-pane active">
             <div class="tab-tools-bar">
-                <input type="text" id="busq_inventario" class="search-input" placeholder="Buscar equipo por AF, nombre, área..." oninput="filtrarListaInventario()">
+                <input type="text" id="busq_inventario" class="search-input" placeholder="Buscar equipo o mueble por AF, nombre, área..." oninput="filtrarListaInventario()">
                 {% if es_admin or perms.get('Inventario', {}).get('agregar', True) %}
                 <button class="btn-add-action" onclick="abrirModalRegistroEquipo()">✚ Registrar</button>
                 {% endif %}
             </div>
+            <!-- FILTRO UNIFICADO DE ACTIVOS -->
+            <div class="asset-filters-bar">
+                <button type="button" class="btn-filter-pill active" id="pill_inv_todo" onclick="setFiltroTipoActivo('todo')">
+                    🌐 Ver Todo <span id="cnt_inv_todo" class="pill-count">0</span>
+                </button>
+                <button type="button" class="btn-filter-pill" id="pill_inv_equipos" onclick="setFiltroTipoActivo('equipos')">
+                    🩺 Solo Equipos Médicos <span id="cnt_inv_equipos" class="pill-count">0</span>
+                </button>
+                <button type="button" class="btn-filter-pill" id="pill_inv_muebles" onclick="setFiltroTipoActivo('muebles')">
+                    🛋️ Solo Muebles y TI <span id="cnt_inv_muebles" class="pill-count">0</span>
+                </button>
+            </div>
             <div id="lista_inventario" class="cards-grid">
-                <div class="empty-state"><span>⏳</span>Cargando equipos del centro...</div>
+                <div class="empty-state"><span>⏳</span>Cargando activos del centro...</div>
             </div>
         </section>
         {% endif %}
@@ -1213,7 +1273,37 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                 </div>
             </div>
 
-            <!-- ENLACE 2: PORTAL WEB GENERAL (NUBE 24/7) -->
+            <!-- ENLACE 2: CONSULTA HISTÓRICA (GESTIONES ANTERIORES - SOLO LECTURA) -->
+            <div class="card-item" style="border-left: 5px solid #D97706; background: #FFFFFF; padding: 16px; margin-bottom: 14px;">
+                <div class="card-item-header" style="margin-bottom: 6px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 26px;">🏛️</span>
+                        <div>
+                            <div class="item-title" style="color: #92400E; font-size: 15px; font-weight: 800;">Consulta Histórica GAMLP (Solo Lectura)</div>
+                            <span class="badge" style="background: #FEF3C7; color: #92400E; font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 4px;">🏛️ 2.938 EQUIPOS • SOLO LECTURA</span>
+                        </div>
+                    </div>
+                </div>
+                <div style="font-size: 12.5px; color: var(--text-muted); line-height: 1.4;">
+                    Consulta y búsqueda de antecedentes de los 2.938 equipos y muebles de gestiones pasadas en modo Solo Lectura (sin modificación ni eliminación).
+                </div>
+                <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 8px 12px; margin: 10px 0; font-family: monospace; font-size: 13px; font-weight: 700; color: #D97706; word-break: break-all;">
+                    https://cmms-gamlp.onrender.com/historico
+                </div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px;">
+                    <button type="button" class="btn-sm" style="flex: 1; min-width: 125px; background: #D97706; color: white; padding: 9px 12px; border: none; border-radius: 6px; font-weight: 700; font-size: 12px; cursor: pointer;" onclick="copiarTexto('https://cmms-gamlp.onrender.com/historico', this)">
+                        📋 Copiar Enlace
+                    </button>
+                    <a href="https://api.whatsapp.com/send?text=Consulta%20Hist%C3%B3rica%20SGEM%20GAMLP%3A%20https%3A%2F%2Fcmms-gamlp.onrender.com%2Fhistorico" target="_blank" class="btn-sm" style="flex: 1; min-width: 145px; background: #22C55E; color: white; padding: 9px 12px; border: none; border-radius: 6px; font-weight: 700; font-size: 12px; text-decoration: none; text-align: center; display: inline-flex; align-items: center; justify-content: center; gap: 4px;">
+                        📲 Enviar por WhatsApp
+                    </a>
+                    <a href="https://cmms-gamlp.onrender.com/historico" target="_blank" class="btn-sm" style="background: #FEF3C7; color: #92400E; padding: 9px 14px; border: 1px solid #FDE68A; border-radius: 6px; font-weight: 700; font-size: 12px; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+                        🚀 Abrir Histórico
+                    </a>
+                </div>
+            </div>
+
+            <!-- ENLACE 3: PORTAL WEB GENERAL (NUBE 24/7) -->
             <div class="card-item" style="border-left: 5px solid #005691; background: #FFFFFF; padding: 16px; margin-bottom: 14px;">
                 <div class="card-item-header" style="margin-bottom: 6px;">
                     <div style="display: flex; align-items: center; gap: 10px;">
@@ -2039,6 +2129,7 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
         let LISTA_REPUESTOS = [];
         let LISTA_HISTORIAL = [];
         let LISTA_USUARIOS = [];
+        let FILTRO_TIPO_ACTIVO = 'todo'; // 'todo' | 'equipos' | 'muebles'
 
         window.addEventListener('DOMContentLoaded', () => {
             alCambiarRedGlobal();
@@ -2213,7 +2304,8 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             try {
                 const res = await fetch(`/api/equipos?centro=${encodeURIComponent(centro)}`);
                 LISTA_EQUIPOS = await res.json();
-                renderizarListaInventario(LISTA_EQUIPOS);
+                actualizarContadoresInventario();
+                aplicarFiltroInventario();
 
                 const selInter = document.getElementById('inter_equipo');
                 if (selInter) {
@@ -2232,14 +2324,15 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
 
         async function cargarMueblesCentro(centro) {
             const cont = document.getElementById('lista_muebles');
-            if (!cont) return;
-            cont.innerHTML = '<div class="empty-state"><span>⏳</span>Cargando muebles...</div>';
+            if (cont) cont.innerHTML = '<div class="empty-state"><span>⏳</span>Cargando muebles...</div>';
             try {
                 const res = await fetch(`/api/muebles?centro=${encodeURIComponent(centro)}`);
                 LISTA_MUEBLES = await res.json();
-                renderizarListaMuebles(LISTA_MUEBLES);
+                if (cont) renderizarListaMuebles(LISTA_MUEBLES);
+                actualizarContadoresInventario();
+                aplicarFiltroInventario();
             } catch (e) {
-                cont.innerHTML = '<div class="empty-state"><span>⚠️</span>Error al cargar muebles</div>';
+                if (cont) cont.innerHTML = '<div class="empty-state"><span>⚠️</span>Error al cargar muebles</div>';
             }
         }
 
@@ -2330,48 +2423,90 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
         // RENDERIZADO DE VISTAS EN TARJETAS (CON ACCIONES EDITAR / ELIMINAR)
         // =====================================================================
 
+        function escaparJs(str) {
+            if (!str) return '';
+            return String(str).split("'").join("\\'").split('"').join('&quot;');
+        }
+
         function renderizarListaInventario(items) {
             const cont = document.getElementById('lista_inventario');
             if (!cont) return;
             if (!items || items.length === 0) {
-                cont.innerHTML = '<div class="empty-state"><span>📦</span>No hay equipos médicos en este centro</div>';
+                let msg = 'No hay activos registrados en este centro';
+                if (FILTRO_TIPO_ACTIVO === 'equipos') msg = 'No hay equipos médicos registrados en este centro';
+                if (FILTRO_TIPO_ACTIVO === 'muebles') msg = 'No hay muebles o activos de TI registrados en este centro';
+                cont.innerHTML = `<div class="empty-state"><span>📦</span>${msg}</div>`;
                 return;
             }
             let html = '';
-            items.forEach(eq => {
-                const st = (eq.estado || 'Bueno').toLowerCase();
-                const badgeCls = st === 'bueno' ? 'status-bueno' : (st === 'regular' ? 'status-regular' : 'status-malo');
-                const cr = (eq.criticidad || 'Media').toLowerCase();
-                const critCls = cr === 'alta' ? 'status-crit-alta' : (cr === 'media' ? 'status-crit-media' : 'status-crit-baja');
+            items.forEach(it => {
+                const esEquipo = it._tipo !== 'MUEBLE';
+                if (esEquipo) {
+                    const st = (it.estado || 'Bueno').toLowerCase();
+                    const badgeCls = st === 'bueno' ? 'status-bueno' : (st === 'regular' ? 'status-regular' : 'status-malo');
+                    const cr = (it.criticidad || 'Media').toLowerCase();
+                    const critCls = cr === 'alta' ? 'status-crit-alta' : (cr === 'media' ? 'status-crit-media' : 'status-crit-baja');
 
-                let actionsHtml = `<a href="/equipo/${encodeURIComponent(eq.id)}" class="btn-card-view">📋 Ficha</a>`;
-                if (puede('Inventario', 'cambiar')) {
-                    actionsHtml += `<button type="button" class="btn-card-edit" onclick="editarEquipo('${eq.id}')">✎ Editar</button>`;
-                }
-                if (puede('Inventario', 'eliminar')) {
-                    actionsHtml += `<button type="button" class="btn-card-del" onclick="eliminarRegistro('equipos', '${eq.id}', '${eq.nombre || eq.id}')">🗑️ Eliminar</button>`;
-                }
+                    let actionsHtml = `<a href="/equipo/${encodeURIComponent(it.id)}" class="btn-card-view">📋 Ficha</a>`;
+                    if (puede('Inventario', 'cambiar')) {
+                        actionsHtml += `<button type="button" class="btn-card-edit" onclick="editarEquipo('${it.id}')">✎ Editar</button>`;
+                    }
+                    if (puede('Inventario', 'eliminar')) {
+                        actionsHtml += `<button type="button" class="btn-card-del" onclick="eliminarRegistro('equipos', '${it.id}', '${escaparJs(it.nombre || it.id)}')">🗑️ Eliminar</button>`;
+                    }
 
-                html += `
-                <div class="card-item">
-                    <div class="card-item-header">
-                        <span class="badge-af">${eq.id}</span>
-                        <div style="display:flex; gap:4px;">
-                            <span class="badge-status ${critCls}">Crit: ${eq.criticidad || 'Media'}</span>
-                            <span class="badge-status ${badgeCls}">${eq.estado || 'Bueno'}</span>
+                    html += `
+                    <div class="card-item" style="border-top: 3px solid #0284C7;">
+                        <div class="card-item-header">
+                            <span class="badge-af">${it.id}</span>
+                            <div style="display:flex; gap:4px; align-items:center;">
+                                <span class="badge-status" style="background:#E0F2FE; color:#0284C7; font-size:10px; font-weight:800;">🩺 EQUIPO</span>
+                                <span class="badge-status ${critCls}">Crit: ${it.criticidad || 'Media'}</span>
+                                <span class="badge-status ${badgeCls}">${it.estado || 'Bueno'}</span>
+                            </div>
                         </div>
-                    </div>
-                    <div class="item-title">${eq.nombre}</div>
-                    <div class="item-subtitle">
-                        <span>🏷️ ${eq.marca || 'S/M'} ${eq.modelo || ''}</span>
-                        <span>•</span>
-                        <span>📍 ${eq.area || 'Sin Área'}</span>
-                    </div>
-                    ${eq.persona_asignada ? `<div class="item-detail-row">👤 <strong>Responsable:</strong> ${eq.persona_asignada} ${eq.cargo_asignado ? `(${eq.cargo_asignado})` : ''}</div>` : ''}
-                    <div class="item-actions">
-                        ${actionsHtml}
-                    </div>
-                </div>`;
+                        <div class="item-title">${it.nombre}</div>
+                        <div class="item-subtitle">
+                            <span>🏷️ ${it.marca || 'S/M'} ${it.modelo || ''}</span>
+                            <span>•</span>
+                            <span>📍 ${it.area || 'Sin Área'}</span>
+                        </div>
+                        ${it.persona_asignada ? `<div class="item-detail-row">👤 <strong>Responsable:</strong> ${it.persona_asignada} ${it.cargo_asignado ? `(${it.cargo_asignado})` : ''}</div>` : ''}
+                        <div class="item-actions">
+                            ${actionsHtml}
+                        </div>
+                    </div>`;
+                } else {
+                    let actionsHtml = '';
+                    if (puede('Muebleria', 'cambiar')) {
+                        actionsHtml += `<button type="button" class="btn-card-edit" onclick="editarMueble(${it.id})">✎ Editar</button>`;
+                    }
+                    if (puede('Muebleria', 'eliminar')) {
+                        actionsHtml += `<button type="button" class="btn-card-del" onclick="eliminarRegistro('muebleria', ${it.id}, '${escaparJs(it.descripcion || it.tipo_activo)}')">🗑️ Eliminar</button>`;
+                    }
+
+                    html += `
+                    <div class="card-item" style="border-top: 3px solid #D97706;">
+                        <div class="card-item-header">
+                            <span class="badge-af" style="color:#B45309; background:#FEF3C7; border-color:#FDE68A;">${it.codigo_sispam || it.id || 'MUEBLE'}</span>
+                            <div style="display:flex; gap:4px; align-items:center;">
+                                <span class="badge-status" style="background:#FEF3C7; color:#B45309; font-size:10px; font-weight:800;">🛋️ MUEBLE/TI</span>
+                                <span class="badge-status status-bueno">${it.estado_conservacion || 'Bueno'}</span>
+                            </div>
+                        </div>
+                        <div class="item-title">${it.descripcion || it.tipo_activo}</div>
+                        <div class="item-subtitle">
+                            <span>🏷️ ${it.marca || 'S/M'} ${it.modelo || ''}</span>
+                            <span>•</span>
+                            <span>Serie: ${it.serie || 'S/S'}</span>
+                        </div>
+                        <div class="item-detail-row">
+                            📍 <strong>Ubicación:</strong> ${it.ubicacion || 'General'}
+                            ${it.persona_asignada ? `<br>👤 <strong>Asignado:</strong> ${it.persona_asignada}` : ''}
+                        </div>
+                        ${actionsHtml ? `<div class="item-actions">${actionsHtml}</div>` : ''}
+                    </div>`;
+                }
             });
             cont.innerHTML = html;
         }
@@ -2656,15 +2791,63 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
         // FILTROS EN TIEMPO REAL
         // =====================================================================
 
+        function setFiltroTipoActivo(tipo) {
+            FILTRO_TIPO_ACTIVO = tipo;
+            ['todo', 'equipos', 'muebles'].forEach(t => {
+                const btn = document.getElementById(`pill_inv_${t}`);
+                if (btn) {
+                    if (t === tipo) btn.classList.add('active');
+                    else btn.classList.remove('active');
+                }
+            });
+            aplicarFiltroInventario();
+        }
+
+        function actualizarContadoresInventario() {
+            const numEq = (LISTA_EQUIPOS || []).length;
+            const numMu = (LISTA_MUEBLES || []).length;
+            const numTodo = numEq + numMu;
+
+            const cTodo = document.getElementById('cnt_inv_todo');
+            const cEq = document.getElementById('cnt_inv_equipos');
+            const cMu = document.getElementById('cnt_inv_muebles');
+
+            if (cTodo) cTodo.textContent = numTodo;
+            if (cEq) cEq.textContent = numEq;
+            if (cMu) cMu.textContent = numMu;
+        }
+
+        function aplicarFiltroInventario() {
+            const q = (document.getElementById('busq_inventario') ? document.getElementById('busq_inventario').value : '').toLowerCase().trim();
+            let items = [];
+
+            if (FILTRO_TIPO_ACTIVO === 'todo' || FILTRO_TIPO_ACTIVO === 'equipos') {
+                const eqs = (LISTA_EQUIPOS || []).map(e => ({ ...e, _tipo: 'EQUIPO' }));
+                items = items.concat(eqs);
+            }
+            if (FILTRO_TIPO_ACTIVO === 'todo' || FILTRO_TIPO_ACTIVO === 'muebles') {
+                const mus = (LISTA_MUEBLES || []).map(m => ({ ...m, _tipo: 'MUEBLE' }));
+                items = items.concat(mus);
+            }
+
+            if (q) {
+                items = items.filter(it => {
+                    const idStr = String(it.id || it.codigo_sispam || '').toLowerCase();
+                    const nomStr = String(it.nombre || it.descripcion || it.tipo_activo || '').toLowerCase();
+                    const marStr = String(it.marca || '').toLowerCase();
+                    const modStr = String(it.modelo || '').toLowerCase();
+                    const areStr = String(it.area || it.ubicacion || '').toLowerCase();
+                    const serStr = String(it.numero_serie || it.serie || '').toLowerCase();
+                    const perStr = String(it.persona_asignada || '').toLowerCase();
+                    return idStr.includes(q) || nomStr.includes(q) || marStr.includes(q) || modStr.includes(q) || areStr.includes(q) || serStr.includes(q) || perStr.includes(q);
+                });
+            }
+
+            renderizarListaInventario(items);
+        }
+
         function filtrarListaInventario() {
-            const q = document.getElementById('busq_inventario').value.toLowerCase().trim();
-            const filt = LISTA_EQUIPOS.filter(e => 
-                (e.id || '').toLowerCase().includes(q) ||
-                (e.nombre || '').toLowerCase().includes(q) ||
-                (e.marca || '').toLowerCase().includes(q) ||
-                (e.area || '').toLowerCase().includes(q)
-            );
-            renderizarListaInventario(filt);
+            aplicarFiltroInventario();
         }
 
         function filtrarListaCatalogo() {

@@ -17,6 +17,7 @@ class VistaEnlaces(ctk.CTkFrame):
         self.ip_local = self.obtener_ip_local()
         self.cfg = cargar_config()
         self.url_cloud = "https://cmms-gamlp.onrender.com/movil"
+        self.url_hist = "https://cmms-gamlp.onrender.com/historico"
         self.url_web = "https://cmms-gamlp.onrender.com/"
         self.url_local = f"http://{self.ip_local}:5000/movil"
         self.url_supabase = "https://supabase.com/dashboard"
@@ -110,7 +111,25 @@ class VistaEnlaces(ctk.CTkFrame):
         )
 
         # ----------------------------------------------------
-        # TARJETA 2: PORTAL WEB GENERAL DE CONSULTA
+        # TARJETA 2: CONSULTA HISTÓRICA GAMLP (SOLO LECTURA)
+        # ----------------------------------------------------
+        self._crear_tarjeta_enlace(
+            scroll,
+            icono="🏛️",
+            titulo="Consulta Histórica GAMLP (Gestiones Anteriores - Solo Lectura)",
+            badge="🏛️ 2.938 EQUIPOS • SOLO LECTURA",
+            badge_color="#D97706",
+            descripcion="Consulta y búsqueda de antecedentes de los 2.938 equipos médicos y mobiliario relevados en gestiones pasadas.\nFichas técnicas completas protegidas contra modificación o borrado accidental.",
+            url=self.url_hist,
+            acciones=[
+                ("📋 Copiar Enlace", lambda: self.copiar_al_portapapeles(self.url_hist)),
+                ("🌐 Abrir en Navegador", lambda: webbrowser.open(self.url_hist)),
+                ("📱 Ver Código QR", lambda: self.mostrar_qr_modal(self.url_hist, "Consulta Histórica 24/7 (Nube)"))
+            ]
+        )
+
+        # ----------------------------------------------------
+        # TARJETA 3: PORTAL WEB GENERAL DE CONSULTA
         # ----------------------------------------------------
         self._crear_tarjeta_enlace(
             scroll,

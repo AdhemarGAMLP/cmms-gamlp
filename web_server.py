@@ -40,6 +40,7 @@ from database import (
 )
 from auth import login as auth_login
 from vistas_web_movil import HTML_MOVIL_LOGIN, HTML_MOVIL_REGISTRO
+from vistas_web_historico import HTML_HISTORICO_WEB
 from datetime import date, datetime
 from excel_utils import (
     obtener_ruta_plantilla,
@@ -421,6 +422,7 @@ HTML_INVENTARIO = """
             <a href="/inventario" class="nav-tab active">📦 Inventario</a>
             <a href="/analisis" class="nav-tab">📊 Análisis y Censo</a>
             <a href="/movil" class="nav-tab">📱 Registro Móvil</a>
+            <a href="/historico" class="nav-tab">🏛️ Histórico</a>
             <a href="/enlaces" class="nav-tab">🔗 Enlaces</a>
         </div>
     </div>
@@ -1097,6 +1099,7 @@ HTML_ANALISIS = """
             <a href="/inventario" class="nav-tab">📦 Inventario</a>
             <a href="/analisis" class="nav-tab active">📊 Análisis y Censo</a>
             <a href="/movil" class="nav-tab">📱 Registro Móvil</a>
+            <a href="/historico" class="nav-tab">🏛️ Histórico</a>
             <a href="/enlaces" class="nav-tab">🔗 Enlaces</a>
         </div>
     </div>
@@ -1697,6 +1700,7 @@ HTML_ENLACES_PORTAL = """<!DOCTYPE html>
             <a href="/inventario" class="nav-tab">📦 Inventario</a>
             <a href="/analisis" class="nav-tab">📊 Análisis y Censo</a>
             <a href="/movil" class="nav-tab">📱 Registro Móvil</a>
+            <a href="/historico" class="nav-tab">🏛️ Histórico</a>
             <a href="/enlaces" class="nav-tab active">🔗 Enlaces</a>
         </div>
     </div>
@@ -1705,28 +1709,45 @@ HTML_ENLACES_PORTAL = """<!DOCTYPE html>
         <div class="banner">
             <h2 style="font-size: 20px; font-weight: 800; margin-bottom: 6px;">🔗 Directorio de Enlaces y Accesos Oficiales</h2>
             <p style="font-size: 13.5px; opacity: 0.95; line-height: 1.5;">
-                Todos los accesos al sistema SGEM GAMLP disponibles 24/7 en la nube, red interna, bases de datos y administración técnica. Copia con un clic o comparte directamente por WhatsApp.
+                Todos los accesos al sistema SGEM GAMLP disponibles 24/7 en la nube, red interna y consulta histórica. Copia con un clic o comparte directamente por WhatsApp.
             </p>
         </div>
 
-        <!-- 1. SUITE MÓVIL (NUBE 24/7) -->
+        <!-- 1. SUITE MÓVIL (NUBE 24/7 - RELEVAMIENTO 2026) -->
         <div class="link-card" style="border-left: 5px solid #16A34A;">
             <div class="card-header">
-                <div class="card-title">📱 Suite Móvil para Celulares (Nube 24/7)</div>
+                <div class="card-title">📱 Suite Móvil - Relevamiento 2026 (Actual)</div>
                 <span class="badge" style="background: #DCFCE7; color: #166534;">🟢 ACTIVO ONLINE OFICIAL</span>
             </div>
             <div class="card-desc">
-                Acceso completo para técnicos y personal de campo desde cualquier celular o tablet con internet en cualquier lugar (no requiere computadoras encendidas).
+                Acceso para trabajo de campo en celulares y tablets. Registro de nuevos equipos médicos, muebles, áreas y mantenimientos en la base de datos oficial 2026.
             </div>
             <div class="url-box">https://cmms-gamlp.onrender.com/movil</div>
             <div class="btn-group">
                 <button class="btn btn-copy" onclick="copiarTexto('https://cmms-gamlp.onrender.com/movil', this)">📋 Copiar Enlace</button>
                 <a href="https://api.whatsapp.com/send?text=Acceso%20Suite%20M%C3%B3vil%20SGEM%20GAMLP%3A%20https%3A%2F%2Fcmms-gamlp.onrender.com%2Fmovil" target="_blank" class="btn btn-wa">📲 Enviar por WhatsApp</a>
-                <a href="https://cmms-gamlp.onrender.com/movil" target="_blank" class="btn btn-open">🚀 Abrir</a>
+                <a href="https://cmms-gamlp.onrender.com/movil" target="_blank" class="btn btn-open">🚀 Abrir Relevamiento</a>
             </div>
         </div>
 
-        <!-- 2. PORTAL WEB GENERAL (NUBE 24/7) -->
+        <!-- 2. CONSULTA HISTÓRICA (GESTIONES ANTERIORES - SOLO LECTURA) -->
+        <div class="link-card" style="border-left: 5px solid #D97706;">
+            <div class="card-header">
+                <div class="card-title">🏛️ Consulta Histórica GAMLP (Gestiones Anteriores - Solo Lectura)</div>
+                <span class="badge" style="background: #FEF3C7; color: #92400E;">🏛️ SOLO LECTURA • 2.938 EQUIPOS</span>
+            </div>
+            <div class="card-desc">
+                Consulta y búsqueda de antecedentes de los 2.938 equipos médicos y mobiliario relevados en gestiones pasadas. Fichas técnicas completas protegidas contra modificación o borrado accidental.
+            </div>
+            <div class="url-box">https://cmms-gamlp.onrender.com/historico</div>
+            <div class="btn-group">
+                <button class="btn btn-copy" style="background: #D97706; color: white;" onclick="copiarTexto('https://cmms-gamlp.onrender.com/historico', this)">📋 Copiar Enlace</button>
+                <a href="https://api.whatsapp.com/send?text=Consulta%20Hist%C3%B3rica%20SGEM%20GAMLP%3A%20https%3A%2F%2Fcmms-gamlp.onrender.com%2Fhistorico" target="_blank" class="btn btn-wa">📲 Enviar por WhatsApp</a>
+                <a href="https://cmms-gamlp.onrender.com/historico" target="_blank" class="btn btn-open">🚀 Abrir Consulta Histórica</a>
+            </div>
+        </div>
+
+        <!-- 3. PORTAL WEB GENERAL (NUBE 24/7) -->
         <div class="link-card" style="border-left: 5px solid #005691;">
             <div class="card-header">
                 <div class="card-title">🌐 Portal Web General GAMLP (Nube 24/7)</div>
@@ -1742,18 +1763,18 @@ HTML_ENLACES_PORTAL = """<!DOCTYPE html>
             </div>
         </div>
 
-        <!-- 3. RED LOCAL WI-FI -->
-        <div class="link-card" style="border-left: 5px solid #F59E0B;">
+        <!-- 4. RED LOCAL WI-FI -->
+        <div class="link-card" style="border-left: 5px solid #64748B;">
             <div class="card-header">
                 <div class="card-title">📶 Conexión Red Local Wi-Fi (Servidor Oficina)</div>
-                <span class="badge" style="background: #FEF3C7; color: #92400E;">🏢 RED LOCAL INTERNA</span>
+                <span class="badge" style="background: #F1F5F9; color: #475569;">🏢 RED LOCAL INTERNA</span>
             </div>
             <div class="card-desc">
                 Para ingresar desde celulares o computadoras conectadas a la misma red Wi-Fi de la oficina mientras el software de escritorio esté abierto en la PC principal.
             </div>
             <div class="url-box" id="lbl_local">http://&lt;IP_DE_TU_PC&gt;:5000/movil</div>
             <div class="btn-group">
-                <button class="btn" style="background: #D97706; color: white;" onclick="copiarTexto(document.getElementById('lbl_local').innerText.trim(), this)">📋 Copiar Formato</button>
+                <button class="btn" style="background: #475569; color: white;" onclick="copiarTexto(document.getElementById('lbl_local').innerText.trim(), this)">📋 Copiar Formato</button>
                 <button class="btn btn-open" onclick="detectarIp()">🔍 Detectar Dirección Actual</button>
             </div>
         </div>
@@ -1807,6 +1828,12 @@ HTML_ENLACES_PORTAL = """<!DOCTYPE html>
 def vista_enlaces_web():
     """Directorio web de enlaces y accesos institucionales."""
     return render_template_string(HTML_ENLACES_PORTAL)
+
+@app_web.route('/historico')
+@app_web.route('/movil/historico')
+def vista_historica_web():
+    """Portal web de consulta histórica GAMLP (Solo Lectura • Gestiones Anteriores)."""
+    return render_template_string(HTML_HISTORICO_WEB)
 
 @app_web.route('/descargar/<filename>')
 def descargar_archivo(filename):
@@ -3017,6 +3044,70 @@ def api_ping_health():
         "timestamp": datetime.now().isoformat()
     }), status_code
 
+# =========================================================================
+# ENDPOINTS JSON DE CONSULTA HISTÓRICA (SOLO LECTURA • GESTIONES ANTERIORES)
+# =========================================================================
+
+@app_web.route('/api/historico/sedes')
+def api_historico_sedes():
+    """Retorna la jerarquía de sedes de la base histórica."""
+    try:
+        data = obtener_jerarquia_sedes_db(perfil='historica')
+        return jsonify(data)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app_web.route('/api/historico/equipos')
+def api_historico_equipos():
+    """Retorna equipos médicos de la base histórica (solo lectura)."""
+    centro = request.args.get('centro', '').strip()
+    red = request.args.get('red', '').strip()
+    try:
+        equipos = obtener_equipos_db(centro_nombre=centro or None, limite=5000, perfil='historica', red_nombre=red or None)
+        return jsonify(equipos)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app_web.route('/api/historico/muebles')
+def api_historico_muebles():
+    """Retorna activos de mueblería y computación de la base histórica (solo lectura)."""
+    centro = request.args.get('centro', '').strip()
+    red = request.args.get('red', '').strip()
+    try:
+        muebles = obtener_muebles_db(centro_nombre=centro or None, limite=5000, perfil='historica', red_nombre=red or None)
+        return jsonify(muebles)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app_web.route('/api/historico/areas')
+def api_historico_areas():
+    """Retorna áreas registradas en la base histórica."""
+    centro = request.args.get('centro', '').strip()
+    try:
+        areas = obtener_areas_db(centro_nombre=centro or None, perfil='historica')
+        return jsonify(areas)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app_web.route('/api/historico/catalogo')
+def api_historico_catalogo():
+    """Retorna catálogo de modelos de la base histórica."""
+    try:
+        cats = obtener_catalogo_equipos_db(perfil='historica')
+        return jsonify(cats)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app_web.route('/api/historico/estadisticas')
+def api_historico_estadisticas():
+    """Retorna estadísticas e indicadores calculados sobre la base histórica."""
+    centro = request.args.get('centro', '').strip()
+    try:
+        stats = obtener_estadisticas_censo_db(centro_nombre=centro or None, perfil='historica')
+        return jsonify(stats)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @app_web.route('/api/sedes')
 def api_sedes():
     """Retorna la jerarquía de redes y centros de salud en formato JSON."""
@@ -3096,8 +3187,9 @@ def api_guardar_equipo():
 def api_equipos():
     """Retorna la lista de equipos médicos registrados."""
     centro = request.args.get('centro', '').strip()
+    red = request.args.get('red', '').strip()
     try:
-        equipos = obtener_equipos_db(centro)
+        equipos = obtener_equipos_db(centro_nombre=centro or None, limite=3000, red_nombre=red or None)
         return jsonify(equipos)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -3123,8 +3215,9 @@ def api_guardar_catalogo():
 def api_muebles():
     """Retorna los activos de mueblería y computación."""
     centro = request.args.get('centro', '').strip()
+    red = request.args.get('red', '').strip()
     try:
-        muebles = obtener_muebles_db(centro)
+        muebles = obtener_muebles_db(centro_nombre=centro or None, limite=3000, red_nombre=red or None)
         return jsonify(muebles)
     except Exception as e:
         return jsonify({"error": str(e)}), 500

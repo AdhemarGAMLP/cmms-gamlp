@@ -4,31 +4,36 @@ import json
 import psycopg2
 import psycopg2.extras
 from datetime import date, datetime
-from config import CONFIG
+from config import CONFIG, PERFILES_DB
 
-def obtener_conexion():
-    """Establece y retorna la conexión a PostgreSQL usando los datos de config.py."""
+def obtener_conexion(perfil=None):
+    """Establece y retorna la conexión a PostgreSQL usando los datos de config.py o un perfil específico."""
     try:
+        if perfil and perfil in PERFILES_DB:
+            cfg_db = PERFILES_DB[perfil]
+        else:
+            cfg_db = CONFIG
+
         kwargs = {
-            "dbname": CONFIG["db_name"],
-            "user": CONFIG["db_user"],
-            "password": CONFIG["db_password"],
-            "host": CONFIG["db_host"],
-            "port": CONFIG["db_port"],
-            "connect_timeout": 4,
+            "dbname": cfg_db["db_name"],
+            "user": cfg_db["db_user"],
+            "password": cfg_db["db_password"],
+            "host": cfg_db["db_host"],
+            "port": cfg_db["db_port"],
+            "connect_timeout": 6,
             "keepalives": 1,
             "keepalives_idle": 30,
             "keepalives_interval": 10,
             "keepalives_count": 5
         }
-        if CONFIG.get("db_sslmode") or ("supabase" in str(CONFIG.get("db_host", "")).lower()):
-            kwargs["sslmode"] = CONFIG.get("db_sslmode", "require")
+        if cfg_db.get("db_sslmode") or ("supabase" in str(cfg_db.get("db_host", "")).lower()):
+            kwargs["sslmode"] = cfg_db.get("db_sslmode", "require")
             
         conn = psycopg2.connect(**kwargs)
         conn.set_client_encoding('UTF8')
         return conn
     except Exception as e:
-        print(f"[ERROR] Error de conexión a la BD: {e}")
+        print(f"[ERROR] Error de conexión a la BD ({perfil or 'activo'}): {e}")
         return None
 
 def inicializar_bd():
@@ -608,15 +613,15 @@ def _obtener_ruta_cache_sedes():
     db_host_key = str(CONFIG.get("db_host", "default")).replace(":", "_").replace("/", "_").replace(".", "_")
     return os.path.join(os.path.expanduser("~"), f".gamlp_sedes_cache_{db_host_key}.json")
 
-def obtener_jerarquia_sedes_db(forzar_recarga=False):
+def obtener_jerarquia_sedes_db(forzar_recarga=False, perfil=None):
     """Obtiene la jerarquía completa de Departamentos, Municipios, Redes y Centros de Salud (con caché en memoria y disco persistente)."""
     global _CACHE_JERARQUIA_SEDES
-    if _CACHE_JERARQUIA_SEDES and not forzar_recarga:
+    if not perfil and _CACHE_JERARQUIA_SEDES and not forzar_recarga:
         return _CACHE_JERARQUIA_SEDES
 
-    conn = obtener_conexion()
+    conn = obtener_conexion(perfil=perfil)
     if not conn:
-        if _CACHE_JERARQUIA_SEDES:
+        if not perfil and _CACHE_JERARQUIA_SEDES:
             return _CACHE_JERARQUIA_SEDES
         # Intentar cargar desde el archivo de caché persistente en disco
         ruta_s = _obtener_ruta_cache_sedes()
@@ -702,6 +707,13 @@ def obtener_jerarquia_sedes_db(forzar_recarga=False):
         
         cur.close()
         conn.close()
+        if perfil:
+            return {
+                "departamentos": deptos,
+                "municipios": muns,
+                "redes": redes,
+                "centros": centros
+            }
         _CACHE_JERARQUIA_SEDES = {
             "departamentos": deptos,
             "municipios": muns,
@@ -1733,9 +1745,9 @@ def generar_siguiente_codigo_af(red_nom, cen_nom, equipos_existentes=None, cola_
     siguiente = max(numeros, default=0) + 1
     return f"{prefijo}{siguiente:06d}"
 
-def obtener_areas_db(centro_nombre=None):
+def obtener_areas_db(centro_nombre=None, perfil=None):
     """Retorna las áreas registradas en el sistema, opcionalmente filtradas por centro de salud."""
-    conn = obtener_conexion()
+    conn = obtener_conexion(perfil=perfil)
     if conn:
         try:
             cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
@@ -1757,14 +1769,14 @@ def obtener_areas_db(centro_nombre=None):
             conn.close()
             return areas
         except Exception as e:
-            print(f"[WARN] Error al obtener áreas desde BD: {e}")
+            print(f"[WARN] Error al obtener áreas desde BD ({perfil}): {e}")
             try: conn.close()
             except: pass
     return []
 
-def obtener_catalogo_equipos_db():
+def obtener_catalogo_equipos_db(perfil=None):
     """Retorna los modelos de equipos médicos configurados en el catálogo central."""
-    conn = obtener_conexion()
+    conn = obtener_conexion(perfil=perfil)
     if conn:
         try:
             cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
@@ -1774,28 +1786,31 @@ def obtener_catalogo_equipos_db():
             conn.close()
             return cats
         except Exception as e:
-            print(f"[WARN] Error al obtener catálogo de BD: {e}")
+            print(f"[WARN] Error al obtener catálogo de BD ({perfil}): {e}")
             try: conn.close()
             except: pass
     return []
 
-def obtener_equipos_db(centro_nombre=None, limite=300):
+def obtener_equipos_db(centro_nombre=None, limite=300, perfil=None, red_nombre=None):
     """Retorna equipos médicos con todos sus campos para inventario y edición web."""
-    conn = obtener_conexion()
+    conn = obtener_conexion(perfil=perfil)
     if conn:
         try:
             cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+            conds = []
+            params = []
             if centro_nombre and not str(centro_nombre).startswith("["):
-                cur.execute("""
-                    SELECT * FROM equipos 
-                    WHERE centro_salud_nombre = %s OR centro_salud_nombre ILIKE %s 
-                    ORDER BY id DESC LIMIT %s;
-                """, (centro_nombre, f"%{centro_nombre}%", limite))
-            else:
-                cur.execute("""
-                    SELECT * FROM equipos 
-                    ORDER BY id DESC LIMIT %s;
-                """, (limite,))
+                conds.append("(centro_salud_nombre = %s OR centro_salud_nombre ILIKE %s)")
+                params.extend([centro_nombre, f"%{centro_nombre}%"])
+            if red_nombre and not str(red_nombre).startswith("["):
+                conds.append("(red_salud_nombre = %s OR red_salud_nombre ILIKE %s)")
+                params.extend([red_nombre, f"%{red_nombre}%"])
+
+            where_clause = ("WHERE " + " AND ".join(conds)) if conds else ""
+            query = f"SELECT * FROM equipos {where_clause} ORDER BY id DESC LIMIT %s;"
+            params.append(limite)
+
+            cur.execute(query, tuple(params))
             filas = cur.fetchall()
             res = []
             for r in filas:
@@ -1808,28 +1823,31 @@ def obtener_equipos_db(centro_nombre=None, limite=300):
             conn.close()
             return res
         except Exception as e:
-            print(f"[WARN] Error al obtener equipos desde BD: {e}")
+            print(f"[WARN] Error al obtener equipos desde BD ({perfil}): {e}")
             try: conn.close()
             except: pass
     return []
 
-def obtener_muebles_db(centro_nombre=None, limite=300):
+def obtener_muebles_db(centro_nombre=None, limite=300, perfil=None, red_nombre=None):
     """Retorna los activos de mueblería y computación con todos sus campos."""
-    conn = obtener_conexion()
+    conn = obtener_conexion(perfil=perfil)
     if conn:
         try:
             cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+            conds = []
+            params = []
             if centro_nombre and not str(centro_nombre).startswith("["):
-                cur.execute("""
-                    SELECT * FROM muebleria 
-                    WHERE ubicacion ILIKE %s OR descripcion ILIKE %s OR unidad_organizacional ILIKE %s
-                    ORDER BY id DESC LIMIT %s;
-                """, (f"%{centro_nombre}%", f"%{centro_nombre}%", f"%{centro_nombre}%", limite))
-            else:
-                cur.execute("""
-                    SELECT * FROM muebleria 
-                    ORDER BY id DESC LIMIT %s;
-                """, (limite,))
+                conds.append("(ubicacion ILIKE %s OR descripcion ILIKE %s OR unidad_organizacional ILIKE %s)")
+                params.extend([f"%{centro_nombre}%", f"%{centro_nombre}%", f"%{centro_nombre}%"])
+            if red_nombre and not str(red_nombre).startswith("["):
+                conds.append("(ubicacion ILIKE %s OR descripcion ILIKE %s OR unidad_organizacional ILIKE %s)")
+                params.extend([f"%{red_nombre}%", f"%{red_nombre}%", f"%{red_nombre}%"])
+
+            where_clause = ("WHERE " + " AND ".join(conds)) if conds else ""
+            query = f"SELECT * FROM muebleria {where_clause} ORDER BY id DESC LIMIT %s;"
+            params.append(limite)
+
+            cur.execute(query, tuple(params))
             filas = cur.fetchall()
             res = []
             for r in filas:
@@ -1842,7 +1860,7 @@ def obtener_muebles_db(centro_nombre=None, limite=300):
             conn.close()
             return res
         except Exception as e:
-            print(f"[WARN] Error al obtener muebles desde BD: {e}")
+            print(f"[WARN] Error al obtener muebles desde BD ({perfil}): {e}")
             try: conn.close()
             except: pass
     return []
@@ -2266,9 +2284,9 @@ def eliminar_registro_db(tabla, id_registro, usuario="web_user"):
             except: pass
         return False, str(e)
 
-def obtener_estadisticas_censo_db(centro_nombre=None):
+def obtener_estadisticas_censo_db(centro_nombre=None, perfil=None):
     """Calcula indicadores y métricas en vivo para la pestaña de Análisis."""
-    conn = obtener_conexion()
+    conn = obtener_conexion(perfil=perfil)
     if not conn:
         return {
             "total_equipos": 0, "operativos": 0, "mantenimiento": 0, "baja": 0,
