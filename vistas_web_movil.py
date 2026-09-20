@@ -2231,7 +2231,7 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             const lbl = document.getElementById('lbl_enlace_local');
             if (lbl) {
                 lbl.innerText = urlActual;
-                alert('Dirección web actual detectada:\n' + urlActual);
+                alert(`Dirección web actual detectada:\n${urlActual}`);
             }
         }
 
