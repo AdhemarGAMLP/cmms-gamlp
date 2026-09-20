@@ -988,6 +988,8 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
         {% if es_admin %}
         <button class="tab-btn" data-tab="usuarios" onclick="cambiarPestana('usuarios')">👥 Usuarios</button>
         {% endif %}
+
+        <button class="tab-btn" data-tab="links" onclick="cambiarPestana('links')">🔗 Enlaces</button>
     </nav>
 
     <!-- CONTENEDOR PRINCIPAL -->
@@ -1170,6 +1172,182 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
         </section>
         {% endif %}
 
+        <!-- 11. PESTAÑA: DIRECTORIO DE ENLACES Y ACCESOS DEL SISTEMA -->
+        <section id="pane_links" class="tab-pane">
+            <div style="background: linear-gradient(135deg, #003B64, #005691); color: #ffffff; padding: 18px 20px; border-radius: 12px; margin-bottom: 16px; box-shadow: 0 4px 12px rgba(0,59,100,0.15);">
+                <div style="font-size: 19px; font-weight: 800; margin-bottom: 4px; display: flex; align-items: center; gap: 8px;">
+                    <span>🔗</span> Directorio de Enlaces y Accesos
+                </div>
+                <div style="font-size: 13px; opacity: 0.92; line-height: 1.4;">
+                    Accesos oficiales del sistema en la nube 24/7, red interna, bases de datos y herramientas de soporte. Copia con un clic o comparte directamente por WhatsApp.
+                </div>
+            </div>
+
+            <!-- ENLACE 1: SUITE MÓVIL EN LA NUBE (OFICIAL 24/7) -->
+            <div class="card-item" style="border-left: 5px solid #16A34A; background: #FFFFFF; padding: 16px; margin-bottom: 14px;">
+                <div class="card-item-header" style="margin-bottom: 6px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 26px;">📱</span>
+                        <div>
+                            <div class="item-title" style="color: #003B64; font-size: 15px; font-weight: 800;">Suite Móvil para Celulares (Nube 24/7)</div>
+                            <span class="badge" style="background: #DCFCE7; color: #166534; font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 4px;">🟢 ACTIVO ONLINE OFICIAL</span>
+                        </div>
+                    </div>
+                </div>
+                <div style="font-size: 12.5px; color: var(--text-muted); line-height: 1.4;">
+                    Para técnicos y personal de campo desde cualquier celular o tablet con internet (no requiere computadoras encendidas).
+                </div>
+                <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 8px 12px; margin: 10px 0; font-family: monospace; font-size: 13px; font-weight: 700; color: #0284C7; word-break: break-all;">
+                    https://cmms-gamlp.onrender.com/movil
+                </div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px;">
+                    <button type="button" class="btn-sm" style="flex: 1; min-width: 125px; background: #2563EB; color: white; padding: 9px 12px; border: none; border-radius: 6px; font-weight: 700; font-size: 12px; cursor: pointer;" onclick="copiarTexto('https://cmms-gamlp.onrender.com/movil', this)">
+                        📋 Copiar Enlace
+                    </button>
+                    <a href="https://api.whatsapp.com/send?text=Acceso%20Suite%20M%C3%B3vil%20SGEM%20GAMLP%3A%20https%3A%2F%2Fcmms-gamlp.onrender.com%2Fmovil" target="_blank" class="btn-sm" style="flex: 1; min-width: 145px; background: #22C55E; color: white; padding: 9px 12px; border: none; border-radius: 6px; font-weight: 700; font-size: 12px; text-decoration: none; text-align: center; display: inline-flex; align-items: center; justify-content: center; gap: 4px;">
+                        📲 Enviar por WhatsApp
+                    </a>
+                    <a href="https://cmms-gamlp.onrender.com/movil" target="_blank" class="btn-sm" style="background: #F1F5F9; color: #003B64; padding: 9px 14px; border: 1px solid #CBD5E1; border-radius: 6px; font-weight: 700; font-size: 12px; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+                        🚀 Abrir
+                    </a>
+                </div>
+            </div>
+
+            <!-- ENLACE 2: PORTAL WEB GENERAL (NUBE 24/7) -->
+            <div class="card-item" style="border-left: 5px solid #005691; background: #FFFFFF; padding: 16px; margin-bottom: 14px;">
+                <div class="card-item-header" style="margin-bottom: 6px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 26px;">🌐</span>
+                        <div>
+                            <div class="item-title" style="color: #003B64; font-size: 15px; font-weight: 800;">Portal Web General GAMLP (Nube 24/7)</div>
+                            <span class="badge" style="background: #E0F2FE; color: #075985; font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 4px;">🌐 PÁGINA PRINCIPAL</span>
+                        </div>
+                    </div>
+                </div>
+                <div style="font-size: 12.5px; color: var(--text-muted); line-height: 1.4;">
+                    Portal de bienvenida, documentación general y accesos administrativos del sistema institucional.
+                </div>
+                <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 8px 12px; margin: 10px 0; font-family: monospace; font-size: 13px; font-weight: 700; color: #0284C7; word-break: break-all;">
+                    https://cmms-gamlp.onrender.com/
+                </div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px;">
+                    <button type="button" class="btn-sm" style="flex: 1; min-width: 125px; background: #2563EB; color: white; padding: 9px 12px; border: none; border-radius: 6px; font-weight: 700; font-size: 12px; cursor: pointer;" onclick="copiarTexto('https://cmms-gamlp.onrender.com/', this)">
+                        📋 Copiar Enlace
+                    </button>
+                    <a href="https://cmms-gamlp.onrender.com/" target="_blank" class="btn-sm" style="background: #F1F5F9; color: #003B64; padding: 9px 14px; border: 1px solid #CBD5E1; border-radius: 6px; font-weight: 700; font-size: 12px; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+                        🚀 Abrir Portal
+                    </a>
+                </div>
+            </div>
+
+            <!-- ENLACE 3: RED LOCAL WI-FI -->
+            <div class="card-item" style="border-left: 5px solid #F59E0B; background: #FFFFFF; padding: 16px; margin-bottom: 14px;">
+                <div class="card-item-header" style="margin-bottom: 6px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 26px;">📶</span>
+                        <div>
+                            <div class="item-title" style="color: #003B64; font-size: 15px; font-weight: 800;">Conexión Red Local Wi-Fi (Servidor Oficina)</div>
+                            <span class="badge" style="background: #FEF3C7; color: #92400E; font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 4px;">🏢 RED LOCAL INTERNA</span>
+                        </div>
+                    </div>
+                </div>
+                <div style="font-size: 12.5px; color: var(--text-muted); line-height: 1.4;">
+                    Para acceder cuando estés conectado a la misma red Wi-Fi de la oficina donde la PC principal tiene el software de escritorio encendido.
+                </div>
+                <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 8px 12px; margin: 10px 0; font-family: monospace; font-size: 13px; font-weight: 700; color: #D97706; word-break: break-all;" id="lbl_enlace_local">
+                    http://&lt;IP_DE_TU_PC&gt;:5000/movil
+                </div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px;">
+                    <button type="button" class="btn-sm" style="flex: 1; min-width: 125px; background: #D97706; color: white; padding: 9px 12px; border: none; border-radius: 6px; font-weight: 700; font-size: 12px; cursor: pointer;" onclick="copiarTexto(document.getElementById('lbl_enlace_local').innerText.trim(), this)">
+                        📋 Copiar Formato
+                    </button>
+                    <button type="button" class="btn-sm" style="background: #F1F5F9; color: #003B64; padding: 9px 14px; border: 1px solid #CBD5E1; border-radius: 6px; font-weight: 700; font-size: 12px; cursor: pointer;" onclick="detectarIpHostLocal()">
+                        🔍 Ver Dirección Actual
+                    </button>
+                </div>
+            </div>
+
+            <!-- ENLACE 4: BASE DE DATOS POSTGRESQL (SUPABASE CLOUD) -->
+            <div class="card-item" style="border-left: 5px solid #3ECF8E; background: #FFFFFF; padding: 16px; margin-bottom: 14px;">
+                <div class="card-item-header" style="margin-bottom: 6px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 26px;">🗄️</span>
+                        <div>
+                            <div class="item-title" style="color: #003B64; font-size: 15px; font-weight: 800;">Base de Datos PostgreSQL (Supabase Cloud)</div>
+                            <span class="badge" style="background: #D1FAE5; color: #065F46; font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 4px;">🟢 NUEVA BASE 2026</span>
+                        </div>
+                    </div>
+                </div>
+                <div style="font-size: 12.5px; color: var(--text-muted); line-height: 1.4;">
+                    Base de datos centralizada en la nube con 500 MB y pooler activo. Hospeda todas las tablas de equipos, inventarios, muebles, repuestos y mantenimientos.
+                </div>
+                <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 8px 12px; margin: 10px 0; font-family: monospace; font-size: 13px; font-weight: 700; color: #059669; word-break: break-all;">
+                    https://supabase.com/dashboard
+                </div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px;">
+                    <button type="button" class="btn-sm" style="flex: 1; min-width: 125px; background: #059669; color: white; padding: 9px 12px; border: none; border-radius: 6px; font-weight: 700; font-size: 12px; cursor: pointer;" onclick="copiarTexto('https://supabase.com/dashboard', this)">
+                        📋 Copiar Enlace
+                    </button>
+                    <a href="https://supabase.com/dashboard" target="_blank" class="btn-sm" style="background: #F1F5F9; color: #003B64; padding: 9px 14px; border: 1px solid #CBD5E1; border-radius: 6px; font-weight: 700; font-size: 12px; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+                        🚀 Abrir Supabase
+                    </a>
+                </div>
+            </div>
+
+            <!-- ENLACE 5: HOSTING SERVIDOR WEB (RENDER CLOUD) -->
+            <div class="card-item" style="border-left: 5px solid #6366F1; background: #FFFFFF; padding: 16px; margin-bottom: 14px;">
+                <div class="card-item-header" style="margin-bottom: 6px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 26px;">☁️</span>
+                        <div>
+                            <div class="item-title" style="color: #003B64; font-size: 15px; font-weight: 800;">Panel Servidor Cloud (Render Dashboard)</div>
+                            <span class="badge" style="background: #EEF2FF; color: #3730A3; font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 4px;">☁️ HOSTING 24/7</span>
+                        </div>
+                    </div>
+                </div>
+                <div style="font-size: 12.5px; color: var(--text-muted); line-height: 1.4;">
+                    Panel de control donde corre el servidor web móvil en la nube. Gestiona despliegues continuos, logs y estado operativo.
+                </div>
+                <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 8px 12px; margin: 10px 0; font-family: monospace; font-size: 13px; font-weight: 700; color: #4F46E5; word-break: break-all;">
+                    https://dashboard.render.com/
+                </div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px;">
+                    <button type="button" class="btn-sm" style="flex: 1; min-width: 125px; background: #4F46E5; color: white; padding: 9px 12px; border: none; border-radius: 6px; font-weight: 700; font-size: 12px; cursor: pointer;" onclick="copiarTexto('https://dashboard.render.com/', this)">
+                        📋 Copiar Enlace
+                    </button>
+                    <a href="https://dashboard.render.com/" target="_blank" class="btn-sm" style="background: #F1F5F9; color: #003B64; padding: 9px 14px; border: 1px solid #CBD5E1; border-radius: 6px; font-weight: 700; font-size: 12px; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+                        🚀 Abrir Render
+                    </a>
+                </div>
+            </div>
+
+            <!-- ENLACE 6: REPOSITORIO GITHUB -->
+            <div class="card-item" style="border-left: 5px solid #1E293B; background: #FFFFFF; padding: 16px; margin-bottom: 14px;">
+                <div class="card-item-header" style="margin-bottom: 6px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 26px;">🐙</span>
+                        <div>
+                            <div class="item-title" style="color: #003B64; font-size: 15px; font-weight: 800;">Repositorio Oficial del Proyecto (GitHub)</div>
+                            <span class="badge" style="background: #F1F5F9; color: #334155; font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 4px;">💻 CÓDIGO FUENTE</span>
+                        </div>
+                    </div>
+                </div>
+                <div style="font-size: 12.5px; color: var(--text-muted); line-height: 1.4;">
+                    Repositorio GitHub con sincronización y despliegue continuo automático a Render cada vez que se actualiza el código.
+                </div>
+                <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 8px 12px; margin: 10px 0; font-family: monospace; font-size: 13px; font-weight: 700; color: #1E293B; word-break: break-all;">
+                    https://github.com/AdhemarGAMLP/cmms-gamlp
+                </div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px;">
+                    <button type="button" class="btn-sm" style="flex: 1; min-width: 125px; background: #1E293B; color: white; padding: 9px 12px; border: none; border-radius: 6px; font-weight: 700; font-size: 12px; cursor: pointer;" onclick="copiarTexto('https://github.com/AdhemarGAMLP/cmms-gamlp', this)">
+                        📋 Copiar Enlace
+                    </button>
+                    <a href="https://github.com/AdhemarGAMLP/cmms-gamlp" target="_blank" class="btn-sm" style="background: #F1F5F9; color: #003B64; padding: 9px 14px; border: 1px solid #CBD5E1; border-radius: 6px; font-weight: 700; font-size: 12px; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+                        🚀 Abrir GitHub
+                    </a>
+                </div>
+            </div>
+        </section>
     </main>
 
     <!-- ========================================================================= -->
@@ -2009,6 +2187,53 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
         // 3. Modales
         function abrirModal(id) { document.getElementById(id).style.display = 'flex'; }
         function cerrarModal(id) { document.getElementById(id).style.display = 'none'; }
+
+        // 4. Copiar enlaces y utilidades de links
+        function copiarTexto(texto, btnElement) {
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(texto).then(() => {
+                    mostrarFeedbackCopiado(btnElement);
+                }).catch(() => fallbackCopiarTexto(texto, btnElement));
+            } else {
+                fallbackCopiarTexto(texto, btnElement);
+            }
+        }
+
+        function fallbackCopiarTexto(texto, btnElement) {
+            const temp = document.createElement("input");
+            temp.value = texto;
+            document.body.appendChild(temp);
+            temp.select();
+            try {
+                document.execCommand("copy");
+                mostrarFeedbackCopiado(btnElement);
+            } catch (err) {
+                prompt("Copia el enlace manualmente con Ctrl+C:", texto);
+            }
+            document.body.removeChild(temp);
+        }
+
+        function mostrarFeedbackCopiado(btn) {
+            if (!btn) return;
+            const orig = btn.innerHTML;
+            btn.innerHTML = '✅ ¡Copiado!';
+            const origBg = btn.style.backgroundColor;
+            btn.style.backgroundColor = '#16A34A';
+            setTimeout(() => {
+                btn.innerHTML = orig;
+                btn.style.backgroundColor = origBg;
+            }, 2000);
+        }
+
+        function detectarIpHostLocal() {
+            const loc = window.location;
+            const urlActual = loc.origin + '/movil';
+            const lbl = document.getElementById('lbl_enlace_local');
+            if (lbl) {
+                lbl.innerText = urlActual;
+                alert('Dirección web actual detectada:\n' + urlActual);
+            }
+        }
 
         // =====================================================================
         // CARGAS DE DATOS DE LA API

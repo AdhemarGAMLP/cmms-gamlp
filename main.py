@@ -73,6 +73,7 @@ from vistas.analisis import VistaAnalisis
 from vistas.sedes import VistaSedes
 from vistas.respaldos import VistaRespaldos
 from vistas.usuarios import VistaUsuarios
+from vistas.enlaces import VistaEnlaces
 
 # ========================================================
 # VERSIÓN DEL SISTEMA
@@ -1295,6 +1296,10 @@ class SistemaMantenimiento(ctk.CTk):
             self.btn_nav_usuarios.pack(pady=1, padx=8, fill="x")
             self.botones_nav.append(self.btn_nav_usuarios)
 
+        self.btn_nav_enlaces = ctk.CTkButton(self.scroll_sidebar, text="🔗 Enlaces y Accesos", command=lambda: self.mostrar_vista("Enlaces"), **btn_estilo)
+        self.btn_nav_enlaces.pack(pady=1, padx=8, fill="x")
+        self.botones_nav.append(self.btn_nav_enlaces)
+
         # Botón Acceso Móvil / Código QR para celulares
         self.btn_nav_movil = ctk.CTkButton(
             self.scroll_sidebar, 
@@ -1377,6 +1382,7 @@ class SistemaMantenimiento(ctk.CTk):
         self.vistas["Respaldos"] = VistaRespaldos(self.contenedor_principal, self)
         if self.es_jefe:
             self.vistas["Usuarios"] = VistaUsuarios(self.contenedor_principal, self)
+        self.vistas["Enlaces"] = VistaEnlaces(self.contenedor_principal, self)
 
     def mostrar_vista(self, nombre):
         self.vista_actual_nombre = nombre
@@ -1413,7 +1419,8 @@ class SistemaMantenimiento(ctk.CTk):
             "Protocolos": self.btn_nav_prot,
             "Areas": self.btn_nav_areas,
             "Sedes": self.btn_nav_sedes,
-            "Respaldos": self.btn_nav_respaldos
+            "Respaldos": self.btn_nav_respaldos,
+            "Enlaces": getattr(self, "btn_nav_enlaces", None)
         }
         if self.btn_nav_usuarios:
             mapa_botones["Usuarios"] = self.btn_nav_usuarios

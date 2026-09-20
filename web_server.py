@@ -421,6 +421,7 @@ HTML_INVENTARIO = """
             <a href="/inventario" class="nav-tab active">📦 Inventario</a>
             <a href="/analisis" class="nav-tab">📊 Análisis y Censo</a>
             <a href="/movil" class="nav-tab">📱 Registro Móvil</a>
+            <a href="/enlaces" class="nav-tab">🔗 Enlaces</a>
         </div>
     </div>
 
@@ -1096,6 +1097,7 @@ HTML_ANALISIS = """
             <a href="/inventario" class="nav-tab">📦 Inventario</a>
             <a href="/analisis" class="nav-tab active">📊 Análisis y Censo</a>
             <a href="/movil" class="nav-tab">📱 Registro Móvil</a>
+            <a href="/enlaces" class="nav-tab">🔗 Enlaces</a>
         </div>
     </div>
 
@@ -1583,6 +1585,275 @@ def vista_analisis_web():
         )
     except Exception as e:
         return f"Error en análisis: {e}", 500
+
+# =========================================================================
+# VISTA WEB PÚBLICA: ENLACES Y ACCESOS DEL SISTEMA
+# =========================================================================
+HTML_ENLACES_PORTAL = """<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SGEM GAMLP • Enlaces y Accesos del Sistema</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #003B64;
+            --primary-light: #005691;
+            --accent: #2563EB;
+            --bg: #F4F6F9;
+            --card: #FFFFFF;
+            --text: #0F172A;
+            --muted: #64748B;
+            --border: #E2E8F0;
+            --radius: 12px;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+        body { background-color: var(--bg); color: var(--text); padding-bottom: 50px; }
+        .header {
+            background: linear-gradient(135deg, #00223D 0%, #003B64 50%, #005691 100%);
+            color: #FFFFFF;
+            padding: 25px 20px 20px;
+            text-align: center;
+        }
+        .badge-gamlp { display: inline-block; background: rgba(255,255,255,0.15); padding: 3px 12px; border-radius: 20px; font-size: 11px; margin-bottom: 8px; font-weight: 600; text-transform: uppercase; }
+        .header h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+        .header p { font-size: 13px; color: #94A3B8; }
+        .nav-tabs { display: flex; justify-content: center; gap: 8px; margin-top: 15px; flex-wrap: wrap; }
+        .nav-tab {
+            color: #CBD5E1;
+            text-decoration: none;
+            padding: 7px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            background: rgba(255,255,255,0.08);
+            transition: all 0.2s;
+        }
+        .nav-tab:hover { background: rgba(255,255,255,0.18); color: #FFFFFF; }
+        .nav-tab.active { background: #FFFFFF; color: var(--primary); font-weight: 700; }
+        .container { max-width: 860px; margin: 20px auto 0; padding: 0 16px; }
+        .banner {
+            background: linear-gradient(135deg, #003B64, #005691);
+            color: white;
+            padding: 20px;
+            border-radius: var(--radius);
+            margin-bottom: 20px;
+            box-shadow: 0 4px 14px rgba(0,59,100,0.15);
+        }
+        .link-card {
+            background: var(--card);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            padding: 18px 20px;
+            margin-bottom: 14px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        .link-card:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.06); }
+        .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+        .card-title { font-size: 16px; font-weight: 800; color: var(--primary); display: flex; align-items: center; gap: 8px; }
+        .badge { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 4px; }
+        .card-desc { font-size: 13px; color: var(--muted); line-height: 1.45; margin-bottom: 10px; }
+        .url-box {
+            background: #F8FAFC;
+            border: 1px solid #E2E8F0;
+            border-radius: 8px;
+            padding: 9px 12px;
+            font-family: monospace;
+            font-size: 13px;
+            font-weight: 700;
+            color: #0284C7;
+            word-break: break-all;
+            margin-bottom: 12px;
+        }
+        .btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
+        .btn {
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 12.5px;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.2s;
+        }
+        .btn-copy { background: #2563EB; color: white; }
+        .btn-wa { background: #22C55E; color: white; }
+        .btn-open { background: #F1F5F9; color: #003B64; border: 1px solid #CBD5E1; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <span class="badge-gamlp">GAMLP • SGEM v1.1</span>
+        <h1>Sistema de Gestión de Equipamiento Médico</h1>
+        <p>Directorio Central de Enlaces y Accesos</p>
+        <div class="nav-tabs">
+            <a href="/inventario" class="nav-tab">📦 Inventario</a>
+            <a href="/analisis" class="nav-tab">📊 Análisis y Censo</a>
+            <a href="/movil" class="nav-tab">📱 Registro Móvil</a>
+            <a href="/enlaces" class="nav-tab active">🔗 Enlaces</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="banner">
+            <h2 style="font-size: 20px; font-weight: 800; margin-bottom: 6px;">🔗 Directorio de Enlaces y Accesos Oficiales</h2>
+            <p style="font-size: 13.5px; opacity: 0.95; line-height: 1.5;">
+                Todos los accesos al sistema SGEM GAMLP disponibles 24/7 en la nube, red interna, bases de datos y administración técnica. Copia con un clic o comparte directamente por WhatsApp.
+            </p>
+        </div>
+
+        <!-- 1. SUITE MÓVIL (NUBE 24/7) -->
+        <div class="link-card" style="border-left: 5px solid #16A34A;">
+            <div class="card-header">
+                <div class="card-title">📱 Suite Móvil para Celulares (Nube 24/7)</div>
+                <span class="badge" style="background: #DCFCE7; color: #166534;">🟢 ACTIVO ONLINE OFICIAL</span>
+            </div>
+            <div class="card-desc">
+                Acceso completo para técnicos y personal de campo desde cualquier celular o tablet con internet en cualquier lugar (no requiere computadoras encendidas).
+            </div>
+            <div class="url-box">https://cmms-gamlp.onrender.com/movil</div>
+            <div class="btn-group">
+                <button class="btn btn-copy" onclick="copiarTexto('https://cmms-gamlp.onrender.com/movil', this)">📋 Copiar Enlace</button>
+                <a href="https://api.whatsapp.com/send?text=Acceso%20Suite%20M%C3%B3vil%20SGEM%20GAMLP%3A%20https%3A%2F%2Fcmms-gamlp.onrender.com%2Fmovil" target="_blank" class="btn btn-wa">📲 Enviar por WhatsApp</a>
+                <a href="https://cmms-gamlp.onrender.com/movil" target="_blank" class="btn btn-open">🚀 Abrir</a>
+            </div>
+        </div>
+
+        <!-- 2. PORTAL WEB GENERAL (NUBE 24/7) -->
+        <div class="link-card" style="border-left: 5px solid #005691;">
+            <div class="card-header">
+                <div class="card-title">🌐 Portal Web General GAMLP (Nube 24/7)</div>
+                <span class="badge" style="background: #E0F2FE; color: #075985;">🌐 PÁGINA PRINCIPAL</span>
+            </div>
+            <div class="card-desc">
+                Portal institucional de bienvenida, módulos informativos, inventario descentralizado y análisis territorial de la red hospitalaria.
+            </div>
+            <div class="url-box">https://cmms-gamlp.onrender.com/</div>
+            <div class="btn-group">
+                <button class="btn btn-copy" onclick="copiarTexto('https://cmms-gamlp.onrender.com/', this)">📋 Copiar Enlace</button>
+                <a href="https://cmms-gamlp.onrender.com/" target="_blank" class="btn btn-open">🚀 Abrir Portal</a>
+            </div>
+        </div>
+
+        <!-- 3. RED LOCAL WI-FI -->
+        <div class="link-card" style="border-left: 5px solid #F59E0B;">
+            <div class="card-header">
+                <div class="card-title">📶 Conexión Red Local Wi-Fi (Servidor Oficina)</div>
+                <span class="badge" style="background: #FEF3C7; color: #92400E;">🏢 RED LOCAL INTERNA</span>
+            </div>
+            <div class="card-desc">
+                Para ingresar desde celulares o computadoras conectadas a la misma red Wi-Fi de la oficina mientras el software de escritorio esté abierto en la PC principal.
+            </div>
+            <div class="url-box" id="lbl_local">http://&lt;IP_DE_TU_PC&gt;:5000/movil</div>
+            <div class="btn-group">
+                <button class="btn" style="background: #D97706; color: white;" onclick="copiarTexto(document.getElementById('lbl_local').innerText.trim(), this)">📋 Copiar Formato</button>
+                <button class="btn btn-open" onclick="detectarIp()">🔍 Detectar Dirección Actual</button>
+            </div>
+        </div>
+
+        <!-- 4. SUPABASE POSTGRESQL -->
+        <div class="link-card" style="border-left: 5px solid #3ECF8E;">
+            <div class="card-header">
+                <div class="card-title">🗄️ Base de Datos PostgreSQL (Supabase Cloud)</div>
+                <span class="badge" style="background: #D1FAE5; color: #065F46;">🟢 NUEVA BASE 2026</span>
+            </div>
+            <div class="card-desc">
+                Base de datos PostgreSQL en la nube (Proyecto: Nueva Base Relevamiento 2026). Almacena equipos, inventarios, muebles, repuestos y mantenimientos con pooler de alto rendimiento.
+            </div>
+            <div class="url-box" style="color: #059669;">https://supabase.com/dashboard</div>
+            <div class="btn-group">
+                <button class="btn" style="background: #059669; color: white;" onclick="copiarTexto('https://supabase.com/dashboard', this)">📋 Copiar Enlace</button>
+                <a href="https://supabase.com/dashboard" target="_blank" class="btn btn-open">🚀 Abrir Supabase</a>
+            </div>
+        </div>
+
+        <!-- 5. RENDER CLOUD HOSTING -->
+        <div class="link-card" style="border-left: 5px solid #6366F1;">
+            <div class="card-header">
+                <div class="card-title">☁️ Panel Servidor Cloud 24/7 (Render Dashboard)</div>
+                <span class="badge" style="background: #EEF2FF; color: #3730A3;">☁️ HOSTING 24/7</span>
+            </div>
+            <div class="card-desc">
+                Panel administrativo en la nube donde corre el servicio web Gunicorn/Flask con despliegue automático continuo y monitor de estado.
+            </div>
+            <div class="url-box" style="color: #4F46E5;">https://dashboard.render.com/</div>
+            <div class="btn-group">
+                <button class="btn" style="background: #4F46E5; color: white;" onclick="copiarTexto('https://dashboard.render.com/', this)">📋 Copiar Enlace</button>
+                <a href="https://dashboard.render.com/" target="_blank" class="btn btn-open">🚀 Abrir Render</a>
+            </div>
+        </div>
+
+        <!-- 6. REPOSITORIO GITHUB -->
+        <div class="link-card" style="border-left: 5px solid #1E293B;">
+            <div class="card-header">
+                <div class="card-title">🐙 Repositorio Oficial del Proyecto (GitHub)</div>
+                <span class="badge" style="background: #F1F5F9; color: #334155;">💻 CÓDIGO FUENTE</span>
+            </div>
+            <div class="card-desc">
+                Repositorio oficial de control de versiones Git con ramas de desarrollo y sincronización directa con Render para despliegues instantáneos.
+            </div>
+            <div class="url-box" style="color: #1E293B;">https://github.com/AdhemarGAMLP/cmms-gamlp</div>
+            <div class="btn-group">
+                <button class="btn" style="background: #1E293B; color: white;" onclick="copiarTexto('https://github.com/AdhemarGAMLP/cmms-gamlp', this)">📋 Copiar Enlace</button>
+                <a href="https://github.com/AdhemarGAMLP/cmms-gamlp" target="_blank" class="btn btn-open">🚀 Abrir GitHub</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function copiarTexto(texto, btn) {
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(texto).then(() => feedback(btn)).catch(() => fallback(texto, btn));
+            } else {
+                fallback(texto, btn);
+            }
+        }
+        function fallback(texto, btn) {
+            const el = document.createElement('input');
+            el.value = texto;
+            document.body.appendChild(el);
+            el.select();
+            try {
+                document.execCommand('copy');
+                feedback(btn);
+            } catch(e) {
+                prompt('Copia el enlace manualmente:', texto);
+            }
+            document.body.removeChild(el);
+        }
+        function feedback(btn) {
+            if (!btn) return;
+            const orig = btn.innerHTML;
+            btn.innerHTML = '✅ ¡Copiado!';
+            const origBg = btn.style.backgroundColor;
+            btn.style.backgroundColor = '#16A34A';
+            setTimeout(() => {
+                btn.innerHTML = orig;
+                btn.style.backgroundColor = origBg;
+            }, 2000);
+        }
+        function detectarIp() {
+            const u = window.location.origin + '/movil';
+            const l = document.getElementById('lbl_local');
+            if (l) l.innerText = u;
+            alert('Dirección detectada:\\n' + u);
+        }
+    </script>
+</body>
+</html>
+"""
+
+@app_web.route('/enlaces')
+def vista_enlaces_web():
+    """Directorio web de enlaces y accesos institucionales."""
+    return render_template_string(HTML_ENLACES_PORTAL)
 
 @app_web.route('/descargar/<filename>')
 def descargar_archivo(filename):
