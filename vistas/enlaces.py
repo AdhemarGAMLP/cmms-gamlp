@@ -97,10 +97,10 @@ class VistaEnlaces(ctk.CTkFrame):
         self._crear_tarjeta_enlace(
             scroll,
             icono="📱",
-            titulo="Suite Móvil para Celulares (Nube 24/7 Oficial)",
+            titulo="Registro Móvil con Código QR (Acceso Oficial 24/7)",
             badge="🟢 ACTIVO ONLINE",
             badge_color="#16A34A",
-            descripcion="Acceso completo para celulares y tablets desde cualquier centro de salud con megas o Wi-Fi.\nFunciona las 24 horas del día aunque esta computadora esté apagada.",
+            descripcion="Escanea el código QR desde tu celular o tablet para registrar equipos y mantenimientos en campo.\nFunciona las 24 horas del día aunque esta computadora esté apagada.",
             url=self.url_cloud,
             acciones=[
                 ("📋 Copiar Enlace", lambda: self.copiar_al_portapapeles(self.url_cloud)),

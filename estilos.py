@@ -13,10 +13,10 @@ C_TEXT = "#0F172A"           # Slate 900 (Texto primario 100% nítido)
 C_SUBTEXT = "#64748B"        # Slate 500 (Texto secundario / hints)
 C_GRAY = "#94A3B8"           # Slate 400
 
-# Acentos y Acciones Semánticas (Minimalista Slate)
-C_BLUE = "#0F172A"           # Slate 900 (Acción principal minimalista)
-C_BLUE_HOVER = "#1E293B"     # Slate 800 hover
-C_BLUE_LIGHT = "#F1F5F9"     # Slate 100 para selección activa / badges
+# Acentos y Acciones Semánticas (Azul Corporativo Vibrante GAMLP)
+C_BLUE = "#007AFF"           # Azul Corporativo vibrante de alta visibilidad
+C_BLUE_HOVER = "#0062CC"     # Azul corporativo hover
+C_BLUE_LIGHT = "#E5F1FF"     # Tinte azul pastel suave para selección activa / badges
 
 C_GREEN = "#10B981"          # Emerald 500 (Éxito / Operativo / Al Día)
 C_GREEN_HOVER = "#059669"
@@ -36,10 +36,10 @@ C_AMBER = "#F59E0B"
 C_SECONDARY_BTN = "#F8FAFC"
 C_SECONDARY_BTN_HOVER = "#F1F5F9"
 
-# Compatibilidad de transición (Unificado a Acción Minimalista)
-C_PURPLE = "#0F172A"
-C_PURPLE_HOVER = "#1E293B"
-C_PURPLE_LIGHT = "#F1F5F9"
+# Compatibilidad de transición (Unificado a Azul Corporativo)
+C_PURPLE = "#007AFF"
+C_PURPLE_HOVER = "#0062CC"
+C_PURPLE_LIGHT = "#E5F1FF"
 
 # Constantes de Curvatura y Estilo Minimalista
 CORNER_CARD = 12

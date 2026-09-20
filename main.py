@@ -80,6 +80,9 @@ from vistas.enlaces import VistaEnlaces
 # ========================================================
 VERSION_APP = "v1.1"
 
+# Identificadores genéricos exentos de comprobación de duplicidad estricta
+EXENTOS_DUPLICADOS = {"", "S/C", "0", "DONACION", "SIN CODIGO", "SIN SERIE", "NINGUNO", "N/A", "NO APLICA", "S/N", "SN", "-", "BERTIN", "SISPAM", "SAPM"}
+
 
 # ========================================================
 # SELECTOR TERRITORIAL Y DE SEDE (PREVIO AL ACCESO)
@@ -1296,23 +1299,9 @@ class SistemaMantenimiento(ctk.CTk):
             self.btn_nav_usuarios.pack(pady=1, padx=8, fill="x")
             self.botones_nav.append(self.btn_nav_usuarios)
 
-        self.btn_nav_enlaces = ctk.CTkButton(self.scroll_sidebar, text="🔗 Enlaces y Accesos", command=lambda: self.mostrar_vista("Enlaces"), **btn_estilo)
+        self.btn_nav_enlaces = ctk.CTkButton(self.scroll_sidebar, text="🔗 Enlaces", command=lambda: self.mostrar_vista("Enlaces"), **btn_estilo)
         self.btn_nav_enlaces.pack(pady=1, padx=8, fill="x")
         self.botones_nav.append(self.btn_nav_enlaces)
-
-        # Botón Acceso Móvil / Código QR para celulares
-        self.btn_nav_movil = ctk.CTkButton(
-            self.scroll_sidebar, 
-            text="📱 Registro Móvil (QR)", 
-            command=self.abrir_dialogo_acceso_movil, 
-            fg_color="#005691", 
-            hover_color="#004070",
-            text_color="#FFFFFF",
-            height=36,
-            corner_radius=8,
-            font=ctk.CTkFont(weight="bold", size=12)
-        )
-        self.btn_nav_movil.pack(pady=(8, 4), padx=8, fill="x")
 
         self.contenedor_principal = ctk.CTkFrame(self, fg_color=C_BG)
         self.contenedor_principal.pack(side="right", fill="both", expand=True)
@@ -1385,6 +1374,9 @@ class SistemaMantenimiento(ctk.CTk):
         self.vistas["Enlaces"] = VistaEnlaces(self.contenedor_principal, self)
 
     def mostrar_vista(self, nombre):
+        if getattr(self, "vista_actual_nombre", None) == nombre and getattr(self, "_vista_inicial_cargada", False):
+            return
+        self._vista_inicial_cargada = True
         self.vista_actual_nombre = nombre
         for btn in self.botones_nav:
             btn.configure(fg_color="transparent", text_color=C_TEXT)
@@ -1592,6 +1584,8 @@ class SistemaMantenimiento(ctk.CTk):
         ctk.CTkLabel(sf, text="Modelo de Catálogo:", font=ctk.CTkFont(size=11, weight="bold"), text_color=C_TEXT).pack(anchor="w", padx=150, pady=(5, 0))
         combo_tipo = ctk.CTkComboBox(sf, width=500, values=val_cat if val_cat else ["No hay modelos"])
         combo_tipo.pack(pady=(0, 5))
+        if not eq_edit:
+            combo_tipo.set("")
         habilitar_autocompletado(combo_tipo, val_cat)
         
         ctk.CTkLabel(sf, text="Área / Ubicación Física:", font=ctk.CTkFont(size=11, weight="bold"), text_color=C_TEXT).pack(anchor="w", padx=150, pady=(5, 0))
@@ -1721,9 +1715,17 @@ class SistemaMantenimiento(ctk.CTk):
 
         combo_area.configure(command=al_cambiar_area)
 
+        AREAS_ESTANDAR_SALUD = [
+            "Enfermería", "Medicina General", "Consulta Externa", "Odontología", 
+            "Emergencias / Urgencias", "Vacunatorio / PAI", "Farmacia", "Laboratorio Clínico", 
+            "Sala de Partos", "Ginecología y Obstetricia", "Pediatría", "Esterilización", 
+            "Ecografía", "Rayos X", "Fisioterapia", "Nutrición", "Triage / Admisión", 
+            "Dirección / Administración", "Almacén", "Mantenimiento y Servicios"
+        ]
+
         def al_cambiar_centro_form(cen_sel):
             areas_db = self.datos.get("areas", [])
-            # Filtrar estrictamente por el centro de salud seleccionado (sin mezclar de otros centros ni fallbacks ficticios)
+            # 1. Áreas registradas oficialmente en base de datos para este centro
             areas_cen = [a for a in areas_db if str(a.get("centro_salud_nombre") or "").strip().upper() == str(cen_sel).strip().upper()]
 
             val_a = []
@@ -1737,16 +1739,34 @@ class SistemaMantenimiento(ctk.CTk):
                 if lbl and lbl not in val_a:
                     val_a.append(lbl)
 
-            combo_area.configure(values=val_a if val_a else [""])
+            # 2. Áreas históricas de equipos y mueblería registradas en este centro
+            cen_clean = str(cen_sel).strip().upper()
+            for eq in self.datos.get("equipos", []):
+                if str(eq.get("centro_salud_nombre") or "").strip().upper() == cen_clean:
+                    ar = str(eq.get("area") or "").strip()
+                    if ar and ar not in ("-", "None", "S/C", "") and ar not in val_a:
+                        val_a.append(ar)
+
+            for mb in self.datos.get("muebleria", []):
+                if str(mb.get("unidad_organizacional") or "").strip().upper() == cen_clean:
+                    ub = str(mb.get("ubicacion") or "").strip()
+                    if ub and ub not in ("-", "None", "S/C", "") and ub not in val_a:
+                        val_a.append(ub)
+
+            # 3. Incorporar áreas asistenciales estándar de centros de salud GAMLP
+            for ar_est in AREAS_ESTANDAR_SALUD:
+                if ar_est not in val_a:
+                    val_a.append(ar_est)
+
+            combo_area.configure(values=val_a if val_a else ["Enfermería"])
             habilitar_autocompletado(combo_area, val_a)
 
             if eq_edit and combo_area.get() in val_a:
                 al_cambiar_area(combo_area.get())
             else:
-                combo_area.set("")
-                e_persona_form.delete(0, "end")
-                e_cargo_form.delete(0, "end")
-                e_ci_form.delete(0, "end")
+                area_def = val_a[0] if val_a else ""
+                combo_area.set(area_def)
+                al_cambiar_area(area_def)
 
             actualizar_af_automatico()
 
@@ -2281,7 +2301,20 @@ class SistemaMantenimiento(ctk.CTk):
             actualizar_restante_gar()
 
         def guardar():
-            if not e_id.get(): 
+            # Validar selección obligatoria de Modelo de Catálogo
+            tipo_sel = combo_tipo.get().strip()
+            if not tipo_sel or tipo_sel == "No hay modelos":
+                messagebox.showwarning("Modelo Requerido", "Por favor seleccione un Modelo de Catálogo para registrar el equipo.", parent=vent)
+                return
+
+            # Asegurar Código de Activo Fijo (AF) si no fue asignado
+            if not e_id.get().strip():
+                r_nom = combo_red_form.get().strip()
+                c_nom = combo_centro_form.get().strip()
+                fijar_codigo_af_ui(generar_siguiente_codigo_af(r_nom, c_nom, self.datos.get("equipos", [])))
+
+            if not e_id.get().strip(): 
+                messagebox.showwarning("Código Requerido", "No se pudo generar el Código de Activo Fijo para este centro.", parent=vent)
                 return
                 
             # Validar si el ID, Serie o Códigos ya existen (Validación de duplicidad)
@@ -2642,6 +2675,7 @@ class SistemaMantenimiento(ctk.CTk):
                     guardar_equipo_offline_cola(dict(eq_data))
 
             ejecutar_en_segundo_plano(_guardar_equipo_db, dict(eq_dict))
+            messagebox.showinfo("Éxito", f"Equipo {id_val} guardado y registrado correctamente.", parent=self)
                 
         # Botón de guardar fijo al final de la ventana, fuera de la zona de scroll
         btn_txt = "Actualizar Ficha de Equipo" if eq_edit else "Guardar Equipo"
@@ -3460,13 +3494,20 @@ class SistemaMantenimiento(ctk.CTk):
     def al_redimensionar(self, event):
         if event.widget != self:
             return
-        
-        h = self.winfo_height()
-        nuevo_modo = "compact" if h < 780 else "spacious"
-        
-        if self.sidebar_mode != nuevo_modo:
-            self.sidebar_mode = nuevo_modo
-            self.aplicar_modo_sidebar(nuevo_modo)
+        if hasattr(self, "_debounce_resize_id") and self._debounce_resize_id:
+            self.after_cancel(self._debounce_resize_id)
+        self._debounce_resize_id = self.after(120, self._ejecutar_redimensionar)
+
+    def _ejecutar_redimensionar(self):
+        self._debounce_resize_id = None
+        try:
+            h = self.winfo_height()
+            nuevo_modo = "compact" if h < 780 else "spacious"
+            if self.sidebar_mode != nuevo_modo:
+                self.sidebar_mode = nuevo_modo
+                self.aplicar_modo_sidebar(nuevo_modo)
+        except Exception:
+            pass
 
     def aplicar_modo_sidebar(self, modo):
         if modo == "compact":
