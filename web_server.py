@@ -3036,8 +3036,33 @@ def movil_registro():
         return f"Error cargando formulario móvil: {e}", 500
 
 # =========================================================================
-# API REST JSON PARA LA APLICACIÓN MÓVIL
+# API REST JSON PARA LA APLICACIÓN MÓVIL Y HEALTHCHECK / PING
 # =========================================================================
+
+@app_web.route('/ping')
+@app_web.route('/api/health')
+def api_ping_health():
+    """Keep-alive ultra liviano para UptimeRobot / Cron.
+    Mantiene despiertos simultáneamente Render y la base de datos Supabase."""
+    db_ok = False
+    error_msg = None
+    try:
+        conn = obtener_conexion()
+        if conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT 1;")
+            conn.close()
+            db_ok = True
+    except Exception as e:
+        error_msg = str(e)
+
+    status_code = 200 if db_ok else 503
+    return jsonify({
+        "status": "ok" if db_ok else "degraded",
+        "service": "CMMS-GAMLP Web Server (Render)",
+        "database": "Supabase PostgreSQL (Activo)" if db_ok else f"DB Error: {error_msg}",
+        "timestamp": datetime.now().isoformat()
+    }), status_code
 
 @app_web.route('/api/sedes')
 def api_sedes():
