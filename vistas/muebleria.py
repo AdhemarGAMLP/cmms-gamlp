@@ -38,7 +38,7 @@ TIPOS_ACTIVOS_COMUNES = [
     "OTRO MOBILIARIO / EQUIPO"
 ]
 
-SECTORES_DISPONIBLES = ["SALUD", "G.A.M.L.P.", "ADMINISTRACIÓN CENTRAL"]
+SECTORES_DISPONIBLES = ["SALUD", "G.A.M.L.P."]
 DETALLES_TRANSACCION = ["ASIGNACION", "REASIGNACION", "TRANSFERENCIA", "ALTA", "BAJA", "DONACION", "EN CUSTODIA"]
 
 
@@ -313,7 +313,7 @@ class VistaMuebleria(ctk.CTkFrame):
         ctk.CTkLabel(f_f_inner, text="Sector:", font=ctk.CTkFont(size=11, weight="bold"), text_color=C_TEXT).pack(side="left", padx=(4, 2))
         self.combo_filtro_sector = ctk.CTkComboBox(
             f_f_inner, 
-            values=["[ Todos ]", "SALUD", "G.A.M.L.P.", "ADMINISTRACIÓN CENTRAL"], 
+            values=["[ Todos ]", "SALUD", "G.A.M.L.P."], 
             width=130, 
             command=lambda e: self.refrescar_datos(), 
             fg_color=C_BG, 
@@ -388,6 +388,7 @@ class VistaMuebleria(ctk.CTkFrame):
             "Unidad / Centro",
             "Tipo Activo",
             "Descripción",
+            "Marca",
             "Modelo",
             "Serie",
             "Persona Asignada",
@@ -396,6 +397,7 @@ class VistaMuebleria(ctk.CTkFrame):
             "BERTIN",
             "SAPM",
             "Ubicación",
+            "Estado",
             "Fecha Asignación"
         )
 
@@ -414,6 +416,7 @@ class VistaMuebleria(ctk.CTkFrame):
             "Unidad / Centro": 150,
             "Tipo Activo": 140,
             "Descripción": 180,
+            "Marca": 100,
             "Modelo": 95,
             "Serie": 95,
             "Persona Asignada": 150,
@@ -421,14 +424,15 @@ class VistaMuebleria(ctk.CTkFrame):
             "Cód. SISPAM": 95,
             "BERTIN": 85,
             "SAPM": 85,
-            "Ubicación": 120,
+            "Ubicación": 130,
+            "Estado": 85,
             "Fecha Asignación": 95
         }
 
         for col_name in cols:
             self.tabla.heading(col_name, text=col_name)
             w = ancho_columnas.get(col_name, 100)
-            align = "center" if col_name in ("ID", "Sector", "Red de Salud", "Modelo", "Serie", "C.I. Asignado", "Cód. SISPAM", "BERTIN", "SAPM", "Fecha Asignación") else "w"
+            align = "center" if col_name in ("ID", "Sector", "Red de Salud", "Marca", "Modelo", "Serie", "C.I. Asignado", "Cód. SISPAM", "BERTIN", "SAPM", "Estado", "Fecha Asignación") else "w"
             self.tabla.column(col_name, width=w, minwidth=40, anchor=align)
 
         self.tabla.tag_configure("fila_par", background="#FFFFFF", foreground=C_TEXT)
@@ -631,6 +635,7 @@ class VistaMuebleria(ctk.CTkFrame):
                     str(m.get("sapm") or ""),
                     str(m.get("tipo_activo") or ""),
                     str(m.get("descripcion") or ""),
+                    str(m.get("marca") or ""),
                     str(m.get("modelo") or ""),
                     str(m.get("serie") or ""),
                     str(m.get("persona_asignada") or ""),
@@ -674,14 +679,16 @@ class VistaMuebleria(ctk.CTkFrame):
                     m.get("unidad_organizacional") or "",
                     m.get("tipo_activo") or "",
                     m.get("descripcion") or "",
+                    m.get("marca") or "",
                     m.get("modelo") or "",
-                    m.get("serie") or "",
+                    m.get("serie") or "S/C",
                     m.get("persona_asignada") or "",
                     m.get("ci_asignado") or "",
-                    m.get("codigo_sispam") or "",
-                    m.get("bertin") or "",
-                    m.get("sapm") or "",
+                    m.get("codigo_sispam") or "S/C",
+                    m.get("bertin") or "S/C",
+                    m.get("sapm") or "S/C",
                     m.get("ubicacion") or "",
+                    m.get("estado_conservacion") or m.get("estado_bien") or "Bueno",
                     m.get("fecha_asignacion") or ""
                 ),
                 tags=(tag_fila,)
@@ -694,6 +701,18 @@ class VistaMuebleria(ctk.CTkFrame):
             if t:
                 tipos_set.add(t)
         return sorted(list(tipos_set))
+
+    def _obtener_lista_marcas(self, query=""):
+        marcas_set = {
+            "DELL", "HP", "LENOVO", "EPSON", "CANON", "SAMSUNG", "LG", "SONY",
+            "SONOSCAPE", "MINDRAY", "PHILIPS", "GENERAL ELECTRIC", "SIEMENS",
+            "BILMEX", "METALMEDICA", "GENÉRICO", "S/M"
+        }
+        for m in self.app.datos.get("muebleria", []):
+            mar = str(m.get("marca") or "").strip()
+            if mar:
+                marcas_set.add(mar)
+        return sorted(list(marcas_set))
 
     def _obtener_lista_modelos(self, query=""):
         modelos_set = {
@@ -730,19 +749,62 @@ class VistaMuebleria(ctk.CTkFrame):
                 desc_set.add(d)
         return sorted(list(desc_set))
 
+    def _obtener_lista_series(self, query=""):
+        series_set = {"S/C", "SIN SERIE", "SIN CODIGO"}
+        for m in self.app.datos.get("muebleria", []):
+            ser = str(m.get("serie") or "").strip()
+            if ser and ser.upper() not in ("-", "0"):
+                series_set.add(ser)
+        return sorted(list(series_set))
+
+    def _obtener_lista_sispam(self, query=""):
+        sispam_set = {"S/C", "0", "DONACION", "SIN CODIGO"}
+        for m in self.app.datos.get("muebleria", []):
+            s = str(m.get("codigo_sispam") or "").strip()
+            if s and s not in ("-",):
+                sispam_set.add(s)
+        return sorted(list(sispam_set))
+
+    def _obtener_lista_bertin(self, query=""):
+        bertin_set = {"S/C", "0", "SIN CODIGO"}
+        for m in self.app.datos.get("muebleria", []):
+            b = str(m.get("bertin") or "").strip()
+            if b and b not in ("-",):
+                bertin_set.add(b)
+        return sorted(list(bertin_set))
+
+    def _obtener_lista_sapm(self, query=""):
+        sapm_set = {"S/C", "0", "SIN CODIGO"}
+        for m in self.app.datos.get("muebleria", []):
+            sp = str(m.get("sapm") or "").strip()
+            if sp and sp not in ("-",):
+                sapm_set.add(sp)
+        return sorted(list(sapm_set))
+
+    def _formatear_area_nombre(self, a):
+        nom = str(a.get("nombre") or "").strip()
+        piso = str(a.get("piso") or "").strip()
+        if not piso or piso == "-":
+            return nom
+        if not piso.lower().startswith("piso") and not piso.lower().startswith("planta") and not piso.lower().startswith("pb"):
+            piso_str = f"Piso {piso}"
+        else:
+            piso_str = piso
+        return f"{piso_str} - {nom}"
+
     def abrir_formulario_mueble(self, mueble_editar=None):
-        """Abre la ventana modal para registrar o modificar un mueble / equipo de computación."""
+        """Abre la ventana modal para registrar o modificar un activo."""
         modal = ctk.CTkToplevel(self)
-        titulo_modal = "Modificar Activo (Mueblería / Computación)" if mueble_editar else "Registrar Nuevo Activo (Mueblería / Computación)"
+        titulo_modal = "Modificar Activo" if mueble_editar else "Registrar Nuevo Activo"
         modal.title(titulo_modal)
-        modal.geometry("860x720")
+        modal.geometry("880x760")
         modal.configure(fg_color=C_BG)
         modal.transient(self)
         modal.grab_set()
 
         # Centrar ventana
         modal.update_idletasks()
-        w, h = 860, 720
+        w, h = 880, 760
         x = (modal.winfo_screenwidth() // 2) - (w // 2)
         y = (modal.winfo_screenheight() // 2) - (h // 2)
         modal.geometry(f"{w}x{h}+{x}+{y}")
@@ -754,7 +816,7 @@ class VistaMuebleria(ctk.CTkFrame):
 
         ctk.CTkLabel(
             f_head, 
-            text=f"🛋️ {titulo_modal}", 
+            text=f"📦 {titulo_modal}", 
             font=ctk.CTkFont(size=18, weight="bold"), 
             text_color=C_TEXT
         ).pack(side="left", padx=20, pady=12)
@@ -774,245 +836,369 @@ class VistaMuebleria(ctk.CTkFrame):
                 "RED 5-SUR (MACRODISTRITO SUR)"
             ]
 
-        # Fila 1: Sector Actual & Detalle Transacción (Llenado Libre)
+        # -------------------------------------------------------------
+        # FILA 1: Dirección Administrativa (Red) & Unidad Organizacional (Centro)
+        # -------------------------------------------------------------
         f_r1 = ctk.CTkFrame(sf, fg_color="transparent")
-        f_r1.pack(fill="x", pady=4)
+        f_r1.pack(fill="x", pady=6)
         f_r1.columnconfigure(0, weight=1)
         f_r1.columnconfigure(1, weight=1)
 
-        # Sector Actual
-        f_sec = ctk.CTkFrame(f_r1, fg_color="transparent")
-        f_sec.grid(row=0, column=0, sticky="ew", padx=(0, 10))
-        ctk.CTkLabel(f_sec, text="1. Sector Actual *", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(0, 2))
-        combo_sector = ctk.CTkComboBox(f_sec, values=SECTORES_DISPONIBLES, fg_color=C_CARD, border_color=C_BORDER)
-        combo_sector.pack(fill="x")
-        combo_sector.set(mueble_editar.get("sector_actual", "SALUD") if mueble_editar else "SALUD")
+        # Dirección Adm. (Red)
+        f_red = ctk.CTkFrame(f_r1, fg_color="transparent")
+        f_red.grid(row=0, column=0, sticky="ew", padx=(0, 10))
+        ctk.CTkLabel(f_red, text="Dirección Administrativa (Red de Salud)", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(0, 2))
+        combo_red = ctk.CTkComboBox(f_red, values=lista_redes, fg_color=C_CARD, border_color=C_BORDER)
+        combo_red.pack(fill="x")
 
-        # Detalle Transacción (Llenado libre)
-        f_trans = ctk.CTkFrame(f_r1, fg_color="transparent")
-        f_trans.grid(row=0, column=1, sticky="ew")
-        ctk.CTkLabel(f_trans, text="2. Detalle Transacción (Llenado libre)", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(0, 2))
-        e_trans = ctk.CTkEntry(f_trans, placeholder_text="Ej: ASIGNACION, REASIGNACION, ALTA, BAJA...", fg_color=C_CARD, border_color=C_BORDER)
-        e_trans.pack(fill="x")
-        if mueble_editar and mueble_editar.get("detalle_transaccion"):
-            e_trans.insert(0, mueble_editar["detalle_transaccion"])
+        # Unidad Org. (Centro)
+        f_centro = ctk.CTkFrame(f_r1, fg_color="transparent")
+        f_centro.grid(row=0, column=1, sticky="ew")
+        ctk.CTkLabel(f_centro, text="Unidad Organizacional (Centro de Salud)", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(0, 2))
+        combo_centro = ctk.CTkComboBox(f_centro, values=["Seleccione Red primero..."], fg_color=C_CARD, border_color=C_BORDER)
+        combo_centro.pack(fill="x")
 
-        # Fila 2: Dirección Administrativa (Red) & Unidad Organizacional (Centro)
+        # -------------------------------------------------------------
+        # FILA 2: Ubicación Física (Piso - Área) & Sector Actual
+        # -------------------------------------------------------------
         f_r2 = ctk.CTkFrame(sf, fg_color="transparent")
         f_r2.pack(fill="x", pady=6)
         f_r2.columnconfigure(0, weight=1)
         f_r2.columnconfigure(1, weight=1)
 
-        # Dirección Adm. (Red)
-        f_red = ctk.CTkFrame(f_r2, fg_color="transparent")
-        f_red.grid(row=0, column=0, sticky="ew", padx=(0, 10))
-        ctk.CTkLabel(f_red, text="3. Dirección Administrativa (Red de Salud) *", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(0, 2))
-        combo_red = ctk.CTkComboBox(f_red, values=lista_redes, fg_color=C_CARD, border_color=C_BORDER)
-        combo_red.pack(fill="x")
+        # Ubicación física vinculada a Áreas (Piso - Área)
+        f_ubi = ctk.CTkFrame(f_r2, fg_color="transparent")
+        f_ubi.grid(row=0, column=0, sticky="ew", padx=(0, 10))
+        ctk.CTkLabel(f_ubi, text="Ubicación Física (Piso - Área)", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(0, 2))
+        combo_ubicacion = ctk.CTkComboBox(f_ubi, values=["Cargando áreas..."], fg_color=C_CARD, border_color=C_BORDER)
+        combo_ubicacion.pack(fill="x")
 
-        # Unidad Org. (Centro)
-        f_centro = ctk.CTkFrame(f_r2, fg_color="transparent")
-        f_centro.grid(row=0, column=1, sticky="ew")
-        ctk.CTkLabel(f_centro, text="4. Unidad Organizacional (Centro de Salud) *", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(0, 2))
-        combo_centro = ctk.CTkComboBox(f_centro, values=["Seleccione Red primero..."], fg_color=C_CARD, border_color=C_BORDER)
-        combo_centro.pack(fill="x")
+        # Sector Actual
+        f_sec = ctk.CTkFrame(f_r2, fg_color="transparent")
+        f_sec.grid(row=0, column=1, sticky="ew")
+        ctk.CTkLabel(f_sec, text="Sector Actual", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(0, 2))
+        combo_sector = ctk.CTkComboBox(f_sec, values=SECTORES_DISPONIBLES, fg_color=C_CARD, border_color=C_BORDER)
+        combo_sector.pack(fill="x")
+        combo_sector.set(mueble_editar.get("sector_actual", "SALUD") if mueble_editar else "SALUD")
 
-        def actualizar_centros_por_red(red_nom, centro_sel_default=None):
-            red_obj = next((r for r in sedes.get("redes", []) if r["nombre"] == red_nom), None)
-            if red_obj:
-                centros_de_red = [c["nombre"] for c in sedes.get("centros", []) if c.get("red_salud_id") == red_obj["id"]]
-            else:
-                centros_de_red = [c["nombre"] for c in sedes.get("centros", [])]
-            if not centros_de_red:
-                centros_de_red = ["CENTRO DE SALUD GAMLP"]
-            combo_centro.configure(values=centros_de_red)
-            if centro_sel_default and centro_sel_default in centros_de_red:
-                combo_centro.set(centro_sel_default)
-            elif centros_de_red:
-                combo_centro.set(centros_de_red[0])
-
-        combo_red.configure(command=lambda r: actualizar_centros_por_red(r))
-
-        # Determinar valores por defecto de Red y Centro (respetando contexto activo o edición)
-        ctx = getattr(self.app, "contexto_sede", None)
-        if mueble_editar:
-            red_inicial = mueble_editar.get("direccion_administrativa") or (lista_redes[0] if lista_redes else "")
-            cen_inicial = mueble_editar.get("unidad_organizacional")
-            combo_red.set(red_inicial)
-            actualizar_centros_por_red(red_inicial, cen_inicial)
-        elif ctx and not ctx.get("es_global", True):
-            red_ctx = ctx.get("red_salud")
-            cen_ctx = ctx.get("centro_salud")
-            if red_ctx and red_ctx in lista_redes:
-                combo_red.set(red_ctx)
-                actualizar_centros_por_red(red_ctx, cen_ctx)
-            else:
-                combo_red.set(lista_redes[0] if lista_redes else "")
-                actualizar_centros_por_red(combo_red.get(), cen_ctx)
-        else:
-            combo_red.set(lista_redes[0] if lista_redes else "")
-            actualizar_centros_por_red(combo_red.get())
-
-        # Fila 3: Tipo de Activo (Llenado libre con sugerencia emergente) & Modelo (Llenado libre con sugerencia emergente)
+        # -------------------------------------------------------------
+        # FILA 3: Persona Asignada & C.I. Asignado (Auto-llenado por Área, editable)
+        # -------------------------------------------------------------
         f_r3 = ctk.CTkFrame(sf, fg_color="transparent")
         f_r3.pack(fill="x", pady=6)
         f_r3.columnconfigure(0, weight=1)
         f_r3.columnconfigure(1, weight=1)
 
-        f_tipo = ctk.CTkFrame(f_r3, fg_color="transparent")
+        f_pers = ctk.CTkFrame(f_r3, fg_color="transparent")
+        f_pers.grid(row=0, column=0, sticky="ew", padx=(0, 10))
+        ctk.CTkLabel(f_pers, text="Persona Asignada (Doctora / Custodio)", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(0, 2))
+        e_persona = ctk.CTkEntry(f_pers, placeholder_text="Nombre de la doctora o responsable a cargo...", fg_color=C_CARD, border_color=C_BORDER)
+        e_persona.pack(fill="x")
+
+        f_ci = ctk.CTkFrame(f_r3, fg_color="transparent")
+        f_ci.grid(row=0, column=1, sticky="ew")
+        ctk.CTkLabel(f_ci, text="C.I. Asignado", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(0, 2))
+        e_ci = ctk.CTkEntry(f_ci, placeholder_text="Ej: 4892711 LP...", fg_color=C_CARD, border_color=C_BORDER)
+        e_ci.pack(fill="x")
+
+        # -------------------------------------------------------------
+        # VINCULACIÓN DINÁMICA: RED -> CENTRO -> UBICACIÓN (ÁREA) -> DOCTOR & CI
+        # -------------------------------------------------------------
+        mapa_areas_actuales = {}
+
+        def al_cambiar_ubicacion(val_ubi=None):
+            sel = (val_ubi or combo_ubicacion.get()).strip()
+            area_obj = mapa_areas_actuales.get(sel)
+            if not area_obj:
+                sel_low = sel.lower()
+                for k, v in mapa_areas_actuales.items():
+                    if k.lower() == sel_low or str(v.get("nombre", "")).lower() == sel_low:
+                        area_obj = v
+                        break
+            if area_obj:
+                enc = str(area_obj.get("encargado") or "").strip()
+                ci_enc = str(area_obj.get("ci_encargado") or "").strip()
+                if enc:
+                    e_persona.delete(0, "end")
+                    e_persona.insert(0, enc)
+                if ci_enc:
+                    e_ci.delete(0, "end")
+                    e_ci.insert(0, ci_enc)
+
+        def actualizar_ubicaciones_por_centro(centro_nom, red_nom=None, ubi_sel_default=None, auto_llenar_doctor=True):
+            mapa_areas_actuales.clear()
+            areas_db = self.app.datos.get("areas", [])
+            
+            areas_centro = []
+            if centro_nom:
+                cen_nom_clean = str(centro_nom).strip().upper()
+                areas_centro = [
+                    a for a in areas_db 
+                    if str(a.get("centro_salud_nombre") or "").strip().upper() == cen_nom_clean
+                ]
+            
+            if not areas_centro:
+                areas_centro = [
+                    a for a in areas_db 
+                    if not str(a.get("centro_salud_nombre") or "").strip() or str(a.get("centro_salud_nombre") or "").strip() == "-"
+                ]
+            if not areas_centro:
+                areas_centro = areas_db
+
+            lista_areas_fmt = []
+            for a in areas_centro:
+                fmt = self._formatear_area_nombre(a)
+                mapa_areas_actuales[fmt] = a
+                mapa_areas_actuales[str(a.get("nombre", ""))] = a
+                if fmt not in lista_areas_fmt:
+                    lista_areas_fmt.append(fmt)
+
+            if not lista_areas_fmt:
+                lista_areas_fmt = ["Piso 1 - Consulta Externa", "PB - Emergencias", "Piso 1 - Ecografía"]
+
+            combo_ubicacion.configure(values=lista_areas_fmt)
+
+            if ubi_sel_default and (ubi_sel_default in lista_areas_fmt or ubi_sel_default in mapa_areas_actuales):
+                combo_ubicacion.set(ubi_sel_default)
+                if auto_llenar_doctor:
+                    al_cambiar_ubicacion(ubi_sel_default)
+            elif ubi_sel_default:
+                combo_ubicacion.set(ubi_sel_default)
+            elif lista_areas_fmt:
+                combo_ubicacion.set(lista_areas_fmt[0])
+                if auto_llenar_doctor:
+                    al_cambiar_ubicacion(lista_areas_fmt[0])
+
+        def actualizar_centros_por_red(red_nom, centro_sel_default=None, ubi_sel_default=None, auto_llenar_doctor=True):
+            red_obj = next((r for r in sedes.get("redes", []) if r["nombre"] == red_nom), None)
+            if red_obj:
+                centros_de_red = [c["nombre"] for c in sedes.get("centros", []) if c.get("red_salud_id") == red_obj["id"]]
+            else:
+                centros_de_red = [c["nombre"] for c in sedes.get("centros", [])]
+            if "RED 1" in (red_nom or "").upper() and "167 AUXILIO" not in centros_de_red:
+                centros_de_red.append("167 AUXILIO")
+            if not centros_de_red:
+                centros_de_red = ["CENTRO DE SALUD GAMLP"]
+
+            combo_centro.configure(values=centros_de_red)
+            if centro_sel_default and centro_sel_default in centros_de_red:
+                cen_sel = centro_sel_default
+            elif centros_de_red:
+                cen_sel = centros_de_red[0]
+            else:
+                cen_sel = ""
+            combo_centro.set(cen_sel)
+
+            actualizar_ubicaciones_por_centro(cen_sel, red_nom, ubi_sel_default=ubi_sel_default, auto_llenar_doctor=auto_llenar_doctor)
+
+        combo_red.configure(command=lambda r: actualizar_centros_por_red(r, auto_llenar_doctor=True))
+        combo_centro.configure(command=lambda c: actualizar_ubicaciones_por_centro(c, combo_red.get(), auto_llenar_doctor=True))
+        combo_ubicacion.configure(command=al_cambiar_ubicacion)
+
+        # -------------------------------------------------------------
+        # FILA 4: Tipo de Activo & Marca
+        # -------------------------------------------------------------
+        f_r4 = ctk.CTkFrame(sf, fg_color="transparent")
+        f_r4.pack(fill="x", pady=6)
+        f_r4.columnconfigure(0, weight=1)
+        f_r4.columnconfigure(1, weight=1)
+
+        f_tipo = ctk.CTkFrame(f_r4, fg_color="transparent")
         f_tipo.grid(row=0, column=0, sticky="ew", padx=(0, 10))
-        ctk.CTkLabel(f_tipo, text="5. Tipo de Activo *", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(0, 2))
+        ctk.CTkLabel(f_tipo, text="Tipo de Activo", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(0, 2))
         e_tipo = ctk.CTkEntry(f_tipo, placeholder_text="Ej: COMPUTADORA DE ESCRITORIO, SILLA, ESCRITORIO...", fg_color=C_CARD, border_color=C_BORDER)
         e_tipo.pack(fill="x")
         if mueble_editar and mueble_editar.get("tipo_activo"):
             e_tipo.insert(0, mueble_editar["tipo_activo"])
         pop_tipo = AutocompletarEntryPopup(e_tipo, self._obtener_lista_tipos)
 
-        f_mod = ctk.CTkFrame(f_r3, fg_color="transparent")
-        f_mod.grid(row=0, column=1, sticky="ew")
-        ctk.CTkLabel(f_mod, text="6. Modelo", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(0, 2))
+        f_mar = ctk.CTkFrame(f_r4, fg_color="transparent")
+        f_mar.grid(row=0, column=1, sticky="ew")
+        ctk.CTkLabel(f_mar, text="Marca", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(0, 2))
+        e_marca = ctk.CTkEntry(f_mar, placeholder_text="Ej: Dell, HP, Lenovo, SonoScape, Bilmex...", fg_color=C_CARD, border_color=C_BORDER)
+        e_marca.pack(fill="x")
+        if mueble_editar and mueble_editar.get("marca"):
+            e_marca.insert(0, mueble_editar["marca"])
+        pop_mar = AutocompletarEntryPopup(e_marca, self._obtener_lista_marcas)
+
+        # -------------------------------------------------------------
+        # FILA 5: Modelo & Número de Serie (Único)
+        # -------------------------------------------------------------
+        f_r5 = ctk.CTkFrame(sf, fg_color="transparent")
+        f_r5.pack(fill="x", pady=6)
+        f_r5.columnconfigure(0, weight=1)
+        f_r5.columnconfigure(1, weight=1)
+
+        f_mod = ctk.CTkFrame(f_r5, fg_color="transparent")
+        f_mod.grid(row=0, column=0, sticky="ew", padx=(0, 10))
+        ctk.CTkLabel(f_mod, text="Modelo", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(0, 2))
         e_modelo = ctk.CTkEntry(f_mod, placeholder_text="Ej: OptiPlex 7080, LaserJet Pro M404, Ergonómica...", fg_color=C_CARD, border_color=C_BORDER)
         e_modelo.pack(fill="x")
         if mueble_editar and mueble_editar.get("modelo"):
             e_modelo.insert(0, mueble_editar["modelo"])
         pop_mod = AutocompletarEntryPopup(e_modelo, self._obtener_lista_modelos)
 
-        # Fila 4: Descripción del Activo (Llenado libre con sugerencia emergente) & Número de Serie (Único)
-        f_r4 = ctk.CTkFrame(sf, fg_color="transparent")
-        f_r4.pack(fill="x", pady=6)
-        f_r4.columnconfigure(0, weight=1)
-        f_r4.columnconfigure(1, weight=1)
-
-        f_desc = ctk.CTkFrame(f_r4, fg_color="transparent")
-        f_desc.grid(row=0, column=0, sticky="ew", padx=(0, 10))
-        ctk.CTkLabel(f_desc, text="7. Descripción del Activo *", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(0, 2))
-        e_desc = ctk.CTkEntry(f_desc, placeholder_text="Ej: COMPUTADORA CORE I7 16GB RAM, ESCRITORIO DE MADERA 3 GAVETAS...", fg_color=C_CARD, border_color=C_BORDER)
-        e_desc.pack(fill="x")
-        if mueble_editar and mueble_editar.get("descripcion"):
-            e_desc.insert(0, mueble_editar["descripcion"])
-        pop_desc = AutocompletarEntryPopup(e_desc, self._obtener_lista_descripciones)
-
-        f_ser = ctk.CTkFrame(f_r4, fg_color="transparent")
+        f_ser = ctk.CTkFrame(f_r5, fg_color="transparent")
         f_ser.grid(row=0, column=1, sticky="ew")
-        ctk.CTkLabel(f_ser, text="8. Número de Serie", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(0, 2))
-        e_serie = ctk.CTkEntry(f_ser, placeholder_text="Ej: CN-0H754T-74261, S/N...", fg_color=C_CARD, border_color=C_BORDER)
+        ctk.CTkLabel(f_ser, text="Número de Serie (Por defecto S/C)", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(0, 2))
+        e_serie = ctk.CTkEntry(f_ser, placeholder_text="Ej: CN-0H754T-74261, S/C...", fg_color=C_CARD, border_color=C_BORDER)
         e_serie.pack(fill="x")
         if mueble_editar and mueble_editar.get("serie"):
             e_serie.insert(0, mueble_editar["serie"])
+        pop_ser = AutocompletarEntryPopup(e_serie, self._obtener_lista_series)
 
-        # Fila 5: Código SISPAM & BERTIN
-        f_r5 = ctk.CTkFrame(sf, fg_color="transparent")
-        f_r5.pack(fill="x", pady=6)
-        f_r5.columnconfigure(0, weight=1)
-        f_r5.columnconfigure(1, weight=1)
-
-        f_sispam = ctk.CTkFrame(f_r5, fg_color="transparent")
-        f_sispam.grid(row=0, column=0, sticky="ew", padx=(0, 10))
-        ctk.CTkLabel(f_sispam, text="9. Código SISPAM", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(0, 2))
-        e_sispam = ctk.CTkEntry(f_sispam, placeholder_text="Código institucional SISPAM...", fg_color=C_CARD, border_color=C_BORDER)
-        e_sispam.pack(fill="x")
-        if mueble_editar and mueble_editar.get("codigo_sispam"):
-            e_sispam.insert(0, mueble_editar["codigo_sispam"])
-
-        f_bertin = ctk.CTkFrame(f_r5, fg_color="transparent")
-        f_bertin.grid(row=0, column=1, sticky="ew")
-        ctk.CTkLabel(f_bertin, text="10. BERTIN", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(0, 2))
-        e_bertin = ctk.CTkEntry(f_bertin, placeholder_text="Código BERTIN...", fg_color=C_CARD, border_color=C_BORDER)
-        e_bertin.pack(fill="x")
-        if mueble_editar and mueble_editar.get("bertin"):
-            e_bertin.insert(0, mueble_editar["bertin"])
-
-        # Fila 6: SAPM & Ubicación Física
+        # -------------------------------------------------------------
+        # FILA 6: Código SISPAM & BERTIN
+        # -------------------------------------------------------------
         f_r6 = ctk.CTkFrame(sf, fg_color="transparent")
         f_r6.pack(fill="x", pady=6)
         f_r6.columnconfigure(0, weight=1)
         f_r6.columnconfigure(1, weight=1)
 
-        f_sapm = ctk.CTkFrame(f_r6, fg_color="transparent")
-        f_sapm.grid(row=0, column=0, sticky="ew", padx=(0, 10))
-        ctk.CTkLabel(f_sapm, text="11. SAPM", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(0, 2))
-        e_sapm = ctk.CTkEntry(f_sapm, placeholder_text="Código SAPM...", fg_color=C_CARD, border_color=C_BORDER)
-        e_sapm.pack(fill="x")
-        if mueble_editar and mueble_editar.get("sapm"):
-            e_sapm.insert(0, mueble_editar["sapm"])
+        f_sispam = ctk.CTkFrame(f_r6, fg_color="transparent")
+        f_sispam.grid(row=0, column=0, sticky="ew", padx=(0, 10))
+        ctk.CTkLabel(f_sispam, text="Código SISPAM (Por defecto S/C o DONACION)", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(0, 2))
+        e_sispam = ctk.CTkEntry(f_sispam, placeholder_text="Ej: SISPAM, DONACION, S/C...", fg_color=C_CARD, border_color=C_BORDER)
+        e_sispam.pack(fill="x")
+        if mueble_editar and mueble_editar.get("codigo_sispam"):
+            e_sispam.insert(0, mueble_editar["codigo_sispam"])
+        pop_sis = AutocompletarEntryPopup(e_sispam, self._obtener_lista_sispam)
 
-        f_ubi = ctk.CTkFrame(f_r6, fg_color="transparent")
-        f_ubi.grid(row=0, column=1, sticky="ew")
-        ctk.CTkLabel(f_ubi, text="12. Ubicación Física (Ambiente / Oficina / Piso)", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(0, 2))
-        e_ubicacion = ctk.CTkEntry(f_ubi, placeholder_text="Ej: DIRECCIÓN MÉDICA, CONSULTORIO 1, FARMACIA, PISO 2...", fg_color=C_CARD, border_color=C_BORDER)
-        e_ubicacion.pack(fill="x")
-        if mueble_editar and mueble_editar.get("ubicacion"):
-            e_ubicacion.insert(0, mueble_editar["ubicacion"])
+        f_bertin = ctk.CTkFrame(f_r6, fg_color="transparent")
+        f_bertin.grid(row=0, column=1, sticky="ew")
+        ctk.CTkLabel(f_bertin, text="BERTIN (Por defecto S/C)", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(0, 2))
+        e_bertin = ctk.CTkEntry(f_bertin, placeholder_text="Ej: BERTIN, S/C...", fg_color=C_CARD, border_color=C_BORDER)
+        e_bertin.pack(fill="x")
+        if mueble_editar and mueble_editar.get("bertin"):
+            e_bertin.insert(0, mueble_editar["bertin"])
+        pop_ber = AutocompletarEntryPopup(e_bertin, self._obtener_lista_bertin)
 
-        # Fila 7: Persona Asignada & C.I. Asignado
+        # -------------------------------------------------------------
+        # FILA 7: SAPM & Detalle Transacción
+        # -------------------------------------------------------------
         f_r7 = ctk.CTkFrame(sf, fg_color="transparent")
         f_r7.pack(fill="x", pady=6)
         f_r7.columnconfigure(0, weight=1)
         f_r7.columnconfigure(1, weight=1)
 
-        f_pers = ctk.CTkFrame(f_r7, fg_color="transparent")
-        f_pers.grid(row=0, column=0, sticky="ew", padx=(0, 10))
-        ctk.CTkLabel(f_pers, text="13. Persona Asignada (Custodio Responsable)", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(0, 2))
-        e_persona = ctk.CTkEntry(f_pers, placeholder_text="Nombre completo del personal a cargo...", fg_color=C_CARD, border_color=C_BORDER)
-        e_persona.pack(fill="x")
-        if mueble_editar and mueble_editar.get("persona_asignada"):
-            e_persona.insert(0, mueble_editar["persona_asignada"])
+        f_sapm = ctk.CTkFrame(f_r7, fg_color="transparent")
+        f_sapm.grid(row=0, column=0, sticky="ew", padx=(0, 10))
+        ctk.CTkLabel(f_sapm, text="SAPM (Por defecto S/C)", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(0, 2))
+        e_sapm = ctk.CTkEntry(f_sapm, placeholder_text="Ej: SAPM, S/C...", fg_color=C_CARD, border_color=C_BORDER)
+        e_sapm.pack(fill="x")
+        if mueble_editar and mueble_editar.get("sapm"):
+            e_sapm.insert(0, mueble_editar["sapm"])
+        pop_sap = AutocompletarEntryPopup(e_sapm, self._obtener_lista_sapm)
 
-        f_ci = ctk.CTkFrame(f_r7, fg_color="transparent")
-        f_ci.grid(row=0, column=1, sticky="ew")
-        ctk.CTkLabel(f_ci, text="14. C.I. Asignado", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(0, 2))
-        e_ci = ctk.CTkEntry(f_ci, placeholder_text="Ej: 4892711 LP...", fg_color=C_CARD, border_color=C_BORDER)
-        e_ci.pack(fill="x")
-        if mueble_editar and mueble_editar.get("ci_asignado"):
-            e_ci.insert(0, mueble_editar["ci_asignado"])
+        f_trans = ctk.CTkFrame(f_r7, fg_color="transparent")
+        f_trans.grid(row=0, column=1, sticky="ew")
+        ctk.CTkLabel(f_trans, text="Detalle Transacción (Llenado libre)", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(0, 2))
+        e_trans = ctk.CTkEntry(f_trans, placeholder_text="Ej: Asignacion 2026, REASIGNACION...", fg_color=C_CARD, border_color=C_BORDER)
+        e_trans.pack(fill="x")
+        trans_def = mueble_editar.get("detalle_transaccion") if mueble_editar else "Asignacion 2026"
+        e_trans.insert(0, trans_def or "Asignacion 2026")
 
-        # Fila 8: Fechas (Asignación & Incorporación)
+        # -------------------------------------------------------------
+        # FILA 8: Estado de Conservación (Bueno, Regular, Baja) & Fecha Asignación
+        # -------------------------------------------------------------
         f_r8 = ctk.CTkFrame(sf, fg_color="transparent")
         f_r8.pack(fill="x", pady=6)
         f_r8.columnconfigure(0, weight=1)
         f_r8.columnconfigure(1, weight=1)
 
+        f_est = ctk.CTkFrame(f_r8, fg_color="transparent")
+        f_est.grid(row=0, column=0, sticky="ew", padx=(0, 10))
+        ctk.CTkLabel(f_est, text="Estado de Conservación", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(0, 2))
+        combo_estado = ctk.CTkComboBox(f_est, values=["Bueno", "Regular", "Baja"], fg_color=C_CARD, border_color=C_BORDER)
+        combo_estado.pack(fill="x")
+        combo_estado.set(mueble_editar.get("estado_conservacion", "Bueno") if mueble_editar else "Bueno")
+
         f_fasig = ctk.CTkFrame(f_r8, fg_color="transparent")
-        f_fasig.grid(row=0, column=0, sticky="ew", padx=(0, 10))
-        ctk.CTkLabel(f_fasig, text="15. Fecha Asignación (YYYY-MM-DD)", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(0, 2))
+        f_fasig.grid(row=0, column=1, sticky="ew")
+        ctk.CTkLabel(f_fasig, text="Fecha Asignación (YYYY-MM-DD)", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(0, 2))
         e_fasig = ctk.CTkEntry(f_fasig, placeholder_text="YYYY-MM-DD", fg_color=C_CARD, border_color=C_BORDER)
         e_fasig.pack(fill="x")
         hoy_str = datetime.now().strftime("%Y-%m-%d")
         e_fasig.insert(0, mueble_editar.get("fecha_asignacion", hoy_str) if mueble_editar else hoy_str)
 
-        f_finc = ctk.CTkFrame(f_r8, fg_color="transparent")
-        f_finc.grid(row=0, column=1, sticky="ew")
-        ctk.CTkLabel(f_finc, text="16. Fecha Incorporación (YYYY-MM-DD)", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(0, 2))
-        e_finc = ctk.CTkEntry(f_finc, placeholder_text="YYYY-MM-DD", fg_color=C_CARD, border_color=C_BORDER)
-        e_finc.pack(fill="x")
-        if mueble_editar and mueble_editar.get("fecha_incorporacion"):
-            e_finc.insert(0, mueble_editar["fecha_incorporacion"])
-
-        # Fila 9: Técnico Inventareador (Llenado libre)
+        # -------------------------------------------------------------
+        # FILA 9: Descripción del Activo
+        # -------------------------------------------------------------
         f_r9 = ctk.CTkFrame(sf, fg_color="transparent")
         f_r9.pack(fill="x", pady=6)
 
-        ctk.CTkLabel(f_r9, text="17. Técnico Inventareador (Llenado libre)", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(0, 2))
-        e_tecnico = ctk.CTkEntry(f_r9, placeholder_text="Ej: Nombre o cargo del técnico inventariador...", fg_color=C_CARD, border_color=C_BORDER)
-        e_tecnico.pack(fill="x")
-        if mueble_editar and mueble_editar.get("tecnico_inventareador"):
-            e_tecnico.insert(0, mueble_editar["tecnico_inventareador"])
+        ctk.CTkLabel(f_r9, text="Descripción del Activo", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(0, 2))
+        e_desc = ctk.CTkEntry(f_r9, placeholder_text="Ej: COMPUTADORA CORE I7 16GB RAM, ESCRITORIO DE MADERA 3 GAVETAS...", fg_color=C_CARD, border_color=C_BORDER)
+        e_desc.pack(fill="x")
+        if mueble_editar and mueble_editar.get("descripcion"):
+            e_desc.insert(0, mueble_editar["descripcion"])
+        pop_desc = AutocompletarEntryPopup(e_desc, self._obtener_lista_descripciones)
 
-        # Fila 10: Observaciones de Asignación
+        # -------------------------------------------------------------
+        # FILA 10: Técnico Inventariador (Auto-completado con Usuario en Sesión)
+        # -------------------------------------------------------------
         f_r10 = ctk.CTkFrame(sf, fg_color="transparent")
         f_r10.pack(fill="x", pady=6)
 
-        ctk.CTkLabel(f_r10, text="18. Observaciones de Asignación", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(0, 2))
-        txt_obs = ctk.CTkTextbox(f_r10, height=75, fg_color=C_CARD, border_color=C_BORDER, border_width=1)
+        ctk.CTkLabel(f_r10, text="Técnico Inventariador (Llenado automático)", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(0, 2))
+        e_tecnico = ctk.CTkEntry(f_r10, placeholder_text="Nombre del técnico inventariador...", fg_color=C_CARD, border_color=C_BORDER)
+        e_tecnico.pack(fill="x")
+        usuario_act = getattr(self.app, "usuario_actual", {}) or {}
+        tecnico_default = usuario_act.get("nombre_completo") or usuario_act.get("nombre_usuario", "")
+        if mueble_editar and mueble_editar.get("tecnico_inventareador"):
+            e_tecnico.insert(0, mueble_editar["tecnico_inventareador"])
+        else:
+            e_tecnico.insert(0, tecnico_default)
+
+        # -------------------------------------------------------------
+        # FILA 11: Observaciones de Asignación
+        # -------------------------------------------------------------
+        f_r11 = ctk.CTkFrame(sf, fg_color="transparent")
+        f_r11.pack(fill="x", pady=6)
+
+        ctk.CTkLabel(f_r11, text="Observaciones de Asignación", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(0, 2))
+        txt_obs = ctk.CTkTextbox(f_r11, height=75, fg_color=C_CARD, border_color=C_BORDER, border_width=1)
         txt_obs.pack(fill="x")
         if mueble_editar and mueble_editar.get("observaciones_de_asignacion"):
             txt_obs.insert("1.0", mueble_editar["observaciones_de_asignacion"])
 
+        # Inicializar selección territorial / edición
+        ctx = getattr(self.app, "contexto_sede", None)
+        if mueble_editar:
+            red_inicial = mueble_editar.get("direccion_administrativa") or (lista_redes[0] if lista_redes else "")
+            cen_inicial = mueble_editar.get("unidad_organizacional")
+            ubi_inicial = mueble_editar.get("ubicacion")
+            combo_red.set(red_inicial)
+            actualizar_centros_por_red(red_inicial, centro_sel_default=cen_inicial, ubi_sel_default=ubi_inicial, auto_llenar_doctor=False)
+            if mueble_editar.get("persona_asignada"):
+                e_persona.delete(0, "end")
+                e_persona.insert(0, mueble_editar["persona_asignada"])
+            if mueble_editar.get("ci_asignado"):
+                e_ci.delete(0, "end")
+                e_ci.insert(0, mueble_editar["ci_asignado"])
+        elif ctx and not ctx.get("es_global", True):
+            red_ctx = ctx.get("red_salud")
+            cen_ctx = ctx.get("centro_salud")
+            if red_ctx and red_ctx in lista_redes:
+                combo_red.set(red_ctx)
+                actualizar_centros_por_red(red_ctx, centro_sel_default=cen_ctx, auto_llenar_doctor=True)
+            else:
+                combo_red.set(lista_redes[0] if lista_redes else "")
+                actualizar_centros_por_red(combo_red.get(), centro_sel_default=cen_ctx, auto_llenar_doctor=True)
+        else:
+            combo_red.set(lista_redes[0] if lista_redes else "")
+            actualizar_centros_por_red(combo_red.get(), auto_llenar_doctor=True)
+
         # Cerrar popups si se hace scroll o cierra modal
         def cerrar_todos_popups(e=None):
             pop_tipo.cerrar_popup()
+            pop_mar.cerrar_popup()
             pop_mod.cerrar_popup()
             pop_desc.cerrar_popup()
+            pop_ser.cerrar_popup()
+            pop_sis.cerrar_popup()
+            pop_ber.cerrar_popup()
+            pop_sap.cerrar_popup()
 
         sf.bind("<MouseWheel>", cerrar_todos_popups)
 
@@ -1032,6 +1218,7 @@ class VistaMuebleria(ctk.CTkFrame):
             red_val = combo_red.get().strip()
             cen_val = combo_centro.get().strip()
             tipo_val = e_tipo.get().strip()
+            marca_val = e_marca.get().strip()
             desc_val = e_desc.get().strip()
 
             if not tipo_val:
@@ -1043,6 +1230,92 @@ class VistaMuebleria(ctk.CTkFrame):
                 messagebox.showwarning("Campo Requerido", "Por favor ingrese la descripción del activo.", parent=modal)
                 e_desc.focus_set()
                 return
+
+            # Valores de Códigos y Serie con valor por defecto S/C
+            serie_val = e_serie.get().strip() or "S/C"
+            sispam_val = e_sispam.get().strip() or "S/C"
+            bertin_val = e_bertin.get().strip() or "S/C"
+            sapm_val = e_sapm.get().strip() or "S/C"
+            trans_val = e_trans.get().strip() or "Asignacion 2026"
+            ubi_val = combo_ubicacion.get().strip()
+            estado_val = combo_estado.get().strip() or "Bueno"
+
+            # -------------------------------------------------------------
+            # VALIDACIÓN DE NO DUPLICADOS (SERIE, SISPAM, BERTIN, SAPM)
+            # Excepciones permitidas que pueden repetirse: S/C, 0, DONACION, SIN CODIGO, etc.
+            # -------------------------------------------------------------
+            EXENTOS_DUPLICADOS = {"", "S/C", "0", "DONACION", "SIN CODIGO", "SIN SERIE", "NINGUNO", "N/A", "NO APLICA", "S/N", "SN", "-"}
+            id_actual = str(mueble_editar.get("id")) if mueble_editar else None
+
+            for m in self.app.datos.get("muebleria", []):
+                if id_actual and str(m.get("id")) == id_actual:
+                    continue
+                if str(m.get("estado", "Activo")).lower() != "activo":
+                    continue
+
+                # 1. Validar Serie
+                m_serie = str(m.get("serie") or "").strip()
+                if serie_val.upper() not in EXENTOS_DUPLICADOS and m_serie.upper() not in EXENTOS_DUPLICADOS:
+                    if serie_val.upper() == m_serie.upper():
+                        messagebox.showerror(
+                            "Número de Serie Duplicado",
+                            f"El Número de Serie '{serie_val}' ya se encuentra registrado en el activo:\n\n"
+                            f"• ID: {m.get('id')}\n"
+                            f"• Descripción: {m.get('descripcion')}\n"
+                            f"• Ubicación: {m.get('ubicacion')}\n\n"
+                            f"No se permite registrar activos con el mismo número de serie.",
+                            parent=modal
+                        )
+                        e_serie.focus_set()
+                        return
+
+                # 2. Validar SISPAM
+                m_sispam = str(m.get("codigo_sispam") or "").strip()
+                if sispam_val.upper() not in EXENTOS_DUPLICADOS and m_sispam.upper() not in EXENTOS_DUPLICADOS:
+                    if sispam_val.upper() == m_sispam.upper():
+                        messagebox.showerror(
+                            "Código SISPAM Duplicado",
+                            f"El Código SISPAM '{sispam_val}' ya se encuentra registrado en el activo:\n\n"
+                            f"• ID: {m.get('id')}\n"
+                            f"• Descripción: {m.get('descripcion')}\n"
+                            f"• Ubicación: {m.get('ubicacion')}\n\n"
+                            f"No se permite registrar códigos SISPAM duplicados.",
+                            parent=modal
+                        )
+                        e_sispam.focus_set()
+                        return
+
+                # 3. Validar BERTIN
+                m_bertin = str(m.get("bertin") or "").strip()
+                if bertin_val.upper() not in EXENTOS_DUPLICADOS and m_bertin.upper() not in EXENTOS_DUPLICADOS:
+                    if bertin_val.upper() == m_bertin.upper():
+                        messagebox.showerror(
+                            "Código BERTIN Duplicado",
+                            f"El Código BERTIN '{bertin_val}' ya se encuentra registrado en el activo:\n\n"
+                            f"• ID: {m.get('id')}\n"
+                            f"• Descripción: {m.get('descripcion')}\n"
+                            f"• Ubicación: {m.get('ubicacion')}\n\n"
+                            f"No se permite registrar códigos BERTIN duplicados.",
+                            parent=modal
+                        )
+                        e_bertin.focus_set()
+                        return
+
+                # 4. Validar SAPM
+                m_sapm = str(m.get("sapm") or "").strip()
+                if sapm_val.upper() not in EXENTOS_DUPLICADOS and m_sapm.upper() not in EXENTOS_DUPLICADOS:
+                    if sapm_val.upper() == m_sapm.upper():
+                        messagebox.showerror(
+                            "Código SAPM Duplicado",
+                            f"El Código SAPM '{sapm_val}' ya se encuentra registrado en el activo:\n\n"
+                            f"• ID: {m.get('id')}\n"
+                            f"• Descripción: {m.get('descripcion')}\n"
+                            f"• Ubicación: {m.get('ubicacion')}\n\n"
+                            f"No se permite registrar códigos SAPM duplicados.",
+                            parent=modal
+                        )
+                        e_sapm.focus_set()
+                        return
 
             cerrar_todos_popups()
 
@@ -1056,23 +1329,25 @@ class VistaMuebleria(ctk.CTkFrame):
                 "sector_actual": sec_val or "SALUD",
                 "direccion_administrativa": red_val,
                 "unidad_organizacional": cen_val,
-                "fecha_asignacion": e_fasig.get().strip(),
+                "fecha_asignacion": e_fasig.get().strip() or hoy_str,
                 "tecnico_inventareador": e_tecnico.get().strip(),
                 "persona_asignada": e_persona.get().strip(),
                 "ci_asignado": e_ci.get().strip(),
                 "tipo_activo": tipo_val,
                 "descripcion": desc_val,
+                "marca": marca_val,
                 "modelo": e_modelo.get().strip(),
-                "serie": e_serie.get().strip(),
-                "detalle_transaccion": e_trans.get().strip() or "ASIGNACION",
-                "codigo_sispam": e_sispam.get().strip(),
-                "bertin": e_bertin.get().strip(),
-                "sapm": e_sapm.get().strip(),
+                "serie": serie_val,
+                "detalle_transaccion": trans_val,
+                "codigo_sispam": sispam_val,
+                "bertin": bertin_val,
+                "sapm": sapm_val,
                 "observaciones_de_asignacion": txt_obs.get("1.0", "end-1c").strip(),
-                "ubicacion": e_ubicacion.get().strip(),
-                "fecha_incorporacion": e_finc.get().strip(),
+                "ubicacion": ubi_val,
+                "fecha_incorporacion": "",
                 "red_salud_id": red_id,
                 "centro_salud_id": cen_id,
+                "estado_conservacion": estado_val,
                 "estado": "Activo"
             }
 
@@ -1080,6 +1355,18 @@ class VistaMuebleria(ctk.CTkFrame):
                 datos_guardar["id"] = mueble_editar.get("id")
 
             exito, resp = guardar_mueble_db(datos_guardar)
+            es_offline = False
+            if not exito:
+                # Si falló por falta de conexión a Internet, guardar en cola offline
+                from database import guardar_mueble_offline_cola
+                import time
+                if not datos_guardar.get("id"):
+                    datos_guardar["id"] = -int(time.time() * 1000) % 1000000000
+                guardar_mueble_offline_cola(dict(datos_guardar))
+                exito = True
+                es_offline = True
+                resp = datos_guardar["id"]
+
             if exito:
                 nuevo_id = resp
                 datos_guardar["id"] = nuevo_id
@@ -1099,7 +1386,10 @@ class VistaMuebleria(ctk.CTkFrame):
                 guardar_cache_local_datos(self.app.datos)
                 self.refrescar_datos()
                 modal.destroy()
-                messagebox.showinfo("Éxito", f"Activo {'modificado' if mueble_editar else 'registrado'} correctamente.")
+                msg_txt = f"Activo {'modificado' if mueble_editar else 'registrado'} correctamente."
+                if es_offline:
+                    msg_txt += "\n(Guardado localmente en modo Offline. Se sincronizará automáticamente al conectar)."
+                messagebox.showinfo("Éxito", msg_txt)
             else:
                 messagebox.showerror("Error", f"No se pudo guardar el activo:\n{resp}", parent=modal)
 

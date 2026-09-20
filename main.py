@@ -26,6 +26,7 @@ import openpyxl
 from openpyxl.styles import Font, Alignment
 from openpyxl.drawing.image import Image as ExcelImage
 import threading
+import webbrowser
 
 # Importar constantes de diseño y backend centralizado
 from estilos import *
@@ -41,7 +42,12 @@ from database import (
     obtener_firma_datos_db,
     ejecutar_en_segundo_plano,
     comprimir_imagen_base64,
-    cargar_imagen_pil
+    cargar_imagen_pil,
+    guardar_mueble_db,
+    generar_siguiente_codigo_af,
+    guardar_equipo_offline_cola,
+    guardar_mueble_offline_cola,
+    sincronizar_todo_offline
 )
 
 from auth import inicializar_usuarios, login
@@ -57,7 +63,7 @@ from excel_utils import (
 # Importar las vistas modulares del subpaquete vistas
 from vistas.inventario import VistaInventario
 from vistas.catalogo import VistaCatalogo
-from vistas.muebleria import VistaMuebleria
+from vistas.muebleria import VistaMuebleria, AutocompletarEntryPopup
 from vistas.repuestos import VistaRepuestos
 from vistas.cronograma import VistaCronograma
 from vistas.historial import VistaHistorial
@@ -71,7 +77,7 @@ from vistas.usuarios import VistaUsuarios
 # ========================================================
 # VERSIÓN DEL SISTEMA
 # ========================================================
-VERSION_APP = "v1.0"
+VERSION_APP = "v1.1"
 
 
 # ========================================================
@@ -258,6 +264,107 @@ class VentanaSelectorSede(ctk.CTkToplevel):
         self.destroy()
         if self.on_confirmar_callback:
             self.on_confirmar_callback(contexto)
+
+
+# ========================================================
+# VENTANA MODAL DE ACCESO MÓVIL Y CÓDIGO QR PARA CELULARES
+# ========================================================
+class VentanaAccesoMovil(ctk.CTkToplevel):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.parent = parent
+        self.title("SGEM GAMLP - Registro Móvil para Celulares (Código QR)")
+        self.geometry("520x680")
+        self.configure(fg_color=C_BG)
+        self.resizable(False, False)
+        self.transient(parent)
+        self.grab_set()
+
+        # Centrar ventana
+        self.update_idletasks()
+        w = 520
+        h = 680
+        x = (self.winfo_screenwidth() // 2) - (w // 2)
+        y = (self.winfo_screenheight() // 2) - (h // 2)
+        self.geometry(f"{w}x{h}+{x}+{y}")
+
+        self.ip_local = self.obtener_ip_local()
+        self.url_movil = f"http://{self.ip_local}:5000/movil"
+
+        self.construir_ui()
+
+    def obtener_ip_local(self):
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect(("8.8.8.8", 80))
+            ip = s.getsockname()[0]
+            s.close()
+            return ip
+        except Exception:
+            return "127.0.0.1"
+
+    def construir_ui(self):
+        f_top = ctk.CTkFrame(self, fg_color="transparent")
+        f_top.pack(pady=(20, 10), padx=25, fill="x")
+
+        ctk.CTkLabel(f_top, text="📱 Registro Móvil desde Celular", font=ctk.CTkFont(size=20, weight="bold"), text_color=C_BLUE).pack()
+        ctk.CTkLabel(f_top, text="Escanea este código QR con la cámara de tu teléfono para registrar\nequipos médicos directamente en las salas y consultorios.", font=ctk.CTkFont(size=11), text_color=C_SUBTEXT, justify="center").pack(pady=(4, 0))
+
+        # Tarjeta con QR
+        card = ctk.CTkFrame(self, fg_color=C_CARD, corner_radius=CORNER_CARD, border_width=1, border_color=C_BORDER)
+        card.pack(padx=25, pady=10, fill="both", expand=True)
+
+        # Generar QR
+        try:
+            qr = qrcode.QRCode(
+                version=1,
+                error_correction=qrcode.constants.ERROR_CORRECT_M,
+                box_size=8,
+                border=2,
+            )
+            qr.add_data(self.url_movil)
+            qr.make(fit=True)
+            img_qr = qr.make_image(fill_color="#003B64", back_color="white").convert("RGB")
+            self.qr_ctk_img = ctk.CTkImage(light_image=img_qr, dark_image=img_qr, size=(210, 210))
+            lbl_qr = ctk.CTkLabel(card, image=self.qr_ctk_img, text="")
+            lbl_qr.pack(pady=(16, 8))
+        except Exception as e:
+            ctk.CTkLabel(card, text=f"Error generando QR: {e}", text_color=C_RED).pack(pady=30)
+
+        # Enlace directo
+        ctk.CTkLabel(card, text="Enlace de Acceso en Red Local:", font=ctk.CTkFont(size=11, weight="bold"), text_color=C_TEXT).pack(pady=(2, 2))
+        
+        f_link = ctk.CTkFrame(card, fg_color="transparent")
+        f_link.pack(fill="x", padx=20, pady=(0, 8))
+
+        entry_link = ctk.CTkEntry(f_link, height=36, corner_radius=CORNER_INPUT, border_color=C_BORDER, fg_color=C_BG, font=ctk.CTkFont(size=12, weight="bold"))
+        entry_link.insert(0, self.url_movil)
+        entry_link.configure(state="readonly")
+        entry_link.pack(side="left", fill="x", expand=True, padx=(0, 6))
+
+        def copiar_enlace():
+            self.clipboard_clear()
+            self.clipboard_append(self.url_movil)
+            btn_copiar.configure(text="¡Copiado!", fg_color="#16A34A")
+            self.after(2000, lambda: btn_copiar.configure(text="📋 Copiar", fg_color=C_BLUE))
+
+        btn_copiar = ctk.CTkButton(f_link, text="📋 Copiar", width=85, height=36, fg_color=C_BLUE, hover_color=C_BLUE_HOVER, corner_radius=CORNER_INPUT, command=copiar_enlace)
+        btn_copiar.pack(side="right")
+
+        # Mensaje de ayuda Wi-Fi
+        f_info = ctk.CTkFrame(card, fg_color="#EFF6FF", corner_radius=8, border_width=1, border_color="#BFDBFE")
+        f_info.pack(fill="x", padx=20, pady=(4, 12))
+        ctk.CTkLabel(f_info, text="💡 Requisito: Conecta tu celular a la misma red Wi-Fi de esta PC.\nAl ingresar, te solicitará tu usuario y contraseña (ej: admin / admin123).", font=ctk.CTkFont(size=11), text_color="#1E40AF", justify="center").pack(pady=8, padx=10)
+
+        # Botones de pie
+        f_btns = ctk.CTkFrame(self, fg_color="transparent")
+        f_btns.pack(fill="x", padx=25, pady=(0, 18))
+
+        def abrir_navegador():
+            webbrowser.open(f"http://localhost:5000/movil")
+
+        ctk.CTkButton(f_btns, text="🌐 Abrir en este Navegador", height=40, fg_color=C_BLUE_LIGHT, hover_color="#D8E8FC", text_color=C_BLUE, font=ctk.CTkFont(weight="bold", size=12), corner_radius=CORNER_INPUT, command=abrir_navegador).pack(side="left", expand=True, padx=(0, 5))
+        ctk.CTkButton(f_btns, text="Cerrar", height=40, fg_color=C_SUBTEXT, hover_color="#64748B", text_color="#FFFFFF", font=ctk.CTkFont(weight="bold", size=12), corner_radius=CORNER_INPUT, command=self.destroy).pack(side="right", expand=True, padx=(5, 0))
 
 
 # ========================================================
@@ -645,11 +752,11 @@ class SistemaMantenimiento(ctk.CTk):
             import time, socket
             while getattr(self, "_ejecutando", True):
                 time.sleep(10)
-                # 1. Comprobar conectividad real a internet
+                # 1. Comprobar conectividad real a internet con timeout ultra-corto
                 online = False
                 try:
                     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                    s.settimeout(1.5)
+                    s.settimeout(1.2)
                     s.connect(("8.8.8.8", 53))
                     s.close()
                     online = True
@@ -662,10 +769,10 @@ class SistemaMantenimiento(ctk.CTk):
                 if estado_anterior != nuevo_estado_offline:
                     self.modo_offline = nuevo_estado_offline
                     if not nuevo_estado_offline:
-                        print("[INFO] ¡Reconexión con Internet y Servidor detectada! Sincronizando...")
+                        print("[INFO] ¡Reconexión con Internet y Servidor detectada! Sincronizando en segundo plano...")
                         self.after(0, self._aplicar_reconeccion_online)
                     else:
-                        print("[WARN] Conexión perdida a Internet. Cambiando a Modo Offline...")
+                        print("[WARN] Conexión perdida a Internet. Cambiando suavemente a Modo Offline...")
                         self.after(0, self.actualizar_estado_offline_ui)
                 elif not nuevo_estado_offline:
                     try:
@@ -674,7 +781,7 @@ class SistemaMantenimiento(ctk.CTk):
                             primera_vez = getattr(self, "ultima_firma_db", None) is None
                             self.ultima_firma_db = firma_actual
                             if not primera_vez:
-                                print("[INFO] ¡Cambio detectado en la Base de Datos Central! Sincronizando...")
+                                print("[INFO] ¡Cambio detectado en la Base de Datos Central! Sincronizando en segundo plano...")
                                 self.after(0, self._aplicar_datos_sincronizados)
                     except Exception:
                         pass
@@ -683,24 +790,27 @@ class SistemaMantenimiento(ctk.CTk):
         t.start()
 
     def _aplicar_reconeccion_online(self):
-        self.cargar_datos_memoria()
-        self.actualizar_estado_offline_ui()
-        for nombre_v, vista_v in self.vistas.items():
-            if hasattr(vista_v, 'refrescar_datos'):
-                vista_v.refrescar_datos()
+        def _refrescar_vistas():
+            for nombre_v, vista_v in self.vistas.items():
+                if hasattr(vista_v, 'refrescar_datos'):
+                    vista_v.refrescar_datos()
+            self.actualizar_boton_alertas()
+        self.actualizar_estado_offline_ui(estado_personalizado=("🟡 Sincronizando...", "#D97706"))
+        self.cargar_datos_memoria_async(callback=_refrescar_vistas)
 
     def _aplicar_datos_sincronizados(self):
-        self.cargar_datos_memoria()
-        vista_activa = getattr(self, "vista_actual_nombre", "Inventario")
-        if vista_activa in self.vistas and hasattr(self.vistas[vista_activa], 'refrescar_datos'):
-            self.vistas[vista_activa].refrescar_datos()
-        if vista_activa == "Cronograma" and "Cronograma" in self.vistas:
-            try:
-                self.vistas["Cronograma"].dibujar_mes(self.vistas["Cronograma"].anio_actual, self.vistas["Cronograma"].mes_actual)
-                self.vistas["Cronograma"].dibujar_anio(self.vistas["Cronograma"].anio_vista)
-            except:
-                pass
-        self.actualizar_boton_alertas()
+        def _refrescar_vistas():
+            vista_activa = getattr(self, "vista_actual_nombre", "Inventario")
+            if vista_activa in self.vistas and hasattr(self.vistas[vista_activa], 'refrescar_datos'):
+                self.vistas[vista_activa].refrescar_datos()
+            if vista_activa == "Cronograma" and "Cronograma" in self.vistas:
+                try:
+                    self.vistas["Cronograma"].dibujar_mes(self.vistas["Cronograma"].anio_actual, self.vistas["Cronograma"].mes_actual)
+                    self.vistas["Cronograma"].dibujar_anio(self.vistas["Cronograma"].anio_vista)
+                except:
+                    pass
+            self.actualizar_boton_alertas()
+        self.cargar_datos_memoria_async(callback=_refrescar_vistas)
 
     def chequear_datos_sucios(self):
         if getattr(self, 'datos_sucios', False):
@@ -708,10 +818,11 @@ class SistemaMantenimiento(ctk.CTk):
             self._aplicar_datos_sincronizados()
         self.after(1500, self.chequear_datos_sucios)
 
-
-    def actualizar_estado_offline_ui(self):
+    def actualizar_estado_offline_ui(self, estado_personalizado=None):
         if hasattr(self, 'lbl_estado_conexion') and self.lbl_estado_conexion.winfo_exists():
-            if getattr(self, 'modo_offline', False):
+            if estado_personalizado:
+                self.lbl_estado_conexion.configure(text=estado_personalizado[0], text_color=estado_personalizado[1])
+            elif getattr(self, 'modo_offline', False):
                 self.lbl_estado_conexion.configure(text="🔴 Desconectado (Offline)", text_color="#DC2626")
             else:
                 self.lbl_estado_conexion.configure(text="🟢 Conectado", text_color="#16A34A")
@@ -883,6 +994,109 @@ class SistemaMantenimiento(ctk.CTk):
         if hasattr(self, 'btn_alertas'):
             self.actualizar_boton_alertas()
 
+    def cargar_datos_memoria_async(self, callback=None):
+        """Descarga los datos de PostgreSQL en segundo plano sin congelar la interfaz de usuario."""
+        if getattr(self, "_cargando_datos_en_hilo", False):
+            return
+        self._cargando_datos_en_hilo = True
+
+        def _hilo_carga():
+            try:
+                conn = obtener_conexion()
+                if not conn:
+                    def _fallo():
+                        self._cargando_datos_en_hilo = False
+                        self.modo_offline = True
+                        self.actualizar_estado_offline_ui()
+                        if callback:
+                            try: callback()
+                            except: pass
+                    self.after(0, _fallo)
+                    return
+
+                try:
+                    sinc = sincronizar_todo_offline(self)
+                    if sinc > 0:
+                        print(f"[OK] Sincronizados {sinc} registros offline (áreas, equipos, mueblería, intervenciones) con PostgreSQL.")
+                except Exception as se:
+                    print(f"[WARN] Error sincronizando colas offline: {se}")
+
+                cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+                cur.execute("SELECT * FROM catalogo ORDER BY nombre ASC")
+                cat_db = [dict(r) for r in cur.fetchall()]
+
+                cur.execute("SELECT * FROM repuestos")
+                rep_db = [dict(r) for r in cur.fetchall()]
+
+                cur.execute("SELECT * FROM areas ORDER BY piso DESC, nombre ASC")
+                areas_db = [dict(r) for r in cur.fetchall()]
+
+                try:
+                    cur.execute("SELECT * FROM muebleria WHERE estado = 'Activo' ORDER BY id DESC")
+                    mueb_db = [dict(r) for r in cur.fetchall()]
+                except Exception:
+                    conn.rollback()
+                    mueb_db = []
+
+                try:
+                    cur.execute("SELECT * FROM protocolos ORDER BY fecha DESC, turno ASC")
+                    prot_db = [dict(r) for r in cur.fetchall()]
+                except Exception:
+                    conn.rollback()
+                    prot_db = []
+
+                eqs_db = []
+                try:
+                    cur.execute("SELECT * FROM historial_intervenciones ORDER BY COALESCE(fecha_entrega, fecha) DESC, COALESCE(hora_entrega, '00:00') DESC, id DESC")
+                    todas_inter = [dict(h) for h in cur.fetchall()]
+                    hist_por_equipo = {}
+                    for h in todas_inter:
+                        hist_por_equipo.setdefault(h['equipo_id'], []).append(h)
+
+                    cur.execute("SELECT * FROM equipos")
+                    eqs_rows = [dict(r) for r in cur.fetchall()]
+                    for eq in eqs_rows:
+                        eq['historial_intervenciones'] = hist_por_equipo.get(eq['id'], [])
+                        eqs_db.append(eq)
+                except Exception as e:
+                    print("[WARN] Error cargando equipos/historial:", e)
+
+                cur.close()
+                conn.close()
+
+                nuevos_datos = {
+                    "catalogo": cat_db,
+                    "repuestos": rep_db,
+                    "areas": areas_db,
+                    "muebleria": mueb_db,
+                    "protocolos": prot_db,
+                    "equipos": eqs_db
+                }
+
+                def _exito():
+                    self._cargando_datos_en_hilo = False
+                    self.datos = nuevos_datos
+                    self.modo_offline = False
+                    self._procesar_calendario_y_alertas()
+                    self.actualizar_estado_offline_ui()
+                    guardar_cache_local_datos(self.datos)
+                    if callback:
+                        try: callback()
+                        except: pass
+
+                self.after(0, _exito)
+
+            except Exception as e_hilo:
+                print(f"[WARN] Error en hilo de datos async: {e_hilo}")
+                def _err():
+                    self._cargando_datos_en_hilo = False
+                    self.modo_offline = True
+                    self.actualizar_estado_offline_ui()
+                self.after(0, _err)
+
+        t = threading.Thread(target=_hilo_carga, daemon=True)
+        t.start()
+
     def cargar_datos_memoria(self, usar_cache_primero=False):
         if usar_cache_primero:
             cache_datos = cargar_cache_local_datos()
@@ -906,11 +1120,11 @@ class SistemaMantenimiento(ctk.CTk):
         else:
             self.modo_offline = False
             try:
-                sinc, _ = sincronizar_mantenimientos_offline_cola()
+                sinc = sincronizar_todo_offline(self)
                 if sinc > 0:
-                    print(f"[OK] Sincronizados {sinc} mantenimientos offline con PostgreSQL.")
+                    print(f"[OK] Sincronizados {sinc} registros offline (áreas, equipos, mueblería, intervenciones) con PostgreSQL.")
             except Exception as se:
-                print(f"[WARN] Error sincronizando cola: {se}")
+                print(f"[WARN] Error sincronizando colas offline: {se}")
 
             cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
             cur.execute("SELECT * FROM catalogo ORDER BY nombre ASC")
@@ -1081,8 +1295,26 @@ class SistemaMantenimiento(ctk.CTk):
             self.btn_nav_usuarios.pack(pady=1, padx=8, fill="x")
             self.botones_nav.append(self.btn_nav_usuarios)
 
+        # Botón Acceso Móvil / Código QR para celulares
+        self.btn_nav_movil = ctk.CTkButton(
+            self.scroll_sidebar, 
+            text="📱 Registro Móvil (QR)", 
+            command=self.abrir_dialogo_acceso_movil, 
+            fg_color="#005691", 
+            hover_color="#004070",
+            text_color="#FFFFFF",
+            height=36,
+            corner_radius=8,
+            font=ctk.CTkFont(weight="bold", size=12)
+        )
+        self.btn_nav_movil.pack(pady=(8, 4), padx=8, fill="x")
+
         self.contenedor_principal = ctk.CTkFrame(self, fg_color=C_BG)
         self.contenedor_principal.pack(side="right", fill="both", expand=True)
+
+    def abrir_dialogo_acceso_movil(self):
+        """Abre la ventana con el código QR y enlace para registro desde celular."""
+        VentanaAccesoMovil(self)
 
     def abrir_selector_sede_rapido(self):
         def al_cambiar_sede(nuevo_contexto):
@@ -1092,6 +1324,8 @@ class SistemaMantenimiento(ctk.CTk):
             # Refrescar solo la vista activa inmediatamente para evitar congelamiento de interfaz
             vista_activa_nom = getattr(self, "vista_actual_nombre", "Inventario")
             vista_activa = self.vistas.get(vista_activa_nom)
+            if vista_activa and hasattr(vista_activa, "sincronizar_con_contexto_sede"):
+                vista_activa.sincronizar_con_contexto_sede()
             if vista_activa and hasattr(vista_activa, "refrescar_datos"):
                 vista_activa.refrescar_datos()
             messagebox.showinfo("Sede Actualizada", f"Sede activa cambiada a:\n{nuevo_contexto.get('resumen_texto')}")
@@ -1160,6 +1394,10 @@ class SistemaMantenimiento(ctk.CTk):
                 self.vistas["Cronograma"].dibujar_anio(self.vistas["Cronograma"].anio_vista)
                 self._calendario_sucio = False
             self.vistas["Cronograma"].refrescar_datos()
+        elif nombre == "Areas":
+            if hasattr(self.vistas["Areas"], "sincronizar_con_contexto_sede"):
+                self.vistas["Areas"].sincronizar_con_contexto_sede()
+            self.vistas["Areas"].refrescar_datos()
         else:
             if hasattr(self.vistas[nombre], 'refrescar_datos'):
                 self.vistas[nombre].refrescar_datos()
@@ -1261,7 +1499,6 @@ class SistemaMantenimiento(ctk.CTk):
         vent.configure(fg_color=C_BG)
         self.centrar_ventana_segura(vent, 800, 680)
 
-        
         ctk.CTkLabel(vent, text="Ficha Técnica Institucional", font=ctk.CTkFont(size=22, weight="bold"), text_color=C_TEXT).pack(pady=15)
         
         sf = ctk.CTkScrollableFrame(vent, fg_color=C_CARD, corner_radius=12)
@@ -1269,6 +1506,55 @@ class SistemaMantenimiento(ctk.CTk):
         
         ctk.CTkLabel(sf, text="1. Identificación y Ubicación", font=ctk.CTkFont(weight="bold", size=14), text_color=C_BLUE).pack(anchor="w", pady=(10, 5))
         
+        # Proveedores de sugerencias autocompletadas (sin imposición)
+        def _obtener_lista_series(q):
+            sugerencias = ["S/C", "SIN SERIE"]
+            for eq in self.datos.get("equipos", []):
+                s = str(eq.get("numero_serie") or "").strip()
+                if s and s not in sugerencias:
+                    sugerencias.append(s)
+            for m in self.datos.get("muebleria", []):
+                s = str(m.get("serie") or "").strip()
+                if s and s not in sugerencias:
+                    sugerencias.append(s)
+            return sugerencias
+
+        def _obtener_lista_sispam(q):
+            sugerencias = ["S/C", "DONACION"]
+            for eq in self.datos.get("equipos", []):
+                s = str(eq.get("codigo_sispam") or "").strip()
+                if s and s not in sugerencias:
+                    sugerencias.append(s)
+            for m in self.datos.get("muebleria", []):
+                s = str(m.get("codigo_sispam") or "").strip()
+                if s and s not in sugerencias:
+                    sugerencias.append(s)
+            return sugerencias
+
+        def _obtener_lista_bertin(q):
+            sugerencias = ["S/C", "BERTIN"]
+            for eq in self.datos.get("equipos", []):
+                s = str(eq.get("bertin") or "").strip()
+                if s and s not in sugerencias:
+                    sugerencias.append(s)
+            for m in self.datos.get("muebleria", []):
+                s = str(m.get("bertin") or "").strip()
+                if s and s not in sugerencias:
+                    sugerencias.append(s)
+            return sugerencias
+
+        def _obtener_lista_sapm(q):
+            sugerencias = ["S/C", "SAPM"]
+            for eq in self.datos.get("equipos", []):
+                s = str(eq.get("sapm") or "").strip()
+                if s and s not in sugerencias:
+                    sugerencias.append(s)
+            for m in self.datos.get("muebleria", []):
+                s = str(m.get("sapm") or "").strip()
+                if s and s not in sugerencias:
+                    sugerencias.append(s)
+            return sugerencias
+
         # Red de Salud y Centro de Salud Oficiales GAMLP
         from database import obtener_jerarquia_sedes_db
         sedes_form_data = obtener_jerarquia_sedes_db()
@@ -1290,16 +1576,187 @@ class SistemaMantenimiento(ctk.CTk):
         combo_centro_form = ctk.CTkComboBox(sf, width=500, values=["Seleccione Red"])
         combo_centro_form.pack(pady=(0, 5))
 
+        ctk.CTkLabel(sf, text="Sector Actual:", font=ctk.CTkFont(size=11, weight="bold"), text_color=C_TEXT).pack(anchor="w", padx=150, pady=(5, 0))
+        combo_sector_form = ctk.CTkComboBox(sf, width=500, values=["SALUD", "G.A.M.L.P."])
+        combo_sector_form.pack(pady=(0, 5))
+        combo_sector_form.set(eq_edit.get("sector_actual", "SALUD") if eq_edit else "SALUD")
+
+        val_cat = [f"{c['nombre']} - {c.get('marca', '')} - {c.get('modelo', '')}" for c in self.datos["catalogo"]]
+        ctk.CTkLabel(sf, text="Modelo de Catálogo:", font=ctk.CTkFont(size=11, weight="bold"), text_color=C_TEXT).pack(anchor="w", padx=150, pady=(5, 0))
+        combo_tipo = ctk.CTkComboBox(sf, width=500, values=val_cat if val_cat else ["No hay modelos"])
+        combo_tipo.pack(pady=(0, 5))
+        habilitar_autocompletado(combo_tipo, val_cat)
+        
+        ctk.CTkLabel(sf, text="Área / Ubicación Física:", font=ctk.CTkFont(size=11, weight="bold"), text_color=C_TEXT).pack(anchor="w", padx=150, pady=(5, 0))
+        combo_area = ctk.CTkComboBox(sf, width=500, values=["Cargando áreas..."])
+        combo_area.pack(pady=(0, 5))
+
+        ctk.CTkLabel(sf, text="Persona Asignada (Doctora / Responsable):", font=ctk.CTkFont(size=11, weight="bold"), text_color=C_TEXT).pack(anchor="w", padx=150, pady=(5, 0))
+        e_persona_form = ctk.CTkEntry(sf, placeholder_text="Nombre de la doctora o responsable a cargo...", width=500)
+        e_persona_form.pack(pady=(0, 5))
+
+        ctk.CTkLabel(sf, text="Cargo Asignado:", font=ctk.CTkFont(size=11, weight="bold"), text_color=C_TEXT).pack(anchor="w", padx=150, pady=(5, 0))
+        e_cargo_form = ctk.CTkEntry(sf, placeholder_text="Cargo del personal asignado (ej: Médico General, Odontólogo, etc.)...", width=500)
+        e_cargo_form.pack(pady=(0, 5))
+
+        ctk.CTkLabel(sf, text="C.I. Asignado:", font=ctk.CTkFont(size=11, weight="bold"), text_color=C_TEXT).pack(anchor="w", padx=150, pady=(5, 0))
+        e_ci_form = ctk.CTkEntry(sf, placeholder_text="Ej: 4892711 LP...", width=500)
+        e_ci_form.pack(pady=(0, 5))
+
+        ctk.CTkLabel(sf, text="Servicio:", font=ctk.CTkFont(size=11, weight="bold"), text_color=C_TEXT).pack(anchor="w", padx=150, pady=(5, 0))
+        e_servicio = ctk.CTkEntry(sf, placeholder_text="Servicio", width=500)
+        e_servicio.pack(pady=(0, 5))
+
+        ctk.CTkLabel(sf, text="Código de Activos Fijos (Automático):", font=ctk.CTkFont(size=11, weight="bold"), text_color=C_TEXT).pack(anchor="w", padx=150, pady=(5, 0))
+        e_id = ctk.CTkEntry(sf, placeholder_text="Generando Código AF automático...", width=500, state="disabled")
+        e_id.pack(pady=(0, 5))
+
+        def fijar_codigo_af_ui(nuevo_val):
+            e_id.configure(state="normal")
+            e_id.delete(0, "end")
+            e_id.insert(0, nuevo_val or "")
+            e_id.configure(state="disabled")
+
+        def actualizar_af_automatico():
+            if eq_edit is not None:
+                return # Si es modificación de equipo existente, no sobreescribir su código original
+            r_nom = combo_red_form.get().strip()
+            c_nom = combo_centro_form.get().strip()
+            if not r_nom or not c_nom or c_nom in ("Seleccione Red", "Cargando centros..."):
+                return
+            cod_af = generar_siguiente_codigo_af(r_nom, c_nom, self.datos.get("equipos", []))
+            fijar_codigo_af_ui(cod_af)
+        
+        ctk.CTkLabel(sf, text="Número de Serie (Por defecto S/C):", font=ctk.CTkFont(size=11, weight="bold"), text_color=C_TEXT).pack(anchor="w", padx=150, pady=(5, 0))
+        e_serie = ctk.CTkEntry(sf, placeholder_text="Número de Serie del Equipo", width=500)
+        e_serie.pack(pady=(0, 5))
+        pop_ser = AutocompletarEntryPopup(e_serie, _obtener_lista_series)
+
+        ctk.CTkLabel(sf, text="Código SISPAM (Por defecto S/C):", font=ctk.CTkFont(size=11, weight="bold"), text_color=C_TEXT).pack(anchor="w", padx=150, pady=(5, 0))
+        e_sispam_form = ctk.CTkEntry(sf, placeholder_text="Ej: SISPAM, DONACION, S/C...", width=500)
+        e_sispam_form.pack(pady=(0, 5))
+        pop_sis = AutocompletarEntryPopup(e_sispam_form, _obtener_lista_sispam)
+
+        ctk.CTkLabel(sf, text="Código BERTIN (Por defecto S/C):", font=ctk.CTkFont(size=11, weight="bold"), text_color=C_TEXT).pack(anchor="w", padx=150, pady=(5, 0))
+        e_bertin_form = ctk.CTkEntry(sf, placeholder_text="Ej: BERTIN, S/C...", width=500)
+        e_bertin_form.pack(pady=(0, 5))
+        pop_ber = AutocompletarEntryPopup(e_bertin_form, _obtener_lista_bertin)
+
+        ctk.CTkLabel(sf, text="Código SAPM (Por defecto S/C):", font=ctk.CTkFont(size=11, weight="bold"), text_color=C_TEXT).pack(anchor="w", padx=150, pady=(5, 0))
+        e_sapm_form = ctk.CTkEntry(sf, placeholder_text="Ej: SAPM, S/C...", width=500)
+        e_sapm_form.pack(pady=(0, 5))
+        pop_sap = AutocompletarEntryPopup(e_sapm_form, _obtener_lista_sapm)
+
+        def buscar_area_en_db(sel_str, cen_nom_param=None):
+            if not sel_str:
+                return None
+            s_raw = str(sel_str).strip().lower()
+            nom_puro = s_raw.split(" - ", 1)[1].strip() if " - " in s_raw else s_raw
+            
+            cen_target = (cen_nom_param or combo_centro_form.get()).strip().upper()
+            areas_db = self.datos.get("areas", [])
+            
+            # Prioridad 1: áreas del centro actual
+            areas_cen = [a for a in areas_db if not cen_target or str(a.get("centro_salud_nombre") or "").strip().upper() == cen_target]
+            listas_a_revisar = [areas_cen, areas_db] if areas_cen else [areas_db]
+            
+            for lista in listas_a_revisar:
+                for a in lista:
+                    a_nom = str(a.get("nombre", "")).strip().lower()
+                    a_piso = str(a.get("piso", "")).strip().lower()
+                    if not a_nom:
+                        continue
+                    
+                    if a_nom == s_raw or a_nom == nom_puro:
+                        return a
+                    
+                    variantes = [
+                        f"{a_piso} - {a_nom}",
+                        f"piso {a_piso} - {a_nom}",
+                        f"pb - {a_nom}"
+                    ]
+                    if a_piso.startswith("piso "):
+                        variantes.append(f"{a_piso.replace('piso ', '').strip()} - {a_nom}")
+                    
+                    if any(v == s_raw for v in variantes):
+                        return a
+                    
+                    if s_raw.endswith(f"- {a_nom}") or s_raw.endswith(a_nom):
+                        return a
+            return None
+
+        def al_cambiar_area(area_sel=None):
+            sel = (area_sel or combo_area.get()).strip()
+            if not sel:
+                e_persona_form.delete(0, "end")
+                e_cargo_form.delete(0, "end")
+                e_ci_form.delete(0, "end")
+                return
+
+            area_match = buscar_area_en_db(sel)
+            if area_match:
+                doc = str(area_match.get("encargado") or "").strip()
+                cargo_doc = str(area_match.get("cargo") or "").strip()
+                ci_doc = str(area_match.get("ci_encargado") or "").strip()
+                if doc:
+                    e_persona_form.delete(0, "end")
+                    e_persona_form.insert(0, doc)
+                if cargo_doc:
+                    e_cargo_form.delete(0, "end")
+                    e_cargo_form.insert(0, cargo_doc)
+                if ci_doc:
+                    e_ci_form.delete(0, "end")
+                    e_ci_form.insert(0, ci_doc)
+            else:
+                e_persona_form.delete(0, "end")
+                e_cargo_form.delete(0, "end")
+                e_ci_form.delete(0, "end")
+
+        combo_area.configure(command=al_cambiar_area)
+
+        def al_cambiar_centro_form(cen_sel):
+            areas_db = self.datos.get("areas", [])
+            # Filtrar estrictamente por el centro de salud seleccionado (sin mezclar de otros centros ni fallbacks ficticios)
+            areas_cen = [a for a in areas_db if str(a.get("centro_salud_nombre") or "").strip().upper() == str(cen_sel).strip().upper()]
+
+            val_a = []
+            for a in areas_cen:
+                nom = a.get("nombre", "").strip()
+                p = str(a.get("piso", "")).strip()
+                if p:
+                    lbl = f"Piso {p} - {nom}" if p.isdigit() else f"{p} - {nom}"
+                else:
+                    lbl = nom
+                if lbl and lbl not in val_a:
+                    val_a.append(lbl)
+
+            combo_area.configure(values=val_a if val_a else [""])
+            habilitar_autocompletado(combo_area, val_a)
+
+            if eq_edit and combo_area.get() in val_a:
+                al_cambiar_area(combo_area.get())
+            else:
+                combo_area.set("")
+                e_persona_form.delete(0, "end")
+                e_cargo_form.delete(0, "end")
+                e_ci_form.delete(0, "end")
+
+            actualizar_af_automatico()
+
         def al_cambiar_red_form(red_sel):
             red_obj = next((r for r in sedes_form_data.get("redes", []) if r["nombre"] == red_sel), None)
             red_id = red_obj["id"] if red_obj else None
             centros = [c["nombre"] for c in sedes_form_data.get("centros", []) if c.get("red_salud_id") == red_id]
+            if "RED 1" in (red_sel or "").upper() and "167 AUXILIO" not in centros:
+                centros.append("167 AUXILIO")
             if not centros:
                 centros = ["CENTRO DE SALUD"]
             combo_centro_form.configure(values=centros)
             combo_centro_form.set(centros[0])
+            al_cambiar_centro_form(centros[0])
 
         combo_red_form.configure(command=al_cambiar_red_form)
+        combo_centro_form.configure(command=al_cambiar_centro_form)
 
         # Pre-seleccionar según contexto de sede activa o por defecto
         sede_activa = getattr(self, "contexto_sede", {}) or {}
@@ -1313,31 +1770,9 @@ class SistemaMantenimiento(ctk.CTk):
         centro_default = sede_activa.get("centro_salud")
         if centro_default and not str(centro_default).startswith("[ Todos"):
             combo_centro_form.set(centro_default)
-
-        val_cat = [f"{c['nombre']} - {c.get('marca', '')} - {c.get('modelo', '')}" for c in self.datos["catalogo"]]
-        ctk.CTkLabel(sf, text="Modelo de Catálogo:", font=ctk.CTkFont(size=11, weight="bold"), text_color=C_TEXT).pack(anchor="w", padx=150, pady=(5, 0))
-        combo_tipo = ctk.CTkComboBox(sf, width=500, values=val_cat if val_cat else ["No hay modelos"])
-        combo_tipo.pack(pady=(0, 5))
-        habilitar_autocompletado(combo_tipo, val_cat)
-        
-        ctk.CTkLabel(sf, text="Área:", font=ctk.CTkFont(size=11, weight="bold"), text_color=C_TEXT).pack(anchor="w", padx=150, pady=(5, 0))
-        val_areas = [a["nombre"] for a in self.datos["areas"]]
-        combo_area = ctk.CTkComboBox(sf, width=500, values=val_areas if val_areas else ["No hay áreas"])
-        combo_area.pack(pady=(0, 5))
-        combo_area.configure(state="disabled")
-        habilitar_autocompletado(combo_area, val_areas)
-
-        ctk.CTkLabel(sf, text="Servicio:", font=ctk.CTkFont(size=11, weight="bold"), text_color=C_TEXT).pack(anchor="w", padx=150, pady=(5, 0))
-        e_servicio = ctk.CTkEntry(sf, placeholder_text="Servicio", width=500)
-        e_servicio.pack(pady=(0, 5))
-
-        ctk.CTkLabel(sf, text="Código de Activos Fijos:", font=ctk.CTkFont(size=11, weight="bold"), text_color=C_TEXT).pack(anchor="w", padx=150, pady=(5, 0))
-        e_id = ctk.CTkEntry(sf, placeholder_text="Código de Activo Fijo (único)", width=500)
-        e_id.pack(pady=(0, 5))
-        
-        ctk.CTkLabel(sf, text="Número de Serie:", font=ctk.CTkFont(size=11, weight="bold"), text_color=C_TEXT).pack(anchor="w", padx=150, pady=(5, 0))
-        e_serie = ctk.CTkEntry(sf, placeholder_text="Número de Serie del Equipo", width=500)
-        e_serie.pack(pady=(0, 5))
+            al_cambiar_centro_form(centro_default)
+            
+        actualizar_af_automatico()
 
         def al_seleccionar_tipo(val_sel):
             if not val_sel or "-" not in val_sel:
@@ -1349,9 +1784,22 @@ class SistemaMantenimiento(ctk.CTk):
                 mdl = partes[2] if len(partes) > 2 else ""
                 match = next((c for c in self.datos.get("catalogo", []) if c["nombre"].strip().lower() == nom.lower() and (c.get("marca") or "").strip().lower() == mrc.lower() and (c.get("modelo") or "").strip().lower() == mdl.lower()), None)
                 if match and match.get("area"):
-                    combo_area.configure(state="normal")
-                    combo_area.set(match["area"])
-                    combo_area.configure(state="disabled")
+                    cat_area = match["area"].strip()
+                    val_disponibles = combo_area.cget("values") or []
+                    area_obj = buscar_area_en_db(cat_area)
+                    
+                    target_label = None
+                    if area_obj:
+                        for v_opt in val_disponibles:
+                            if buscar_area_en_db(v_opt) == area_obj:
+                                target_label = v_opt
+                                break
+                    if not target_label:
+                        target_label = next((x for x in val_disponibles if cat_area.lower() in str(x).lower()), cat_area)
+                    
+                    if target_label:
+                        combo_area.set(target_label)
+                        al_cambiar_area(target_label)
                 
                 # Buscar en equipos existentes para auto-rellenar procedencia, fabricante, proveedor y año de fabricación
                 eq_match = next((eq for eq in self.datos.get("equipos", []) if 
@@ -1509,7 +1957,6 @@ class SistemaMantenimiento(ctk.CTk):
         self.cal_gar.bind("<<DateEntrySelected>>", actualizar_restante_gar)
 
         # Contenedor externo para el costo del equipo - SIEMPRE PRESENTE para mantener posición
-        # Solo el contenido interno (label + entry) se muestra u oculta
         self.f_costo_container = ctk.CTkFrame(sf, fg_color="transparent", height=0)
         self.f_costo_container.pack(fill="x", pady=0)
         
@@ -1541,7 +1988,7 @@ class SistemaMantenimiento(ctk.CTk):
         def on_donacion_change(*args):
             if self.var_donacion.get() == "X":
                 self.var_compra.set("")
-                self.var_comodato.set("")
+                self.var_donacion.set("")
             actualizar_costo_visibilidad()
 
         self.var_compra.trace_add("write", on_compra_change)
@@ -1671,6 +2118,16 @@ class SistemaMantenimiento(ctk.CTk):
         btn_adicionales = ctk.CTkButton(sf, text="▼ Mostrar Datos Técnicos y Contexto (Excel)", command=toggle_datos_adicionales, fg_color=C_BLUE, hover_color=C_BLUE_HOVER, width=500, font=ctk.CTkFont(weight="bold", size=13), height=35)
         btn_adicionales.pack(pady=10)
 
+        # Cerrar popups si se hace scroll o cierra la ventana
+        def cerrar_todos_popups(e=None):
+            pop_ser.cerrar_popup()
+            pop_sis.cerrar_popup()
+            pop_ber.cerrar_popup()
+            pop_sap.cerrar_popup()
+
+        sf.bind("<MouseWheel>", cerrar_todos_popups)
+        vent.protocol("WM_DELETE_WINDOW", lambda: (cerrar_todos_popups(), vent.destroy()))
+
         if eq_edit:
             red_nom_edit = eq_edit.get("red_salud_nombre") or eq_edit.get("red_salud")
             if red_nom_edit and red_nom_edit in redes_opts:
@@ -1680,16 +2137,35 @@ class SistemaMantenimiento(ctk.CTk):
             cen_nom_edit = eq_edit.get("centro_salud_nombre") or eq_edit.get("centro_salud")
             if cen_nom_edit:
                 combo_centro_form.set(cen_nom_edit)
+                al_cambiar_centro_form(cen_nom_edit)
 
-            e_id.insert(0, eq_edit["id"] or "")
-            e_id.configure(state="disabled")
+            if eq_edit.get("sector_actual"):
+                combo_sector_form.set(eq_edit.get("sector_actual"))
+
+            fijar_codigo_af_ui(eq_edit["id"] or "")
             e_serie.insert(0, eq_edit.get("numero_serie") or "")
-            e_serie.configure(state="disabled")
             
+            if eq_edit.get("persona_asignada"):
+                e_persona_form.delete(0, "end")
+                e_persona_form.insert(0, eq_edit["persona_asignada"])
+            if eq_edit.get("cargo_asignado") or eq_edit.get("cargo"):
+                e_cargo_form.delete(0, "end")
+                e_cargo_form.insert(0, eq_edit.get("cargo_asignado") or eq_edit.get("cargo") or "")
+            if eq_edit.get("ci_asignado"):
+                e_ci_form.delete(0, "end")
+                e_ci_form.insert(0, eq_edit["ci_asignado"])
+            if eq_edit.get("codigo_sispam"):
+                e_sispam_form.delete(0, "end")
+                e_sispam_form.insert(0, eq_edit["codigo_sispam"])
+            if eq_edit.get("bertin"):
+                e_bertin_form.delete(0, "end")
+                e_bertin_form.insert(0, eq_edit["bertin"])
+            if eq_edit.get("sapm"):
+                e_sapm_form.delete(0, "end")
+                e_sapm_form.insert(0, eq_edit["sapm"])
+
             e_servicio.insert(0, eq_edit.get("servicio") or "")
-            combo_area.configure(state="normal")
             combo_area.set(eq_edit.get("area") or "")
-            combo_area.configure(state="disabled")
             e_procedencia.insert(0, eq_edit.get("procedencia") or "")
             e_fabricante.insert(0, eq_edit.get("fabricante") or "")
             e_proveedor.insert(0, eq_edit.get("proveedor") or "")
@@ -1801,16 +2277,56 @@ class SistemaMantenimiento(ctk.CTk):
             if not e_id.get(): 
                 return
                 
-            # Validar si el ID o Serie ya existen al crear un equipo nuevo (Validación instantánea en memoria)
-            id_val = e_id.get().strip()
-            serie_val = e_serie.get().strip()
+            # Validar si el ID, Serie o Códigos ya existen (Validación de duplicidad)
+            # 1. Asegurar Código de Activo Fijo (AF) único y sin colisiones
             if eq_edit is None:
-                if any(str(eq.get("id", "")).strip().lower() == id_val.lower() for eq in self.datos.get("equipos", [])):
-                    messagebox.showerror("Error de Duplicidad", f"Ya existe un equipo registrado con el Código de Activo Fijo '{id_val}'.")
-                    return
-                if serie_val and any(str(eq.get("numero_serie", "")).strip().lower() == serie_val.lower() for eq in self.datos.get("equipos", [])):
-                    messagebox.showerror("Error de Duplicidad", f"Ya existe un equipo registrado con el Número de Serie '{serie_val}'.")
-                    return
+                id_val = generar_siguiente_codigo_af(
+                    combo_red_form.get().strip(),
+                    combo_centro_form.get().strip(),
+                    self.datos.get("equipos", [])
+                )
+                ids_existentes = {str(e.get("id", "")).strip().upper() for e in self.datos.get("equipos", [])}
+                if id_val.upper() in ids_existentes:
+                    partes = id_val.rsplit("-", 1)
+                    if len(partes) == 2 and partes[1].isdigit():
+                        p_pref = partes[0] + "-"
+                        p_num = int(partes[1])
+                        while f"{p_pref}{p_num:06d}".upper() in ids_existentes:
+                            p_num += 1
+                        id_val = f"{p_pref}{p_num:06d}"
+                fijar_codigo_af_ui(id_val)
+            else:
+                id_val = e_id.get().strip()
+
+            serie_val = e_serie.get().strip() or "S/C"
+            sispam_val = e_sispam_form.get().strip() or "S/C"
+            bertin_val = e_bertin_form.get().strip() or "S/C"
+            sapm_val = e_sapm_form.get().strip() or "S/C"
+
+            for eq in self.datos.get("equipos", []):
+                if eq_edit and str(eq.get("id")) == str(eq_edit.get("id")):
+                    continue
+
+                # 2. Serie Única
+                if serie_val.upper() not in EXENTOS_DUPLICADOS and str(eq.get("numero_serie", "")).strip().upper() not in EXENTOS_DUPLICADOS:
+                    if serie_val.upper() == str(eq.get("numero_serie", "")).strip().upper():
+                        messagebox.showerror("Error de Duplicidad", f"Ya existe un equipo registrado con el Número de Serie '{serie_val}'.", parent=vent)
+                        return
+                # 3. SISPAM Único
+                if sispam_val.upper() not in EXENTOS_DUPLICADOS and str(eq.get("codigo_sispam", "")).strip().upper() not in EXENTOS_DUPLICADOS:
+                    if sispam_val.upper() == str(eq.get("codigo_sispam", "")).strip().upper():
+                        messagebox.showerror("Error de Duplicidad", f"Ya existe un equipo registrado con el Código SISPAM '{sispam_val}'.", parent=vent)
+                        return
+                # 4. BERTIN Único
+                if bertin_val.upper() not in EXENTOS_DUPLICADOS and str(eq.get("bertin", "")).strip().upper() not in EXENTOS_DUPLICADOS:
+                    if bertin_val.upper() == str(eq.get("bertin", "")).strip().upper():
+                        messagebox.showerror("Error de Duplicidad", f"Ya existe un equipo registrado con el Código BERTIN '{bertin_val}'.", parent=vent)
+                        return
+                # 5. SAPM Único
+                if sapm_val.upper() not in EXENTOS_DUPLICADOS and str(eq.get("sapm", "")).strip().upper() not in EXENTOS_DUPLICADOS:
+                    if sapm_val.upper() == str(eq.get("sapm", "")).strip().upper():
+                        messagebox.showerror("Error de Duplicidad", f"Ya existe un equipo registrado con el Código SAPM '{sapm_val}'.", parent=vent)
+                        return
                  
             ts = combo_tipo.get().split(" - ")
             n_nom = ts[0]
@@ -1872,6 +2388,13 @@ class SistemaMantenimiento(ctk.CTk):
                 "modelo": n_mod,
                 "servicio": e_servicio.get().strip(),
                 "area": combo_area.get(),
+                "sector_actual": combo_sector_form.get().strip() or "SALUD",
+                "persona_asignada": e_persona_form.get().strip(),
+                "cargo_asignado": e_cargo_form.get().strip(),
+                "ci_asignado": e_ci_form.get().strip(),
+                "codigo_sispam": sispam_val,
+                "bertin": bertin_val,
+                "sapm": sapm_val,
                 "red_salud_id": red_id_val,
                 "red_salud_nombre": red_sel_val,
                 "centro_salud_id": cen_id_val,
@@ -1902,7 +2425,7 @@ class SistemaMantenimiento(ctk.CTk):
                 "fecha_registro": datetime.now().strftime("%Y-%m-%d"),
                 "foto": ruta_foto.get(),
                 "fecha_vencimiento_garantia": str(f_gar_val) if f_gar_val else None,
-                "numero_serie": e_serie.get().strip(),
+                "numero_serie": serie_val,
                 "fecha_inicio_garantia": str(f_gar_ini_val) if f_gar_ini_val else None,
                 "costo": costo_val,
                 "voltaje": _get_entry(self.e_voltaje),
@@ -1929,7 +2452,7 @@ class SistemaMantenimiento(ctk.CTk):
                 "historial_intervenciones": eq_edit.get("historial_intervenciones", []) if eq_edit else []
             }
 
-            # 1. Actualizar memoria y caché de inmediato (0 ms)
+            # 1. Actualizar memoria y caché de equipos de inmediato (0 ms)
             if eq_edit:
                 for idx_e, ex in enumerate(self.datos.get("equipos", [])):
                     if str(ex.get("id")) == str(eq_edit.get("id")):
@@ -1938,62 +2461,178 @@ class SistemaMantenimiento(ctk.CTk):
             else:
                 self.datos.setdefault("equipos", []).append(eq_dict)
 
+            # 2. Sincronizar automáticamente en Inventario de Activos (Mueblería)
+            partes_desc = []
+            c_op = _get_txt(self.txt_contexto)
+            ins = _get_txt(self.txt_acciones_falla)
+            obs = _get_txt(self.txt_observaciones_ficha)
+            if c_op: partes_desc.append(f"Contexto: {c_op}")
+            if ins: partes_desc.append(f"Insumos: {ins}")
+            if obs: partes_desc.append(f"Obs: {obs}")
+            desc_mueble = " | ".join(partes_desc) if partes_desc else f"{n_nom} {n_mar} {n_mod}".strip()
+
+            tecnico_act = getattr(self, "usuario_actual", {}).get("nombre_completo") or getattr(self, "usuario_actual", {}).get("nombre_usuario") or "Sistema"
+            mueble_dict = {
+                "sector_actual": combo_sector_form.get().strip() or "SALUD",
+                "direccion_administrativa": red_sel_val,
+                "unidad_organizacional": cen_sel_val,
+                "fecha_asignacion": str(cal_adq.get_date()) if cal_adq else datetime.now().strftime("%Y-%m-%d"),
+                "tecnico_inventareador": tecnico_act,
+                "persona_asignada": e_persona_form.get().strip(),
+                "cargo_asignado": e_cargo_form.get().strip(),
+                "ci_asignado": e_ci_form.get().strip(),
+                "tipo_activo": n_nom,
+                "descripcion": desc_mueble,
+                "marca": n_mar,
+                "modelo": n_mod,
+                "serie": serie_val,
+                "detalle_transaccion": "Asignacion 2026",
+                "codigo_sispam": sispam_val,
+                "bertin": bertin_val,
+                "sapm": sapm_val,
+                "observaciones_de_asignacion": obs,
+                "ubicacion": combo_area.get(),
+                "fecha_incorporacion": "",
+                "red_salud_id": red_id_val,
+                "centro_salud_id": cen_id_val,
+                "estado_conservacion": "Bueno" if combo_estado.get() == "Operativo" else "Baja",
+                "estado": "Activo"
+            }
+
+            # Buscar si ya existe en muebleria para actualizarlo en vez de duplicar
+            mueble_existente = None
+            for m in self.datos.get("muebleria", []):
+                if (serie_val not in EXENTOS_DUPLICADOS and str(m.get("serie", "")).strip().upper() == serie_val.upper()) or \
+                   (sispam_val not in EXENTOS_DUPLICADOS and str(m.get("codigo_sispam", "")).strip().upper() == sispam_val.upper()) or \
+                   (bertin_val not in EXENTOS_DUPLICADOS and str(m.get("bertin", "")).strip().upper() == bertin_val.upper()) or \
+                   (sapm_val not in EXENTOS_DUPLICADOS and str(m.get("sapm", "")).strip().upper() == sapm_val.upper()):
+                    mueble_existente = m
+                    break
+            
+            if mueble_existente:
+                mueble_dict["id"] = mueble_existente["id"]
+                for idx_m, m in enumerate(self.datos.get("muebleria", [])):
+                    if str(m.get("id")) == str(mueble_existente["id"]):
+                        self.datos["muebleria"][idx_m] = mueble_dict
+                        break
+            else:
+                self.datos.setdefault("muebleria", []).insert(0, mueble_dict)
+
+            # Guardar en base de datos muebleria en segundo plano (con cola offline)
+            def _guardar_mueble_sync(m_data):
+                try:
+                    exito_m, id_res = guardar_mueble_db(m_data)
+                    if exito_m and not m_data.get("id"):
+                        m_data["id"] = id_res
+                    elif not exito_m:
+                        guardar_mueble_offline_cola(dict(m_data))
+                except Exception as me:
+                    print(f"[WARN] Error al sincronizar muebleria desde equipo: {me}")
+                    guardar_mueble_offline_cola(dict(m_data))
+
+            ejecutar_en_segundo_plano(_guardar_mueble_sync, dict(mueble_dict))
+
+            if "Muebleria" in self.vistas:
+                self.vistas["Muebleria"].refrescar_datos()
+
             guardar_cache_local_datos(self.datos)
             self._calendario_sucio = True
             self.vistas["Inventario"].refrescar_datos()
+            cerrar_todos_popups()
             vent.destroy()
 
-            # 2. Guardar en PostgreSQL en segundo plano sin congelar la pantalla
+            # 3. Guardar en PostgreSQL en segundo plano sin congelar la pantalla (con cola offline ante caída de red)
             def _guardar_equipo_db(eq_data):
                 conn = obtener_conexion()
-                if conn:
-                    try:
-                        cur = conn.cursor()
-                        # Resolver IDs reales en base de datos para evitar cualquier desface de llaves foráneas
-                        red_id = None
-                        cen_id = None
-                        if eq_data.get("red_salud_nombre"):
-                            cur.execute("SELECT id FROM redes_salud WHERE nombre = %s OR codigo = %s OR nombre ILIKE %s LIMIT 1;", 
-                                        (eq_data["red_salud_nombre"], eq_data.get("red_salud_nombre", ""), f"%{eq_data['red_salud_nombre']}%"))
-                            r_row = cur.fetchone()
-                            if r_row: red_id = r_row[0]
-                            
-                        if eq_data.get("centro_salud_nombre"):
-                            cur.execute("SELECT id FROM centros_salud WHERE nombre = %s OR nombre ILIKE %s LIMIT 1;", 
-                                        (eq_data["centro_salud_nombre"], f"%{eq_data['centro_salud_nombre']}%"))
-                            c_row = cur.fetchone()
-                            if c_row: cen_id = c_row[0]
+                if not conn:
+                    guardar_equipo_offline_cola(dict(eq_data))
+                    return
 
-                        sql_q = """
-                            INSERT INTO equipos (
-                                id, nombre, marca, modelo, servicio, area, procedencia, fabricante, proveedor, anio_fab,
-                                t_elec, t_elco, t_mec, t_hid, t_neu, t_vap, a_comp, a_como, a_don, te_fijo, te_mov, te_por, garantia, criticidad, categorizacion_detalle, estado, fecha_adquisicion, fecha_registro, foto, fecha_vencimiento_garantia, numero_serie, fecha_inicio_garantia, costo,
-                                voltaje, corriente, potencia, vida_util, temperatura, peso, dimensiones, bateria_respaldo, resolucion, version_software, humedad, suministro_gases, contexto_operacional, funciones_equipo, acciones_preventivas, acciones_falla, fallas_funcionales, causas_fallo, efectos_fallo, efecto_entorno, observaciones,
-                                red_salud_id, red_salud_nombre, centro_salud_id, centro_salud_nombre, municipio_nombre, departamento_nombre
-                            )
-                            VALUES (
-                                %(id)s, %(nombre)s, %(marca)s, %(modelo)s, %(servicio)s, %(area)s, %(procedencia)s, %(fabricante)s, %(proveedor)s, %(anio_fab)s,
-                                %(t_elec)s, %(t_elco)s, %(t_mec)s, %(t_hid)s, %(t_neu)s, %(t_vap)s, %(a_comp)s, %(a_como)s, %(a_don)s, %(te_fijo)s, %(te_mov)s, %(te_por)s, %(garantia)s, %(criticidad)s, %(categorizacion_detalle)s, %(estado)s, %(fecha_adquisicion)s, %(fecha_registro)s, %(foto)s, %(fecha_vencimiento_garantia)s, %(numero_serie)s, %(fecha_inicio_garantia)s, %(costo)s,
-                                %(voltaje)s, %(corriente)s, %(potencia)s, %(vida_util)s, %(temperatura)s, %(peso)s, %(dimensiones)s, %(bateria_respaldo)s, %(resolucion)s, %(version_software)s, %(humedad)s, %(suministro_gases)s, %(contexto_operacional)s, %(funciones_equipo)s, %(acciones_preventivas)s, %(acciones_falla)s, %(fallas_funcionales)s, %(causas_fallo)s, %(efectos_fallo)s, %(efecto_entorno)s, %(observaciones)s,
-                                %(red_salud_id)s, %(red_salud_nombre)s, %(centro_salud_id)s, %(centro_salud_nombre)s, %(municipio_nombre)s, %(departamento_nombre)s
-                            )
-                            ON CONFLICT (id) DO UPDATE SET
-                                nombre=EXCLUDED.nombre, marca=EXCLUDED.marca, modelo=EXCLUDED.modelo, servicio=EXCLUDED.servicio, area=EXCLUDED.area, procedencia=EXCLUDED.procedencia, fabricante=EXCLUDED.fabricante, proveedor=EXCLUDED.proveedor, anio_fab=EXCLUDED.anio_fab,
-                                t_elec=EXCLUDED.t_elec, t_elco=EXCLUDED.t_elco, t_mec=EXCLUDED.t_mec, t_hid=EXCLUDED.t_hid, t_neu=EXCLUDED.t_neu, t_vap=EXCLUDED.t_vap, a_comp=EXCLUDED.a_comp, a_como=EXCLUDED.a_como, a_don=EXCLUDED.a_don,
-                                te_fijo=EXCLUDED.te_fijo, te_mov=EXCLUDED.te_mov, te_por=EXCLUDED.te_por, garantia=EXCLUDED.garantia, criticidad=EXCLUDED.criticidad, categorizacion_detalle=EXCLUDED.categorizacion_detalle, estado=EXCLUDED.estado, fecha_adquisicion=EXCLUDED.fecha_adquisicion, foto=EXCLUDED.foto, fecha_vencimiento_garantia=EXCLUDED.fecha_vencimiento_garantia, numero_serie=EXCLUDED.numero_serie, fecha_inicio_garantia=EXCLUDED.fecha_inicio_garantia, costo=EXCLUDED.costo,
-                                voltaje=EXCLUDED.voltaje, corriente=EXCLUDED.corriente, potencia=EXCLUDED.potencia, vida_util=EXCLUDED.vida_util, temperatura=EXCLUDED.temperatura, peso=EXCLUDED.peso, dimensiones=EXCLUDED.dimensiones, bateria_respaldo=EXCLUDED.bateria_respaldo, resolucion=EXCLUDED.resolucion, version_software=EXCLUDED.version_software, humedad=EXCLUDED.humedad, suministro_gases=EXCLUDED.suministro_gases, contexto_operacional=EXCLUDED.contexto_operacional, funciones_equipo=EXCLUDED.funciones_equipo, acciones_preventivas=EXCLUDED.acciones_preventivas, acciones_falla=EXCLUDED.acciones_falla, fallas_funcionales=EXCLUDED.fallas_funcionales, causas_fallo=EXCLUDED.causas_fallo, efectos_fallo=EXCLUDED.efectos_fallo, efecto_entorno=EXCLUDED.efecto_entorno, observaciones=EXCLUDED.observaciones,
-                                red_salud_id=EXCLUDED.red_salud_id, red_salud_nombre=EXCLUDED.red_salud_nombre, centro_salud_id=EXCLUDED.centro_salud_id, centro_salud_nombre=EXCLUDED.centro_salud_nombre, municipio_nombre=EXCLUDED.municipio_nombre, departamento_nombre=EXCLUDED.departamento_nombre;
-                        """
-                        cur.execute(sql_q, {**eq_data, "red_salud_id": red_id, "centro_salud_id": cen_id})
-                        conn.commit()
-                        cur.close()
-                        conn.close()
-                        print(f"[OK] Equipo {eq_data.get('id')} guardado y sincronizado con éxito en la base de datos central.")
-                    except Exception as err:
-                        print(f"[ERROR] Error al guardar equipo en PostgreSQL: {err}")
-                        if conn:
+                try:
+                    cur = conn.cursor()
+                    # Si es nuevo equipo, validar que no haya colisión con otro usuario online
+                    if not eq_edit:
+                        cur.execute("SELECT id FROM equipos WHERE id = %s;", (eq_data["id"],))
+                        if cur.fetchone():
+                            r_nom = eq_data.get("red_salud_nombre")
+                            c_nom = eq_data.get("centro_salud_nombre")
+                            from database import generar_codigo_red, generar_sigla_centro
+                            prefijo = f"GAMLP-{generar_codigo_red(r_nom)}-{generar_sigla_centro(c_nom)}-"
+                            cur.execute("SELECT id FROM equipos WHERE id LIKE %s;", (f"{prefijo}%",))
+                            nums_bd = []
+                            for row in cur.fetchall():
+                                suf = str(row[0])[len(prefijo):]
+                                if suf.isdigit():
+                                    nums_bd.append(int(suf))
+                            siguiente_num = max(nums_bd, default=0) + 1
+                            nuevo_id = f"{prefijo}{siguiente_num:06d}"
+                            while True:
+                                cur.execute("SELECT id FROM equipos WHERE id = %s;", (nuevo_id,))
+                                if not cur.fetchone():
+                                    break
+                                siguiente_num += 1
+                                nuevo_id = f"{prefijo}{siguiente_num:06d}"
+
+                            id_antiguo = eq_data["id"]
+                            eq_data["id"] = nuevo_id
+                            print(f"[RESOLUCION COLISION] Equipo {id_antiguo} reasignado a {nuevo_id} para evitar duplicidad.")
+                            for eq_loc in self.datos.get("equipos", []):
+                                if str(eq_loc.get("id")) == str(id_antiguo):
+                                    eq_loc["id"] = nuevo_id
+                            guardar_cache_local_datos(self.datos)
+                            if "Inventario" in self.vistas:
+                                self.after(0, self.vistas["Inventario"].refrescar_datos)
+
+                    red_id = None
+                    cen_id = None
+                    if eq_data.get("red_salud_nombre"):
+                        cur.execute("SELECT id FROM redes_salud WHERE nombre = %s OR codigo = %s OR nombre ILIKE %s LIMIT 1;", 
+                                    (eq_data["red_salud_nombre"], eq_data.get("red_salud_nombre", ""), f"%{eq_data['red_salud_nombre']}%"))
+                        r_row = cur.fetchone()
+                        if r_row: red_id = r_row[0]
+                        
+                    if eq_data.get("centro_salud_nombre"):
+                        cur.execute("SELECT id FROM centros_salud WHERE nombre = %s OR nombre ILIKE %s LIMIT 1;", 
+                                    (eq_data["centro_salud_nombre"], f"%{eq_data['centro_salud_nombre']}%"))
+                        c_row = cur.fetchone()
+                        if c_row: cen_id = c_row[0]
+
+                    sql_q = """
+                        INSERT INTO equipos (
+                            id, nombre, marca, modelo, servicio, area, procedencia, fabricante, proveedor, anio_fab,
+                            t_elec, t_elco, t_mec, t_hid, t_neu, t_vap, a_comp, a_como, a_don, te_fijo, te_mov, te_por, garantia, criticidad, categorizacion_detalle, estado, fecha_adquisicion, fecha_registro, foto, fecha_vencimiento_garantia, numero_serie, fecha_inicio_garantia, costo,
+                            voltaje, corriente, potencia, vida_util, temperatura, peso, dimensiones, bateria_respaldo, resolucion, version_software, humedad, suministro_gases, contexto_operacional, funciones_equipo, acciones_preventivas, acciones_falla, fallas_funcionales, causas_fallo, efectos_fallo, efecto_entorno, observaciones,
+                            red_salud_id, red_salud_nombre, centro_salud_id, centro_salud_nombre, municipio_nombre, departamento_nombre,
+                            sector_actual, persona_asignada, cargo_asignado, ci_asignado, codigo_sispam, bertin, sapm
+                        )
+                        VALUES (
+                            %(id)s, %(nombre)s, %(marca)s, %(modelo)s, %(servicio)s, %(area)s, %(procedencia)s, %(fabricante)s, %(proveedor)s, %(anio_fab)s,
+                            %(t_elec)s, %(t_elco)s, %(t_mec)s, %(t_hid)s, %(t_neu)s, %(t_vap)s, %(a_comp)s, %(a_como)s, %(a_don)s, %(te_fijo)s, %(te_mov)s, %(te_por)s, %(garantia)s, %(criticidad)s, %(categorizacion_detalle)s, %(estado)s, %(fecha_adquisicion)s, %(fecha_registro)s, %(foto)s, %(fecha_vencimiento_garantia)s, %(numero_serie)s, %(fecha_inicio_garantia)s, %(costo)s,
+                            %(voltaje)s, %(corriente)s, %(potencia)s, %(vida_util)s, %(temperatura)s, %(peso)s, %(dimensiones)s, %(bateria_respaldo)s, %(resolucion)s, %(version_software)s, %(humedad)s, %(suministro_gases)s, %(contexto_operacional)s, %(funciones_equipo)s, %(acciones_preventivas)s, %(acciones_falla)s, %(fallas_funcionales)s, %(causas_fallo)s, %(efectos_fallo)s, %(efecto_entorno)s, %(observaciones)s,
+                            %(red_salud_id)s, %(red_salud_nombre)s, %(centro_salud_id)s, %(centro_salud_nombre)s, %(municipio_nombre)s, %(departamento_nombre)s,
+                            %(sector_actual)s, %(persona_asignada)s, %(cargo_asignado)s, %(ci_asignado)s, %(codigo_sispam)s, %(bertin)s, %(sapm)s
+                        )
+                        ON CONFLICT (id) DO UPDATE SET
+                            nombre=EXCLUDED.nombre, marca=EXCLUDED.marca, modelo=EXCLUDED.modelo, servicio=EXCLUDED.servicio, area=EXCLUDED.area, procedencia=EXCLUDED.procedencia, fabricante=EXCLUDED.fabricante, proveedor=EXCLUDED.proveedor, anio_fab=EXCLUDED.anio_fab,
+                            t_elec=EXCLUDED.t_elec, t_elco=EXCLUDED.t_elco, t_mec=EXCLUDED.t_mec, t_hid=EXCLUDED.t_hid, t_neu=EXCLUDED.t_neu, t_vap=EXCLUDED.t_vap, a_comp=EXCLUDED.a_comp, a_como=EXCLUDED.a_como, a_don=EXCLUDED.a_don,
+                            te_fijo=EXCLUDED.te_fijo, te_mov=EXCLUDED.te_mov, te_por=EXCLUDED.te_por, garantia=EXCLUDED.garantia, criticidad=EXCLUDED.criticidad, categorizacion_detalle=EXCLUDED.categorizacion_detalle, estado=EXCLUDED.estado, fecha_adquisicion=EXCLUDED.fecha_adquisicion, foto=EXCLUDED.foto, fecha_vencimiento_garantia=EXCLUDED.fecha_vencimiento_garantia, numero_serie=EXCLUDED.numero_serie, fecha_inicio_garantia=EXCLUDED.fecha_inicio_garantia, costo=EXCLUDED.costo,
+                            voltaje=EXCLUDED.voltaje, corriente=EXCLUDED.corriente, potencia=EXCLUDED.potencia, vida_util=EXCLUDED.vida_util, temperatura=EXCLUDED.temperatura, peso=EXCLUDED.peso, dimensiones=EXCLUDED.dimensiones, bateria_respaldo=EXCLUDED.bateria_respaldo, resolucion=EXCLUDED.resolucion, version_software=EXCLUDED.version_software, humedad=EXCLUDED.humedad, suministro_gases=EXCLUDED.suministro_gases, contexto_operacional=EXCLUDED.contexto_operacional, funciones_equipo=EXCLUDED.funciones_equipo, acciones_preventivas=EXCLUDED.acciones_preventivas, acciones_falla=EXCLUDED.acciones_falla, fallas_funcionales=EXCLUDED.fallas_funcionales, causas_fallo=EXCLUDED.causas_fallo, efectos_fallo=EXCLUDED.efectos_fallo, efecto_entorno=EXCLUDED.efecto_entorno, observaciones=EXCLUDED.observaciones,
+                            red_salud_id=EXCLUDED.red_salud_id, red_salud_nombre=EXCLUDED.red_salud_nombre, centro_salud_id=EXCLUDED.centro_salud_id, centro_salud_nombre=EXCLUDED.centro_salud_nombre, municipio_nombre=EXCLUDED.municipio_nombre, departamento_nombre=EXCLUDED.departamento_nombre,
+                            sector_actual=EXCLUDED.sector_actual, persona_asignada=EXCLUDED.persona_asignada, cargo_asignado=EXCLUDED.cargo_asignado, ci_asignado=EXCLUDED.ci_asignado, codigo_sispam=EXCLUDED.codigo_sispam, bertin=EXCLUDED.bertin, sapm=EXCLUDED.sapm;
+                    """
+                    cur.execute(sql_q, {**eq_data, "red_salud_id": red_id, "centro_salud_id": cen_id})
+                    conn.commit()
+                    cur.close()
+                    conn.close()
+                    print(f"[OK] Equipo {eq_data.get('id')} guardado y sincronizado con éxito en la base de datos central.")
+                except Exception as err:
+                    print(f"[ERROR] Error al guardar equipo en PostgreSQL: {err}. Guardando en cola offline...")
+                    if conn:
+                        try:
                             conn.rollback()
                             conn.close()
+                        except: pass
+                    guardar_equipo_offline_cola(dict(eq_data))
 
             ejecutar_en_segundo_plano(_guardar_equipo_db, dict(eq_dict))
                 
@@ -2493,9 +3132,12 @@ class SistemaMantenimiento(ctk.CTk):
         f_grid_datos.grid_columnconfigure(2, weight=0)
         f_grid_datos.grid_columnconfigure(3, weight=1)
 
+        resp_txt = eq_act.get('persona_asignada') or '-'
+        cargo_txt = eq_act.get('cargo_asignado') or eq_act.get('cargo') or '-'
         datos_matriz = [
             ("Marca:", eq_act.get('marca', '-'), "Modelo:", eq_act.get('modelo', '-')),
             ("Código / AF:", str(eq_act['id']), "N° Serie:", str(eq_act.get('numero_serie', '-'))),
+            ("Responsable:", str(resp_txt), "Cargo:", str(cargo_txt)),
             ("Garantía:", str(eq_act.get('garantia', 'Sin Garantía')), "Año Fab.:", str(eq_act.get('anio_fab', '-'))),
             ("MTTR (Rep.):", mttr_str, "MTBF (Fallas):", mtbf_str)
         ]
@@ -3483,8 +4125,14 @@ class SistemaMantenimiento(ctk.CTk):
 # ARRANQUE OFICIAL DE LA APLICACIÓN
 # ========================================================
 if __name__ == "__main__":
-    inicializar_bd()
-    inicializar_usuarios()
+    try:
+        inicializar_bd()
+    except Exception as e_init:
+        print(f"[WARN] Error al inicializar esquema de BD: {e_init}")
+    try:
+        inicializar_usuarios()
+    except Exception as e_usr:
+        print(f"[WARN] Error al inicializar usuarios: {e_usr}")
     
     login_win = VentanaLogin()
     login_win.mainloop()

@@ -15,7 +15,7 @@ def obtener_conexion():
             "password": CONFIG["db_password"],
             "host": CONFIG["db_host"],
             "port": CONFIG["db_port"],
-            "connect_timeout": 10,
+            "connect_timeout": 4,
             "keepalives": 1,
             "keepalives_idle": 30,
             "keepalives_interval": 10,
@@ -32,20 +32,49 @@ def obtener_conexion():
         return None
 
 def inicializar_bd():
-    """Sistema de control de versiones de base de datos."""
+    """Sistema de control de versiones e inicialización segura de base de datos."""
     conn = obtener_conexion()
     if not conn:
+        print("[WARN] No se pudo conectar a la BD PostgreSQL central. Operando en modo local/offline...")
         return False
-    cur = conn.cursor()
-    
-    # 1. Tabla: esquema de versiones
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS schema_version (
-            version INTEGER PRIMARY KEY
-        );
-    """)
-    cur.execute("INSERT INTO schema_version (version) SELECT 0 WHERE NOT EXISTS (SELECT 1 FROM schema_version);")
+    try:
+        cur = conn.cursor()
+        
+        # 1. Tabla: esquema de versiones
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS schema_version (
+                version INTEGER PRIMARY KEY
+            );
+        """)
+        cur.execute("INSERT INTO schema_version (version) SELECT 0 WHERE NOT EXISTS (SELECT 1 FROM schema_version);")
+        cur.execute("SELECT MAX(version) FROM schema_version;")
+        version_row = cur.fetchone()
+        version_actual = version_row[0] if version_row and version_row[0] is not None else 0
 
+        # Comprobar si las tablas principales ya existen
+        cur.execute("SELECT to_regclass('public.equipos');")
+        tablas_existen = cur.fetchone()[0] is not None
+
+        if tablas_existen and version_actual >= 6:
+            # El esquema ya está completamente inicializado y en la última versión.
+            # Evita re-ejecutar docenas de ALTER TABLE / DDL en cada inicio, previniendo
+            # bloqueos (AccessExclusiveLock) y caídas de conexión con Supabase pooler.
+            cur.close()
+            conn.close()
+            return True
+
+        return _ejecutar_migraciones_completas(conn, cur, version_actual)
+    except Exception as e:
+        print(f"[WARN] Error no crítico durante la inicialización de la BD: {e}")
+        try:
+            if conn:
+                conn.rollback()
+                conn.close()
+        except:
+            pass
+        return False
+
+def _ejecutar_migraciones_completas(conn, cur, version_actual):
     # 2. Catálogo de modelos
     cur.execute("""
         CREATE TABLE IF NOT EXISTS catalogo (
@@ -78,6 +107,11 @@ def inicializar_bd():
         ALTER TABLE repuestos ADD COLUMN IF NOT EXISTS costo NUMERIC(12, 2) DEFAULT 0.00;
         ALTER TABLE repuestos ADD COLUMN IF NOT EXISTS caracteristicas TEXT;
         ALTER TABLE repuestos ADD COLUMN IF NOT EXISTS observaciones TEXT;
+        ALTER TABLE repuestos ADD COLUMN IF NOT EXISTS red_salud_nombre VARCHAR(150);
+        ALTER TABLE repuestos ADD COLUMN IF NOT EXISTS centro_salud_nombre VARCHAR(150);
+        ALTER TABLE repuestos ADD COLUMN IF NOT EXISTS area VARCHAR(150);
+        ALTER TABLE repuestos ADD COLUMN IF NOT EXISTS marca VARCHAR(100);
+        ALTER TABLE repuestos ADD COLUMN IF NOT EXISTS modelo VARCHAR(100);
     """)
 
     # 4. Jerarquía Territorial GAMLP y Áreas
@@ -121,38 +155,24 @@ def inicializar_bd():
         CREATE TABLE IF NOT EXISTS areas (
             id SERIAL PRIMARY KEY,
             centro_salud_id INTEGER REFERENCES centros_salud(id) ON DELETE SET NULL,
+            centro_salud_nombre VARCHAR(150),
+            red_salud_nombre VARCHAR(150),
             nombre VARCHAR(255) NOT NULL,
             piso VARCHAR(100),
             contacto VARCHAR(100),
-            encargado VARCHAR(255)
+            encargado VARCHAR(255),
+            cargo VARCHAR(150),
+            ci_encargado VARCHAR(50)
         );
     """)
+    cur.execute("ALTER TABLE areas ADD COLUMN IF NOT EXISTS centro_salud_id INTEGER REFERENCES centros_salud(id) ON DELETE SET NULL;")
+    cur.execute("ALTER TABLE areas ADD COLUMN IF NOT EXISTS centro_salud_nombre VARCHAR(150);")
+    cur.execute("ALTER TABLE areas ADD COLUMN IF NOT EXISTS red_salud_nombre VARCHAR(150);")
+    cur.execute("ALTER TABLE areas ADD COLUMN IF NOT EXISTS cargo VARCHAR(150);")
+    cur.execute("ALTER TABLE areas ADD COLUMN IF NOT EXISTS ci_encargado VARCHAR(50);")
     cur.execute("ALTER TABLE areas DROP CONSTRAINT IF EXISTS areas_nombre_key;")
-    
-    # Limpiar duplicados antes de aplicar la restricción UNIQUE
-    try:
-        cur.execute("""
-            DELETE FROM areas a USING areas b
-            WHERE a.id > b.id 
-              AND a.nombre = b.nombre 
-              AND COALESCE(a.piso, '') = COALESCE(b.piso, '');
-        """)
-        conn.commit()
-    except Exception as e_dedup:
-        conn.rollback()
-
-    try:
-        cur.execute("""
-            DO $$
-            BEGIN
-                IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'unique_nombre_piso') THEN
-                    ALTER TABLE areas ADD CONSTRAINT unique_nombre_piso UNIQUE (nombre, piso);
-                END IF;
-            END $$;
-        """)
-        conn.commit()
-    except Exception as e_cst:
-        conn.rollback()
+    cur.execute("ALTER TABLE areas DROP CONSTRAINT IF EXISTS unique_nombre_piso;")
+    conn.commit()
 
     # 5. Equipos
     cur.execute("""
@@ -296,9 +316,11 @@ def inicializar_bd():
             fecha_asignacion VARCHAR(50),
             tecnico_inventareador VARCHAR(200),
             persona_asignada VARCHAR(200),
+            cargo_asignado VARCHAR(150),
             ci_asignado VARCHAR(50),
-            tipo_activo VARCHAR(150),
+            tipo_activo VARCHAR(150) NOT NULL,
             descripcion TEXT,
+            marca VARCHAR(150),
             modelo VARCHAR(150),
             serie VARCHAR(150),
             detalle_transaccion VARCHAR(100),
@@ -311,9 +333,20 @@ def inicializar_bd():
             red_salud_id INTEGER REFERENCES redes_salud(id) ON DELETE SET NULL,
             centro_salud_id INTEGER REFERENCES centros_salud(id) ON DELETE SET NULL,
             estado VARCHAR(50) DEFAULT 'Activo',
+            estado_conservacion VARCHAR(50) DEFAULT 'Bueno',
             fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
     """)
+    cur.execute("ALTER TABLE muebleria ADD COLUMN IF NOT EXISTS estado_conservacion VARCHAR(50) DEFAULT 'Bueno';")
+    cur.execute("ALTER TABLE muebleria ADD COLUMN IF NOT EXISTS marca VARCHAR(150);")
+    cur.execute("ALTER TABLE muebleria ADD COLUMN IF NOT EXISTS cargo_asignado VARCHAR(150);")
+    cur.execute("ALTER TABLE equipos ADD COLUMN IF NOT EXISTS sector_actual VARCHAR(100);")
+    cur.execute("ALTER TABLE equipos ADD COLUMN IF NOT EXISTS persona_asignada VARCHAR(200);")
+    cur.execute("ALTER TABLE equipos ADD COLUMN IF NOT EXISTS cargo_asignado VARCHAR(150);")
+    cur.execute("ALTER TABLE equipos ADD COLUMN IF NOT EXISTS ci_asignado VARCHAR(50);")
+    cur.execute("ALTER TABLE equipos ADD COLUMN IF NOT EXISTS codigo_sispam VARCHAR(100);")
+    cur.execute("ALTER TABLE equipos ADD COLUMN IF NOT EXISTS bertin VARCHAR(100);")
+    cur.execute("ALTER TABLE equipos ADD COLUMN IF NOT EXISTS sapm VARCHAR(100);")
 
     # 10. Índices de optimización en PostgreSQL
     cur.execute("CREATE INDEX IF NOT EXISTS idx_equipos_nombre ON equipos(nombre);")
@@ -348,40 +381,6 @@ def inicializar_bd():
     except:
         pass
     conn.commit()
-
-    cur.execute("SELECT COUNT(*) FROM areas;")
-    if cur.fetchone()[0] == 0:
-        areas_iniciales = [
-            ("Especialidades Clinicas", "", "", ""),
-            ("Especialidades Quirurgicas", "", "", ""),
-            ("Pediatria", "", "", ""),
-            ("Gineco-Obstetricia", "", "", ""),
-            ("Consulta Externa", "", "", ""),
-            ("Neonatologia", "", "", ""),
-            ("Bloque Quirurgico", "", "", ""),
-            ("UCI-A", "", "", ""),
-            ("Partos", "", "", ""),
-            ("Emergencias", "", "", ""),
-            ("Imagenologia", "", "", ""),
-            ("Consuta Externa", "", "", ""),
-            ("Oncologia", "", "", ""),
-            ("Endoscopia", "", "", ""),
-            ("Hemodialisis", "", "", ""),
-            ("Tranfusional", "", "", ""),
-            ("Esterilizacion", "", "", ""),
-            ("Braquioterapia", "", "", ""),
-            ("Muelle de almacen", "", "", ""),
-            ("Parqueo", "", "", ""),
-            ("Laboratorio", "", "", ""),
-            ("Patologia", "", "", "")
-        ]
-        for name, floor, phone, manager in areas_iniciales:
-            cur.execute("""
-                INSERT INTO areas (nombre, piso, contacto, encargado)
-                VALUES (%s, %s, %s, %s)
-                ON CONFLICT (nombre, piso) DO NOTHING;
-            """, (name, floor, phone, manager))
-        conn.commit()
 
     # Sembrar Departamentos, Municipios, Redes y Centros de Salud de GAMLP
     try:
@@ -490,8 +489,6 @@ def inicializar_bd():
             cur.execute(f"SELECT setval(pg_get_serial_sequence('{ts}', 'id'), COALESCE((SELECT MAX(id) FROM \"{ts}\"), 1));")
         except Exception as e_seq:
             pass
-    conn.commit()
-
     cur.close()
     conn.close()
     return True
@@ -567,7 +564,7 @@ def sembrar_datos_sedes_gamlp(cur, conn):
             "NIÑO KOLLO", "ALCOREZA", "C.M.I VILLA NUEVO POTOSI", "LA GRUTA", 
             "BAJO SAN PEDRO", "EL ROSAL", "SANN LUIS", "BIBLIOTECA", 
             "BAJO TACAGUA", "TEMBLADERANI", "8 DE DICIEMBRE", 
-            "LLOJETA EL VERGEL", "PASANKERY", "ALTO TACAGUA"
+            "LLOJETA EL VERGEL", "PASANKERY", "ALTO TACAGUA", "167 AUXILIO"
         ],
         "RED-2": [
             "EL TEJAR", "CHAMOCO CHICO", "ALTO MCAL. SANTA CRUZ", "VILLA VICTORIA", 
@@ -607,8 +604,12 @@ def sembrar_datos_sedes_gamlp(cur, conn):
 
 _CACHE_JERARQUIA_SEDES = None
 
+def _obtener_ruta_cache_sedes():
+    db_host_key = str(CONFIG.get("db_host", "default")).replace(":", "_").replace("/", "_").replace(".", "_")
+    return os.path.join(os.path.expanduser("~"), f".gamlp_sedes_cache_{db_host_key}.json")
+
 def obtener_jerarquia_sedes_db(forzar_recarga=False):
-    """Obtiene la jerarquía completa de Departamentos, Municipios, Redes y Centros de Salud (con caché en memoria ultrarrápida)."""
+    """Obtiene la jerarquía completa de Departamentos, Municipios, Redes y Centros de Salud (con caché en memoria y disco persistente)."""
     global _CACHE_JERARQUIA_SEDES
     if _CACHE_JERARQUIA_SEDES and not forzar_recarga:
         return _CACHE_JERARQUIA_SEDES
@@ -617,6 +618,59 @@ def obtener_jerarquia_sedes_db(forzar_recarga=False):
     if not conn:
         if _CACHE_JERARQUIA_SEDES:
             return _CACHE_JERARQUIA_SEDES
+        # Intentar cargar desde el archivo de caché persistente en disco
+        ruta_s = _obtener_ruta_cache_sedes()
+        if os.path.exists(ruta_s):
+            try:
+                with open(ruta_s, "r", encoding="utf-8") as f:
+                    _CACHE_JERARQUIA_SEDES = json.load(f)
+                    if _CACHE_JERARQUIA_SEDES and _CACHE_JERARQUIA_SEDES.get("centros"):
+                        return _CACHE_JERARQUIA_SEDES
+            except Exception as e:
+                print(f"[WARN] Error al leer caché persistente de sedes: {e}")
+
+        # Fallback local desde centros_limpios.json si existe
+        try:
+            ruta_cj = os.path.join(os.path.dirname(os.path.abspath(__file__)), "centros_limpios.json")
+            if os.path.exists(ruta_cj):
+                with open(ruta_cj, "r", encoding="utf-8") as f:
+                    cl_data = json.load(f)
+                mapa_redes = {
+                    "RED 1": {"id": 1, "nombre": "RED 1-SUR OESTE (MACRODISTRITO COTAHUMA)", "codigo": "RED-1"},
+                    "RED 2": {"id": 2, "nombre": "RED 2-NOR OESTE (MACRODISTRITO MAX PAREDES)", "codigo": "RED-2"},
+                    "RED 3": {"id": 3, "nombre": "RED 3-NORTE CENTRAL (MACRODISTRITO PERIFERICA CENTRAL)", "codigo": "RED-3"},
+                    "RED 4": {"id": 4, "nombre": "RED 4-SAN ANTONIO (MACRODISTRITO SAN ANTONIO)", "codigo": "RED-4"},
+                    "RED 5": {"id": 5, "nombre": "RED 5-SUR (MACRODISTRITO SUR)", "codigo": "RED-5"}
+                }
+                c_list = []
+                for idx_c, (c_nom, c_info) in enumerate(cl_data.items(), start=1):
+                    r_str = str(c_info.get("red", "RED 1")).strip().upper()
+                    r_id = 1
+                    for rk, robj in mapa_redes.items():
+                        if rk in r_str:
+                            r_id = robj["id"]
+                            break
+                    nom_limpio = c_nom.replace("C.S.", "").replace("C.S ", "").strip()
+                    c_list.append({
+                        "id": idx_c,
+                        "red_salud_id": r_id,
+                        "nombre": nom_limpio if nom_limpio else c_nom,
+                        "nivel": "Primer Nivel",
+                        "direccion": "",
+                        "telefono": "",
+                        "responsable": "",
+                        "estado": "Activo"
+                    })
+                _CACHE_JERARQUIA_SEDES = {
+                    "departamentos": [{"id": 1, "nombre": "La Paz", "codigo": "LPZ", "estado": "Activo"}],
+                    "municipios": [{"id": 1, "departamento_id": 1, "nombre": "GAMLP", "codigo": "GAMLP", "estado": "Activo"}],
+                    "redes": list(mapa_redes.values()),
+                    "centros": c_list
+                }
+                return _CACHE_JERARQUIA_SEDES
+        except Exception as e_fallback:
+            print(f"[WARN] Error en fallback de sedes locales: {e_fallback}")
+
         return {
             "departamentos": [{"id": 1, "nombre": "La Paz", "codigo": "LPZ"}],
             "municipios": [{"id": 1, "departamento_id": 1, "nombre": "GAMLP", "codigo": "GAMLP"}],
@@ -627,15 +681,7 @@ def obtener_jerarquia_sedes_db(forzar_recarga=False):
                 {"id": 4, "municipio_id": 1, "nombre": "RED 4-SAN ANTONIO (MACRODISTRITO SAN ANTONIO)", "codigo": "RED-4"},
                 {"id": 5, "municipio_id": 1, "nombre": "RED 5-SUR (MACRODISTRITO SUR)", "codigo": "RED-5"},
             ],
-            "centros": [
-                {"id": 1, "red_salud_id": 5, "nombre": "C.M.I. CHASQUIPAMPA", "nivel": "Primer Nivel"},
-                {"id": 2, "red_salud_id": 5, "nombre": "BOLOGNIA", "nivel": "Primer Nivel"},
-                {"id": 3, "red_salud_id": 5, "nombre": "ACHUMANI", "nivel": "Primer Nivel"},
-                {"id": 4, "red_salud_id": 1, "nombre": "TEMBLADERANI", "nivel": "Primer Nivel"},
-                {"id": 5, "red_salud_id": 2, "nombre": "LA PORTADA", "nivel": "Primer Nivel"},
-                {"id": 6, "red_salud_id": 3, "nombre": "ACHACHICALA", "nivel": "Primer Nivel"},
-                {"id": 7, "red_salud_id": 4, "nombre": "KUPINI", "nivel": "Primer Nivel"},
-            ]
+            "centros": []
         }
     try:
         import psycopg2.extras
@@ -662,6 +708,13 @@ def obtener_jerarquia_sedes_db(forzar_recarga=False):
             "redes": redes,
             "centros": centros
         }
+        # Guardar en archivo local para uso offline
+        try:
+            with open(_obtener_ruta_cache_sedes(), "w", encoding="utf-8") as f:
+                json.dump(_CACHE_JERARQUIA_SEDES, f, indent=2)
+        except Exception as fe:
+            print(f"[WARN] No se pudo guardar caché persistente de sedes: {fe}")
+            
         return _CACHE_JERARQUIA_SEDES
     except Exception as e:
         print("[WARN] Error obteniendo jerarquía de sedes:", e)
@@ -892,36 +945,41 @@ def guardar_mueble_db(datos):
         ci_asignado = str(datos.get("ci_asignado") or "").strip()
         tipo_activo = str(datos.get("tipo_activo") or "COMPUTADORA").strip()
         descripcion = str(datos.get("descripcion") or "").strip()
+        marca = str(datos.get("marca") or "").strip()
         modelo = str(datos.get("modelo") or "").strip()
-        serie = str(datos.get("serie") or "").strip()
-        detalle_transaccion = str(datos.get("detalle_transaccion") or "ASIGNACION").strip()
-        codigo_sispam = str(datos.get("codigo_sispam") or "").strip()
-        bertin = str(datos.get("bertin") or "").strip()
-        sapm = str(datos.get("sapm") or "").strip()
+        serie = str(datos.get("serie") or "S/C").strip()
+        detalle_transaccion = str(datos.get("detalle_transaccion") or "Asignacion 2026").strip()
+        codigo_sispam = str(datos.get("codigo_sispam") or "S/C").strip()
+        bertin = str(datos.get("bertin") or "S/C").strip()
+        sapm = str(datos.get("sapm") or "S/C").strip()
         observaciones_de_asignacion = str(datos.get("observaciones_de_asignacion") or "").strip()
         ubicacion = str(datos.get("ubicacion") or "").strip()
         fecha_incorporacion = str(datos.get("fecha_incorporacion") or "").strip()
         red_salud_id = datos.get("red_salud_id")
         centro_salud_id = datos.get("centro_salud_id")
+        cargo_asignado = str(datos.get("cargo_asignado") or "").strip()
         estado = str(datos.get("estado") or "Activo").strip()
+        estado_conservacion = str(datos.get("estado_conservacion") or datos.get("estado_bien") or "Bueno").strip()
 
         if m_id:
             cur.execute("""
                 UPDATE muebleria
                 SET sector_actual = %s, direccion_administrativa = %s, unidad_organizacional = %s,
                     fecha_asignacion = %s, tecnico_inventareador = %s, persona_asignada = %s,
-                    ci_asignado = %s, tipo_activo = %s, descripcion = %s, modelo = %s,
+                    cargo_asignado = %s, ci_asignado = %s, tipo_activo = %s, descripcion = %s, marca = %s, modelo = %s,
                     serie = %s, detalle_transaccion = %s, codigo_sispam = %s, bertin = %s,
                     sapm = %s, observaciones_de_asignacion = %s, ubicacion = %s,
-                    fecha_incorporacion = %s, red_salud_id = %s, centro_salud_id = %s, estado = %s
+                    fecha_incorporacion = %s, red_salud_id = %s, centro_salud_id = %s, estado = %s,
+                    estado_conservacion = %s
                 WHERE id = %s;
             """, (
                 sector_actual, direccion_administrativa, unidad_organizacional,
                 fecha_asignacion, tecnico_inventareador, persona_asignada,
-                ci_asignado, tipo_activo, descripcion, modelo,
+                cargo_asignado, ci_asignado, tipo_activo, descripcion, marca, modelo,
                 serie, detalle_transaccion, codigo_sispam, bertin,
                 sapm, observaciones_de_asignacion, ubicacion,
-                fecha_incorporacion, red_salud_id, centro_salud_id, estado, m_id
+                fecha_incorporacion, red_salud_id, centro_salud_id, estado,
+                estado_conservacion, m_id
             ))
             ret_id = m_id
         else:
@@ -929,20 +987,22 @@ def guardar_mueble_db(datos):
                 INSERT INTO muebleria (
                     sector_actual, direccion_administrativa, unidad_organizacional,
                     fecha_asignacion, tecnico_inventareador, persona_asignada,
-                    ci_asignado, tipo_activo, descripcion, modelo,
+                    cargo_asignado, ci_asignado, tipo_activo, descripcion, marca, modelo,
                     serie, detalle_transaccion, codigo_sispam, bertin,
                     sapm, observaciones_de_asignacion, ubicacion,
-                    fecha_incorporacion, red_salud_id, centro_salud_id, estado
+                    fecha_incorporacion, red_salud_id, centro_salud_id, estado,
+                    estado_conservacion
                 ) VALUES (
-                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
                 ) RETURNING id;
             """, (
                 sector_actual, direccion_administrativa, unidad_organizacional,
                 fecha_asignacion, tecnico_inventareador, persona_asignada,
-                ci_asignado, tipo_activo, descripcion, modelo,
+                cargo_asignado, ci_asignado, tipo_activo, descripcion, marca, modelo,
                 serie, detalle_transaccion, codigo_sispam, bertin,
                 sapm, observaciones_de_asignacion, ubicacion,
-                fecha_incorporacion, red_salud_id, centro_salud_id, estado
+                fecha_incorporacion, red_salud_id, centro_salud_id, estado,
+                estado_conservacion
             ))
             ret_id = cur.fetchone()[0]
 
@@ -1003,12 +1063,13 @@ def importar_muebleria_db(lista_muebles):
                 INSERT INTO muebleria (
                     sector_actual, direccion_administrativa, unidad_organizacional,
                     fecha_asignacion, tecnico_inventareador, persona_asignada,
-                    ci_asignado, tipo_activo, descripcion, modelo,
+                    ci_asignado, tipo_activo, descripcion, marca, modelo,
                     serie, detalle_transaccion, codigo_sispam, bertin,
                     sapm, observaciones_de_asignacion, ubicacion,
-                    fecha_incorporacion, red_salud_id, centro_salud_id, estado
+                    fecha_incorporacion, red_salud_id, centro_salud_id, estado,
+                    estado_conservacion
                 ) VALUES (
-                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
                 );
             """, (
                 m.get("sector_actual", "SALUD"),
@@ -1020,18 +1081,20 @@ def importar_muebleria_db(lista_muebles):
                 m.get("ci_asignado", ""),
                 m.get("tipo_activo", "COMPUTADORA"),
                 m.get("descripcion", ""),
+                m.get("marca", ""),
                 m.get("modelo", ""),
-                m.get("serie", ""),
-                m.get("detalle_transaccion", "ASIGNACION"),
-                m.get("codigo_sispam", ""),
-                m.get("bertin", ""),
-                m.get("sapm", ""),
+                m.get("serie", "S/C") or "S/C",
+                m.get("detalle_transaccion", "Asignacion 2026") or "Asignacion 2026",
+                m.get("codigo_sispam", "S/C") or "S/C",
+                m.get("bertin", "S/C") or "S/C",
+                m.get("sapm", "S/C") or "S/C",
                 m.get("observaciones_de_asignacion", ""),
                 m.get("ubicacion", ""),
                 m.get("fecha_incorporacion", ""),
                 m.get("red_salud_id"),
                 m.get("centro_salud_id"),
-                m.get("estado", "Activo")
+                m.get("estado", "Activo"),
+                m.get("estado_conservacion") or m.get("estado_bien") or "Bueno"
             ))
             insertados += 1
         conn.commit()
@@ -1560,8 +1623,1264 @@ def sincronizar_mantenimientos_offline_cola():
         return sincronizados, f"Se sincronizaron {sincronizados} reportes pendientes."
     except Exception as e:
         print(f"[ERROR] Error durante sincronización offline: {e}")
+
+def _obtener_ruta_cola_equipos():
+    db_host_key = str(CONFIG.get("db_host", "default")).replace(":", "_").replace("/", "_").replace(".", "_")
+    return os.path.join(os.path.expanduser("~"), f".gamlp_offline_equipos_{db_host_key}.json")
+
+def _obtener_ruta_cola_muebles():
+    db_host_key = str(CONFIG.get("db_host", "default")).replace(":", "_").replace("/", "_").replace(".", "_")
+    return os.path.join(os.path.expanduser("~"), f".gamlp_offline_muebles_{db_host_key}.json")
+
+def _obtener_ruta_cola_areas():
+    db_host_key = str(CONFIG.get("db_host", "default")).replace(":", "_").replace("/", "_").replace(".", "_")
+    return os.path.join(os.path.expanduser("~"), f".gamlp_offline_areas_{db_host_key}.json")
+
+# =========================================================================
+# GENERADOR INTELIGENTE DE CÓDIGOS DE ACTIVO FIJO (AF)
+# Formato GAMLP: GAMLP-{RED}-{CENTRO}-{CORRELATIVO 6 DÍGITOS}
+# Ejemplo: GAMLP-R1-BSP-000001
+# =========================================================================
+
+def generar_codigo_red(nombre_red):
+    """Extrae el identificador de red en formato R1, R2, etc."""
+    if not nombre_red:
+        return "R1"
+    import re
+    m = re.search(r'RED\s*(\d+)', str(nombre_red), re.IGNORECASE)
+    if m:
+        return f"R{m.group(1)}"
+    m2 = re.search(r'(\d+)', str(nombre_red))
+    if m2:
+        return f"R{m2.group(1)}"
+    return "R1"
+
+def generar_sigla_centro(nombre_centro):
+    """
+    Genera las iniciales representativas del centro de salud.
+    Ejemplos:
+      'Bajo San Pedro' -> 'BSP'
+      'C.S. Bajo Tacagua' -> 'BT'
+      'C.S. 8 de Diciembre' -> '8D'
+      'Asistencia Publica' -> 'AP'
+      'Bolognia' -> 'BOL'
+    """
+    if not nombre_centro:
+        return "GEN"
+    import re
+    s = str(nombre_centro).upper().strip()
+    s = re.sub(r'^(C\.?S\.?M\.?I\.?|C\.?M\.?I\.?|C\.?S\.?|POSTA|HOSPITAL)\s*', '', s)
+    s = re.sub(r'[^\w\s]', ' ', s)
+    stopwords = {'DE', 'DEL', 'LA', 'EL', 'LOS', 'LAS', 'Y', 'EN', 'AL'}
+    palabras = [p for p in s.split() if p not in stopwords]
+    if not palabras:
+        palabras = [p for p in s.split() if p]
+    if not palabras:
+        return "GEN"
+    if len(palabras) == 1:
+        p = palabras[0]
+        return p[:3] if len(p) >= 3 else p
+    else:
+        return ''.join(p[0] for p in palabras)
+
+def generar_siguiente_codigo_af(red_nom, cen_nom, equipos_existentes=None, cola_offline=None):
+    """
+    Calcula el siguiente código de Activo Fijo (AF) asegurando que no colisione
+    con los equipos existentes en memoria local, en cola offline ni en la base central.
+    """
+    rcod = generar_codigo_red(red_nom)
+    csig = generar_sigla_centro(cen_nom)
+    prefijo = f"GAMLP-{rcod}-{csig}-"
+    numeros = []
+
+    # 1. Revisar equipos locales en memoria
+    if equipos_existentes:
+        for eq in equipos_existentes:
+            eq_id = str(eq.get("id") or "").strip().upper()
+            if eq_id.startswith(prefijo.upper()):
+                sufijo = eq_id[len(prefijo):]
+                if sufijo.isdigit():
+                    numeros.append(int(sufijo))
+
+    # 2. Revisar cola offline de equipos pendientes
+    if cola_offline is None:
+        cola_offline = obtener_cola_equipos_offline()
+    if cola_offline:
+        for eq in cola_offline:
+            eq_id = str(eq.get("id") or "").strip().upper()
+            if eq_id.startswith(prefijo.upper()):
+                sufijo = eq_id[len(prefijo):]
+                if sufijo.isdigit():
+                    numeros.append(int(sufijo))
+
+    # 3. Si hay conexión directa a PostgreSQL, consultar correlativo más alto
+    try:
+        conn = obtener_conexion()
+        if conn:
+            cur = conn.cursor()
+            cur.execute("SELECT id FROM equipos WHERE id LIKE %s;", (f"{prefijo}%",))
+            for row in cur.fetchall():
+                eq_id = str(row[0] or "").strip().upper()
+                if eq_id.startswith(prefijo.upper()):
+                    sufijo = eq_id[len(prefijo):]
+                    if sufijo.isdigit():
+                        numeros.append(int(sufijo))
+            cur.close()
+            conn.close()
+    except Exception:
+        pass
+
+    siguiente = max(numeros, default=0) + 1
+    return f"{prefijo}{siguiente:06d}"
+
+def obtener_areas_db(centro_nombre=None):
+    """Retorna las áreas registradas en el sistema, opcionalmente filtradas por centro de salud."""
+    conn = obtener_conexion()
+    if conn:
+        try:
+            cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+            if centro_nombre:
+                cur.execute("""
+                    SELECT id, nombre, piso, encargado, cargo, ci_encargado, contacto, centro_salud_nombre, red_salud_nombre 
+                    FROM areas 
+                    WHERE centro_salud_nombre = %s OR centro_salud_nombre ILIKE %s 
+                    ORDER BY piso DESC, nombre ASC;
+                """, (centro_nombre, f"%{centro_nombre}%"))
+            else:
+                cur.execute("""
+                    SELECT id, nombre, piso, encargado, cargo, ci_encargado, contacto, centro_salud_nombre, red_salud_nombre 
+                    FROM areas 
+                    ORDER BY piso DESC, nombre ASC;
+                """)
+            areas = [dict(r) for r in cur.fetchall()]
+            cur.close()
+            conn.close()
+            return areas
+        except Exception as e:
+            print(f"[WARN] Error al obtener áreas desde BD: {e}")
+            try: conn.close()
+            except: pass
+    return []
+
+def obtener_catalogo_equipos_db():
+    """Retorna los modelos de equipos médicos configurados en el catálogo central."""
+    conn = obtener_conexion()
+    if conn:
+        try:
+            cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+            cur.execute("SELECT * FROM catalogo ORDER BY nombre ASC;")
+            cats = [dict(r) for r in cur.fetchall()]
+            cur.close()
+            conn.close()
+            return cats
+        except Exception as e:
+            print(f"[WARN] Error al obtener catálogo de BD: {e}")
+            try: conn.close()
+            except: pass
+    return []
+
+def obtener_equipos_db(centro_nombre=None, limite=300):
+    """Retorna equipos médicos con todos sus campos para inventario y edición web."""
+    conn = obtener_conexion()
+    if conn:
+        try:
+            cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+            if centro_nombre and not str(centro_nombre).startswith("["):
+                cur.execute("""
+                    SELECT * FROM equipos 
+                    WHERE centro_salud_nombre = %s OR centro_salud_nombre ILIKE %s 
+                    ORDER BY id DESC LIMIT %s;
+                """, (centro_nombre, f"%{centro_nombre}%", limite))
+            else:
+                cur.execute("""
+                    SELECT * FROM equipos 
+                    ORDER BY id DESC LIMIT %s;
+                """, (limite,))
+            filas = cur.fetchall()
+            res = []
+            for r in filas:
+                d = dict(r)
+                for k, v in d.items():
+                    if hasattr(v, "isoformat"):
+                        d[k] = v.isoformat()
+                res.append(d)
+            cur.close()
+            conn.close()
+            return res
+        except Exception as e:
+            print(f"[WARN] Error al obtener equipos desde BD: {e}")
+            try: conn.close()
+            except: pass
+    return []
+
+def obtener_muebles_db(centro_nombre=None, limite=300):
+    """Retorna los activos de mueblería y computación con todos sus campos."""
+    conn = obtener_conexion()
+    if conn:
+        try:
+            cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+            if centro_nombre and not str(centro_nombre).startswith("["):
+                cur.execute("""
+                    SELECT * FROM muebleria 
+                    WHERE ubicacion ILIKE %s OR descripcion ILIKE %s OR unidad_organizacional ILIKE %s
+                    ORDER BY id DESC LIMIT %s;
+                """, (f"%{centro_nombre}%", f"%{centro_nombre}%", f"%{centro_nombre}%", limite))
+            else:
+                cur.execute("""
+                    SELECT * FROM muebleria 
+                    ORDER BY id DESC LIMIT %s;
+                """, (limite,))
+            filas = cur.fetchall()
+            res = []
+            for r in filas:
+                d = dict(r)
+                for k, v in d.items():
+                    if hasattr(v, "isoformat"):
+                        d[k] = v.isoformat()
+                res.append(d)
+            cur.close()
+            conn.close()
+            return res
+        except Exception as e:
+            print(f"[WARN] Error al obtener muebles desde BD: {e}")
+            try: conn.close()
+            except: pass
+    return []
+
+def guardar_area_db(datos):
+    """Inserta o actualiza un área en la base de datos PostgreSQL."""
+    conn = obtener_conexion()
+    a_dict = dict(datos)
+    if not conn:
+        guardar_area_offline_cola(a_dict)
+        return True, "Guardado en cola offline (sin conexión)"
+    try:
+        cur = conn.cursor()
+        cen_id = a_dict.get("centro_salud_id")
+        cen_nom = str(a_dict.get("centro_salud_nombre") or "").strip()
+        red_nom = str(a_dict.get("red_salud_nombre") or "").strip()
+        nom = str(a_dict.get("nombre") or "").strip()
+        piso = str(a_dict.get("piso") or "").strip()
+        contacto = str(a_dict.get("contacto") or "").strip()
+        encargado = str(a_dict.get("encargado") or "").strip()
+        cargo = str(a_dict.get("cargo") or "").strip()
+        ci_enc = str(a_dict.get("ci_encargado") or "").strip()
+
+        if not cen_id and cen_nom:
+            cur.execute("SELECT id FROM centros_salud WHERE nombre = %s OR nombre ILIKE %s LIMIT 1;", (cen_nom, f"%{cen_nom}%"))
+            c_row = cur.fetchone()
+            if c_row: cen_id = c_row[0]
+
+        a_id = a_dict.get("id")
+        if a_id:
+            cur.execute("""
+                UPDATE areas 
+                SET centro_salud_id=%s, centro_salud_nombre=%s, red_salud_nombre=%s,
+                    nombre=%s, piso=%s, contacto=%s, encargado=%s, cargo=%s, ci_encargado=%s 
+                WHERE id=%s;
+            """, (cen_id, cen_nom, red_nom, nom, piso, contacto, encargado, cargo, ci_enc, a_id))
+        else:
+            cur.execute("""
+                INSERT INTO areas (centro_salud_id, centro_salud_nombre, red_salud_nombre, nombre, piso, contacto, encargado, cargo, ci_encargado) 
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                RETURNING id;
+            """, (cen_id, cen_nom, red_nom, nom, piso, contacto, encargado, cargo, ci_enc))
+            new_id = cur.fetchone()[0]
+            a_dict["id"] = new_id
+
+        conn.commit()
+        cur.close()
+        conn.close()
+        return True, "Área guardada exitosamente"
+    except Exception as e:
+        if conn:
+            try: conn.rollback(); conn.close()
+            except: pass
+        guardar_area_offline_cola(a_dict)
+        return True, f"Guardado en cola offline: {e}"
+
+def guardar_catalogo_db(datos):
+    """Inserta o actualiza un modelo en el catálogo central."""
+    conn = obtener_conexion()
+    if not conn:
+        return False, "Sin conexión a la base de datos"
+    try:
+        cur = conn.cursor()
+        nom = str(datos.get("nombre") or "").strip()
+        mar = str(datos.get("marca") or "").strip()
+        mdl = str(datos.get("modelo") or "").strip()
+        ar = str(datos.get("area") or "").strip()
+        ps = str(datos.get("piso") or "").strip()
+
+        c_id = datos.get("id")
+        if c_id:
+            cur.execute("""
+                UPDATE catalogo 
+                SET nombre = %s, marca = %s, modelo = %s, area = %s, piso = %s 
+                WHERE id = %s;
+            """, (nom, mar, mdl, ar, ps, c_id))
+        else:
+            cur.execute("""
+                INSERT INTO catalogo (nombre, marca, modelo, area, piso) 
+                VALUES (%s, %s, %s, %s, %s)
+                RETURNING id;
+            """, (nom, mar, mdl, ar, ps))
+            c_id = cur.fetchone()[0]
+        conn.commit()
+        cur.close()
+        conn.close()
+        return True, c_id
+    except Exception as e:
+        if conn:
+            try: conn.rollback(); conn.close()
+            except: pass
+        return False, str(e)
+
+def obtener_repuestos_db(centro_nombre=None, limite=300):
+    """Retorna la lista de repuestos en stock."""
+    conn = obtener_conexion()
+    if conn:
+        try:
+            cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+            if centro_nombre and not str(centro_nombre).startswith("["):
+                cur.execute("""
+                    SELECT id, tipo_equipo, nombre_repuesto, red_salud_nombre, centro_salud_nombre,
+                           area, marca, modelo, modelo_parte, cantidad, costo, estado_disponibilidad,
+                           caracteristicas, observaciones, foto
+                    FROM repuestos 
+                    WHERE centro_salud_nombre = %s OR centro_salud_nombre ILIKE %s 
+                    ORDER BY nombre_repuesto ASC LIMIT %s;
+                """, (centro_nombre, f"%{centro_nombre}%", limite))
+            else:
+                cur.execute("""
+                    SELECT id, tipo_equipo, nombre_repuesto, red_salud_nombre, centro_salud_nombre,
+                           area, marca, modelo, modelo_parte, cantidad, costo, estado_disponibilidad,
+                           caracteristicas, observaciones, foto
+                    FROM repuestos 
+                    ORDER BY nombre_repuesto ASC LIMIT %s;
+                """, (limite,))
+            res = [dict(r) for r in cur.fetchall()]
+            cur.close()
+            conn.close()
+            return res
+        except Exception as e:
+            print(f"[WARN] Error al obtener repuestos desde BD: {e}")
+            try: conn.close()
+            except: pass
+    return []
+
+def guardar_repuesto_db(datos):
+    """Inserta o actualiza un repuesto en la base de datos."""
+    conn = obtener_conexion()
+    if not conn:
+        return False, "Sin conexión a la base de datos"
+    try:
+        cur = conn.cursor()
+        r = dict(datos)
+        t_eq = str(r.get("tipo_equipo") or "Médico").strip()
+        n_rep = str(r.get("nombre_repuesto") or "").strip()
+        red_r = str(r.get("red_salud_nombre") or "").strip()
+        cen_r = str(r.get("centro_salud_nombre") or "").strip()
+        area_r = str(r.get("area") or "").strip()
+        marca_r = str(r.get("marca") or "").strip()
+        mod_r = str(r.get("modelo") or "").strip()
+        mod_p = str(r.get("modelo_parte") or mod_r).strip()
+        cant_r = int(r.get("cantidad") or 1)
+        cos_r = float(r.get("costo") or 0.0)
+        est_r = str(r.get("estado_disponibilidad") or "En Stock").strip()
+        car_r = str(r.get("caracteristicas") or "").strip()
+        obs_r = str(r.get("observaciones") or "").strip()
+        fot_r = str(r.get("foto") or "").strip()
+
+        r_id = r.get("id")
+        if r_id:
+            cur.execute("""
+                UPDATE repuestos 
+                SET tipo_equipo=%s, nombre_repuesto=%s, red_salud_nombre=%s, centro_salud_nombre=%s, 
+                    area=%s, marca=%s, modelo=%s, modelo_parte=%s, cantidad=%s, 
+                    costo=%s, estado_disponibilidad=%s, caracteristicas=%s, observaciones=%s, foto=%s 
+                WHERE id=%s;
+            """, (t_eq, n_rep, red_r, cen_r, area_r, marca_r, mod_r, mod_p, cant_r, cos_r, est_r, car_r, obs_r, fot_r, r_id))
+        else:
+            cur.execute("""
+                INSERT INTO repuestos (tipo_equipo, nombre_repuesto, red_salud_nombre, centro_salud_nombre, area, marca, modelo, modelo_parte, cantidad, costo, estado_disponibilidad, caracteristicas, observaciones, foto) 
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                RETURNING id;
+            """, (t_eq, n_rep, red_r, cen_r, area_r, marca_r, mod_r, mod_p, cant_r, cos_r, est_r, car_r, obs_r, fot_r))
+            new_id = cur.fetchone()[0]
+            r["id"] = new_id
+
+        conn.commit()
+        cur.close()
+        conn.close()
+        return True, "Repuesto guardado exitosamente"
+    except Exception as e:
+        if conn:
+            try: conn.rollback(); conn.close()
+            except: pass
+        return False, str(e)
+
+def obtener_usuarios_db():
+    """Retorna la lista de usuarios registrados con sus roles, permisos y estado."""
+    conn = obtener_conexion()
+    if not conn:
+        return []
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute("""
+            SELECT id, nombre_usuario, nombre_completo, rol, activo, permisos, sello_firma
+            FROM usuarios
+            ORDER BY CASE WHEN rol='jefe' OR rol='administrador' OR rol='Administrador' THEN 0 ELSE 1 END, nombre_completo ASC
+        """)
+        filas = [dict(r) for r in cur.fetchall()]
+        cur.close()
+        conn.close()
+        for f in filas:
+            if isinstance(f.get("permisos"), str):
+                try: f["permisos"] = json.loads(f["permisos"])
+                except: f["permisos"] = {}
+            elif not f.get("permisos"):
+                f["permisos"] = {}
+        return filas
+    except Exception as e:
+        print(f"[ERROR] Error en obtener_usuarios_db: {e}")
+        try: conn.close()
+        except: pass
+        return []
+
+def guardar_usuario_permisos_db(datos):
+    """Crea o actualiza los datos, rol y matriz de permisos JSONB de un usuario."""
+    ci = str(datos.get("nombre_usuario") or "").strip()
+    nombre = str(datos.get("nombre_completo") or "").strip()
+    rol_raw = str(datos.get("rol") or "tecnico").strip()
+    rol = "jefe" if rol_raw.lower() in ["administrador", "admin", "jefe"] else rol_raw.lower()
+    password = str(datos.get("password") or "").strip()
+    permisos = datos.get("permisos") or {}
+    activo = bool(datos.get("activo", True))
+
+    if not ci or not nombre:
+        return False, "C.I. y Nombre Completo son requeridos."
+
+    conn = obtener_conexion()
+    if not conn:
+        return False, "Error conectando a la base de datos."
+
+    try:
+        from auth import hash_password
+        cur = conn.cursor()
+        cur.execute("SELECT id, password_hash FROM usuarios WHERE nombre_usuario = %s", (ci,))
+        row = cur.fetchone()
+
+        permisos_json = psycopg2.extras.Json(permisos)
+
+        if row:
+            if password:
+                pwd_h = hash_password(password)
+                cur.execute("""
+                    UPDATE usuarios
+                    SET nombre_completo = %s, rol = %s, permisos = %s, activo = %s, password_hash = %s
+                    WHERE nombre_usuario = %s
+                """, (nombre, rol, permisos_json, activo, pwd_h, ci))
+            else:
+                cur.execute("""
+                    UPDATE usuarios
+                    SET nombre_completo = %s, rol = %s, permisos = %s, activo = %s
+                    WHERE nombre_usuario = %s
+                """, (nombre, rol, permisos_json, activo, ci))
+        else:
+            if not password:
+                cur.close()
+                conn.close()
+                return False, "Debe proporcionar una contraseña para un nuevo usuario."
+            pwd_h = hash_password(password)
+            cur.execute("""
+                INSERT INTO usuarios (nombre_usuario, nombre_completo, password_hash, rol, permisos, activo)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            """, (ci, nombre, pwd_h, rol, permisos_json, activo))
+
+        conn.commit()
+        cur.close()
+        conn.close()
+        return True, "Usuario y permisos guardados exitosamente."
+    except Exception as e:
+        print(f"[ERROR] Error al guardar usuario/permisos: {e}")
+        try: conn.rollback(); conn.close()
+        except: pass
+        return False, str(e)
+
+def obtener_intervenciones_db(centro_nombre=None, equipo_id=None, limite=100):
+    """Retorna historial de intervenciones y mantenimientos técnicos."""
+    conn = obtener_conexion()
+    if not conn:
+        return []
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        params = []
+        where_clauses = []
+
+        if equipo_id:
+            where_clauses.append("h.equipo_id = %s")
+            params.append(str(equipo_id).strip())
+
+        if centro_nombre and not str(centro_nombre).startswith("["):
+            where_clauses.append("(e.centro_salud_nombre = %s OR e.centro_salud_nombre ILIKE %s)")
+            params.extend([centro_nombre, f"%{centro_nombre}%"])
+
+        where_sql = ("WHERE " + " AND ".join(where_clauses)) if where_clauses else ""
+        query = f"""
+            SELECT h.id, h.equipo_id, h.fecha, h.tipo, h.detalle, h.condicion, 
+                   h.estado_equipo, h.deficiencia, h.trabajo, h.observaciones, 
+                   h.fecha_entrega, h.hora_entrega, h.realizado_por, h.servicio_ht,
+                   h.repuesto_usado, h.repuesto_nombre, h.repuesto_cantidad,
+                   e.nombre as equipo_nombre, e.area as equipo_area, e.marca as equipo_marca, 
+                   e.modelo as equipo_modelo, e.centro_salud_nombre, e.red_salud_nombre
+            FROM historial_intervenciones h
+            LEFT JOIN equipos e ON h.equipo_id = e.id
+            {where_sql}
+            ORDER BY COALESCE(h.fecha_entrega, h.fecha) DESC, h.id DESC
+            LIMIT %s;
+        """
+        params.append(limite)
+        cur.execute(query, tuple(params))
+        filas = [dict(r) for r in cur.fetchall()]
+        cur.close()
+        conn.close()
+
+        for f in filas:
+            for k in ["fecha", "fecha_entrega"]:
+                if f.get(k) and hasattr(f[k], "strftime"):
+                    f[k] = f[k].strftime("%Y-%m-%d")
+        return filas
+    except Exception as e:
+        print(f"[ERROR] Error en obtener_intervenciones_db: {e}")
+        try: conn.close()
+        except: pass
+        return []
+
+def guardar_intervencion_db(datos):
+    """Guarda un registro de intervención / mantenimiento técnico en la BD."""
+    eq_id = str(datos.get("equipo_id") or "").strip()
+    if not eq_id:
+        return False, "Código de equipo médico es obligatorio."
+
+    conn = obtener_conexion()
+    if not conn:
+        return False, "Error conectando a la base de datos."
+
+    try:
+        cur = conn.cursor()
+        fec = datos.get("fecha") or date.today().strftime("%Y-%m-%d")
+        tip = str(datos.get("tipo") or "Mantenimiento Preventivo").strip()
+        det = str(datos.get("detalle") or "").strip()
+        con = str(datos.get("condicion") or "Operativo").strip()
+        est = str(datos.get("estado_equipo") or "Bueno").strip()
+        tra = str(datos.get("trabajo") or det).strip()
+        obs = str(datos.get("observaciones") or "").strip()
+        rea = str(datos.get("realizado_por") or "Técnico").strip()
+        hor = str(datos.get("hora_entrega") or datetime.now().strftime("%H:%M")).strip()
+        f_ent = datos.get("fecha_entrega") or fec
+        rep_u = bool(datos.get("repuesto_usado", False))
+        rep_n = str(datos.get("repuesto_nombre") or "").strip()
+        rep_c = int(datos.get("repuesto_cantidad") or 0)
+
+        i_id = datos.get("id")
+        if i_id:
+            cur.execute("""
+                UPDATE historial_intervenciones 
+                SET equipo_id = %s, fecha = %s, tipo = %s, detalle = %s, condicion = %s, 
+                    estado_equipo = %s, trabajo = %s, observaciones = %s, realizado_por = %s, 
+                    hora_entrega = %s, fecha_entrega = %s, repuesto_usado = %s, 
+                    repuesto_nombre = %s, repuesto_cantidad = %s
+                WHERE id = %s;
+            """, (eq_id, fec, tip, det, con, est, tra, obs, rea, hor, f_ent, rep_u, rep_n, rep_c, i_id))
+            new_id = i_id
+        else:
+            cur.execute("""
+                INSERT INTO historial_intervenciones (
+                    equipo_id, fecha, tipo, detalle, condicion, estado_equipo, trabajo,
+                    observaciones, realizado_por, hora_entrega, fecha_entrega,
+                    repuesto_usado, repuesto_nombre, repuesto_cantidad
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                RETURNING id;
+            """, (eq_id, fec, tip, det, con, est, tra, obs, rea, hor, f_ent, rep_u, rep_n, rep_c))
+            new_id = cur.fetchone()[0]
+
+        # Actualizar estado del equipo si se especificó
+        if est:
+            cur.execute("UPDATE equipos SET estado = %s WHERE id = %s", (est, eq_id))
+
+        conn.commit()
+        cur.close()
+        conn.close()
+        return True, new_id
+    except Exception as e:
+        print(f"[ERROR] Error al guardar intervención: {e}")
+        try: conn.rollback(); conn.close()
+        except: pass
+        return False, str(e)
+
+def eliminar_registro_db(tabla, id_registro, usuario="web_user"):
+    """
+    Elimina de forma segura un registro de cualquier módulo autorizado,
+    guardando un snapshot completo de respaldo en la tabla papelera.
+    """
+    tablas_validas = {
+        "equipos": "id",
+        "catalogo": "id",
+        "muebleria": "id",
+        "areas": "id",
+        "repuestos": "id",
+        "historial_intervenciones": "id",
+        "usuarios": "nombre_usuario"
+    }
+    t_clean = str(tabla).strip().lower()
+    if t_clean not in tablas_validas:
+        return False, f"La tabla '{tabla}' no está autorizada para eliminación segura."
+
+    campo_id = tablas_validas[t_clean]
+
+    conn = obtener_conexion()
+    if not conn:
+        return False, "Error de conexión con la base de datos central."
+
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute(f"SELECT * FROM {t_clean} WHERE {campo_id} = %s;", (id_registro,))
+        fila = cur.fetchone()
+        if not fila:
+            cur.close()
+            conn.close()
+            return False, f"El registro con ID '{id_registro}' no existe en {t_clean}."
+
+        fila_dict = dict(fila)
+        mover_a_papelera(cur, t_clean, id_registro, fila_dict, usuario=usuario)
+        cur.execute(f"DELETE FROM {t_clean} WHERE {campo_id} = %s;", (id_registro,))
+        conn.commit()
+        cur.close()
+        conn.close()
+        return True, f"Registro eliminado y respaldado en papelera de seguridad."
+    except Exception as e:
+        print(f"[ERROR] Error al eliminar en {t_clean}: {e}")
+        if conn:
+            try: conn.rollback(); conn.close()
+            except: pass
+        return False, str(e)
+
+def obtener_estadisticas_censo_db(centro_nombre=None):
+    """Calcula indicadores y métricas en vivo para la pestaña de Análisis."""
+    conn = obtener_conexion()
+    if not conn:
+        return {
+            "total_equipos": 0, "operativos": 0, "mantenimiento": 0, "baja": 0,
+            "criticidad_alta": 0, "criticidad_media": 0, "criticidad_baja": 0,
+            "total_muebles": 0, "total_repuestos": 0, "total_intervenciones": 0,
+            "areas_distribucion": []
+        }
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        filtro_eq = ""
+        params_eq = []
+        if centro_nombre and not str(centro_nombre).startswith("["):
+            filtro_eq = "WHERE centro_salud_nombre = %s OR centro_salud_nombre ILIKE %s"
+            params_eq = [centro_nombre, f"%{centro_nombre}%"]
+
+        # Equipos por estado y criticidad
+        sql_eq = f"""
+            SELECT 
+                COUNT(*) as total,
+                COUNT(*) FILTER (WHERE estado ILIKE 'Bueno' OR estado ILIKE 'Operativo') as operativos,
+                COUNT(*) FILTER (WHERE estado ILIKE 'Regular' OR estado ILIKE '%%Mantenimiento%%') as mantenimiento,
+                COUNT(*) FILTER (WHERE estado ILIKE 'Malo' OR estado ILIKE '%%Baja%%' OR estado ILIKE '%%Inoperativo%%') as baja,
+                COUNT(*) FILTER (WHERE criticidad ILIKE 'Alta') as crit_alta,
+                COUNT(*) FILTER (WHERE criticidad ILIKE 'Media') as crit_media,
+                COUNT(*) FILTER (WHERE criticidad ILIKE 'Baja') as crit_baja
+            FROM equipos {filtro_eq};
+        """
+        if params_eq:
+            cur.execute(sql_eq, tuple(params_eq))
+        else:
+            cur.execute(sql_eq)
+        row_eq = cur.fetchone() or {}
+
+        # Muebles
+        filtro_mu = ""
+        params_mu = []
+        if centro_nombre and not str(centro_nombre).startswith("["):
+            filtro_mu = "WHERE ubicacion ILIKE %s"
+            params_mu = [f"%{centro_nombre}%"]
+        sql_mu = f"SELECT COUNT(*) FROM muebleria {filtro_mu};"
+        if params_mu:
+            cur.execute(sql_mu, tuple(params_mu))
+        else:
+            cur.execute(sql_mu)
+        tot_muebles = cur.fetchone()[0] or 0
+
+        # Repuestos
+        filtro_rep = ""
+        params_rep = []
+        if centro_nombre and not str(centro_nombre).startswith("["):
+            filtro_rep = "WHERE centro_salud_nombre = %s OR centro_salud_nombre ILIKE %s"
+            params_rep = [centro_nombre, f"%{centro_nombre}%"]
+        sql_rep = f"SELECT COUNT(*) FROM repuestos {filtro_rep};"
+        if params_rep:
+            cur.execute(sql_rep, tuple(params_rep))
+        else:
+            cur.execute(sql_rep)
+        tot_repuestos = cur.fetchone()[0] or 0
+
+        # Intervenciones
+        sql_inter = f"""
+            SELECT COUNT(*) FROM historial_intervenciones h
+            LEFT JOIN equipos e ON h.equipo_id = e.id
+            {filtro_eq.replace('centro_salud_nombre', 'e.centro_salud_nombre')};
+        """
+        if params_eq:
+            cur.execute(sql_inter, tuple(params_eq))
+        else:
+            cur.execute(sql_inter)
+        tot_intervenciones = cur.fetchone()[0] or 0
+
+        # Distribución de equipos por área
+        sql_dist = f"""
+            SELECT COALESCE(area, 'Sin Área') as area_nombre, COUNT(*) as cantidad
+            FROM equipos {filtro_eq}
+            GROUP BY COALESCE(area, 'Sin Área')
+            ORDER BY cantidad DESC LIMIT 8;
+        """
+        if params_eq:
+            cur.execute(sql_dist, tuple(params_eq))
+        else:
+            cur.execute(sql_dist)
+        dist_areas = [dict(r) for r in cur.fetchall()]
+
+        cur.close()
+        conn.close()
+
+        return {
+            "total_equipos": row_eq.get("total", 0) or 0,
+            "operativos": row_eq.get("operativos", 0) or 0,
+            "mantenimiento": row_eq.get("mantenimiento", 0) or 0,
+            "baja": row_eq.get("baja", 0) or 0,
+            "criticidad_alta": row_eq.get("crit_alta", 0) or 0,
+            "criticidad_media": row_eq.get("crit_media", 0) or 0,
+            "criticidad_baja": row_eq.get("crit_baja", 0) or 0,
+            "total_muebles": tot_muebles,
+            "total_repuestos": tot_repuestos,
+            "total_intervenciones": tot_intervenciones,
+            "areas_distribucion": dist_areas
+        }
+    except Exception as e:
+        print(f"[ERROR] Error en obtener_estadisticas_censo_db: {e}")
+        try: conn.close()
+        except: pass
+        return {
+            "total_equipos": 0, "operativos": 0, "mantenimiento": 0, "baja": 0,
+            "criticidad_alta": 0, "criticidad_media": 0, "criticidad_baja": 0,
+            "total_muebles": 0, "total_repuestos": 0, "total_intervenciones": 0,
+            "areas_distribucion": []
+        }
+
+def guardar_equipo_db(eq_data):
+    """
+    Inserta o actualiza un equipo médico en la base de datos PostgreSQL.
+    Si el equipo es nuevo y el código AF colisiona con uno existente, calcula automáticamente
+    el siguiente correlativo libre (evitando sobrescribir registros creados por otros técnicos).
+    Si no hay conexión a la base de datos, guarda el registro en la cola offline local.
+    Retorna: (exito: bool, id_guardado: str, mensaje: str)
+    """
+    from datetime import date
+    eq = dict(eq_data)
+    r_nom = str(eq.get("red_salud_nombre") or "").strip()
+    c_nom = str(eq.get("centro_salud_nombre") or "").strip()
+    eq_id = str(eq.get("id") or "").strip()
+
+    # Si la imagen viene en base64 y es grande, comprimirla
+    foto = eq.get("foto") or ""
+    if foto and len(foto) > 50000:
+        foto = comprimir_imagen_base64(foto)
+        eq["foto"] = foto
+
+    conn = obtener_conexion()
+    if not conn:
+        # Modo Offline
+        if not eq_id and r_nom and c_nom:
+            eq_id = generar_siguiente_codigo_af(r_nom, c_nom)
+            eq["id"] = eq_id
+        guardar_equipo_offline_cola(eq)
+        return True, eq_id, "Guardado en cola offline del dispositivo (sin conexión a servidor central)"
+
+    try:
+        cur = conn.cursor()
+        red_id = eq.get("red_salud_id")
+        cen_id = eq.get("centro_salud_id")
+
+        if not red_id and r_nom:
+            cur.execute("SELECT id FROM redes_salud WHERE nombre = %s OR codigo = %s OR nombre ILIKE %s LIMIT 1;", 
+                        (r_nom, eq.get("red_salud_nombre", ""), f"%{r_nom}%"))
+            r_row = cur.fetchone()
+            if r_row: red_id = r_row[0]
+
+        if not cen_id and c_nom:
+            cur.execute("SELECT id FROM centros_salud WHERE nombre = %s OR nombre ILIKE %s LIMIT 1;", 
+                        (c_nom, f"%{c_nom}%"))
+            c_row = cur.fetchone()
+            if c_row: cen_id = c_row[0]
+
+        # Anticolisión: si es un nuevo registro y el ID ya existe en BD, autoincrementar correlativo
+        es_edicion = bool(eq.get("_es_edicion", False))
+        if not es_edicion:
+            if eq_id:
+                cur.execute("SELECT 1 FROM equipos WHERE id = %s;", (eq_id,))
+                if cur.fetchone():
+                    eq_id = generar_siguiente_codigo_af(r_nom, c_nom)
+                    eq["id"] = eq_id
+            elif r_nom and c_nom:
+                eq_id = generar_siguiente_codigo_af(r_nom, c_nom)
+                eq["id"] = eq_id
+        hoy_str = date.today().strftime('%Y-%m-%d')
+        cat_det = eq.get("categorizacion_detalle")
+        if not cat_det:
+            cat_det_val = psycopg2.extras.Json({})
+        elif isinstance(cat_det, (dict, list)):
+            cat_det_val = psycopg2.extras.Json(cat_det)
+        elif isinstance(cat_det, str) and cat_det.strip():
+            try:
+                cat_det_val = psycopg2.extras.Json(json.loads(cat_det))
+            except Exception:
+                cat_det_val = psycopg2.extras.Json({})
+        else:
+            cat_det_val = psycopg2.extras.Json({})
+
+        f_venc_gar = str(eq.get("fecha_vencimiento_garantia") or "").strip() or None
+        f_ini_gar = str(eq.get("fecha_inicio_garantia") or "").strip() or None
+
+        campos = {
+            "id": eq_id,
+            "nombre": str(eq.get("nombre") or "").strip(),
+            "marca": str(eq.get("marca") or "").strip(),
+            "modelo": str(eq.get("modelo") or "").strip(),
+            "servicio": str(eq.get("servicio") or "").strip(),
+            "area": str(eq.get("area") or "").strip(),
+            "procedencia": str(eq.get("procedencia") or "").strip(),
+            "fabricante": str(eq.get("fabricante") or "").strip(),
+            "proveedor": str(eq.get("proveedor") or "").strip(),
+            "anio_fab": str(eq.get("anio_fab") or "").strip(),
+            "t_elec": bool(eq.get("t_elec")),
+            "t_elco": bool(eq.get("t_elco")),
+            "t_mec": bool(eq.get("t_mec")),
+            "t_hid": bool(eq.get("t_hid")),
+            "t_neu": bool(eq.get("t_neu")),
+            "t_vap": bool(eq.get("t_vap")),
+            "a_comp": bool(eq.get("a_comp")),
+            "a_como": bool(eq.get("a_como")),
+            "a_don": bool(eq.get("a_don")),
+            "te_fijo": bool(eq.get("te_fijo")),
+            "te_mov": bool(eq.get("te_mov")),
+            "te_por": bool(eq.get("te_por")),
+            "garantia": str(eq.get("garantia") or "No").strip(),
+            "criticidad": str(eq.get("criticidad") or "Media").strip(),
+            "categorizacion_detalle": cat_det_val,
+            "estado": str(eq.get("estado") or "Bueno").strip(),
+            "fecha_adquisicion": str(eq.get("fecha_adquisicion") or hoy_str).strip(),
+            "fecha_registro": str(eq.get("fecha_registro") or hoy_str).strip(),
+            "foto": foto,
+            "fecha_vencimiento_garantia": f_venc_gar,
+            "numero_serie": str(eq.get("numero_serie") or "S/C").strip(),
+            "fecha_inicio_garantia": f_ini_gar,
+            "costo": str(eq.get("costo") or "0").strip(),
+            "voltaje": str(eq.get("voltaje") or "").strip(),
+            "corriente": str(eq.get("corriente") or "").strip(),
+            "potencia": str(eq.get("potencia") or "").strip(),
+            "vida_util": str(eq.get("vida_util") or "").strip(),
+            "temperatura": str(eq.get("temperatura") or "").strip(),
+            "peso": str(eq.get("peso") or "").strip(),
+            "dimensiones": str(eq.get("dimensiones") or "").strip(),
+            "bateria_respaldo": str(eq.get("bateria_respaldo") or "").strip(),
+            "resolucion": str(eq.get("resolucion") or "").strip(),
+            "version_software": str(eq.get("version_software") or "").strip(),
+            "humedad": str(eq.get("humedad") or "").strip(),
+            "suministro_gases": str(eq.get("suministro_gases") or "").strip(),
+            "contexto_operacional": str(eq.get("contexto_operacional") or "").strip(),
+            "funciones_equipo": str(eq.get("funciones_equipo") or "").strip(),
+            "acciones_preventivas": str(eq.get("acciones_preventivas") or "").strip(),
+            "acciones_falla": str(eq.get("acciones_falla") or "").strip(),
+            "fallas_funcionales": str(eq.get("fallas_funcionales") or "").strip(),
+            "causas_fallo": str(eq.get("causas_fallo") or "").strip(),
+            "efectos_fallo": str(eq.get("efectos_fallo") or "").strip(),
+            "efecto_entorno": str(eq.get("efecto_entorno") or "").strip(),
+            "observaciones": str(eq.get("observaciones") or "").strip(),
+            "red_salud_id": red_id,
+            "red_salud_nombre": r_nom,
+            "centro_salud_id": cen_id,
+            "centro_salud_nombre": c_nom,
+            "municipio_nombre": str(eq.get("municipio_nombre") or "La Paz").strip(),
+            "departamento_nombre": str(eq.get("departamento_nombre") or "La Paz").strip(),
+            "sector_actual": str(eq.get("sector_actual") or "SALUD").strip(),
+            "persona_asignada": str(eq.get("persona_asignada") or "").strip(),
+            "cargo_asignado": str(eq.get("cargo_asignado") or "").strip(),
+            "ci_asignado": str(eq.get("ci_asignado") or "").strip(),
+            "codigo_sispam": str(eq.get("codigo_sispam") or "S/C").strip(),
+            "bertin": str(eq.get("bertin") or "S/C").strip(),
+            "sapm": str(eq.get("sapm") or "S/C").strip(),
+        }
+
+        sql_ins = """
+            INSERT INTO equipos (
+                id, nombre, marca, modelo, servicio, area, procedencia, fabricante, proveedor, anio_fab,
+                t_elec, t_elco, t_mec, t_hid, t_neu, t_vap, a_comp, a_como, a_don, te_fijo, te_mov, te_por, garantia, criticidad, categorizacion_detalle, estado, fecha_adquisicion, fecha_registro, foto, fecha_vencimiento_garantia, numero_serie, fecha_inicio_garantia, costo,
+                voltaje, corriente, potencia, vida_util, temperatura, peso, dimensiones, bateria_respaldo, resolucion, version_software, humedad, suministro_gases, contexto_operacional, funciones_equipo, acciones_preventivas, acciones_falla, fallas_funcionales, causas_fallo, efectos_fallo, efecto_entorno, observaciones,
+                red_salud_id, red_salud_nombre, centro_salud_id, centro_salud_nombre, municipio_nombre, departamento_nombre,
+                sector_actual, persona_asignada, cargo_asignado, ci_asignado, codigo_sispam, bertin, sapm
+            )
+            VALUES (
+                %(id)s, %(nombre)s, %(marca)s, %(modelo)s, %(servicio)s, %(area)s, %(procedencia)s, %(fabricante)s, %(proveedor)s, %(anio_fab)s,
+                %(t_elec)s, %(t_elco)s, %(t_mec)s, %(t_hid)s, %(t_neu)s, %(t_vap)s, %(a_comp)s, %(a_como)s, %(a_don)s, %(te_fijo)s, %(te_mov)s, %(te_por)s, %(garantia)s, %(criticidad)s, %(categorizacion_detalle)s, %(estado)s, %(fecha_adquisicion)s, %(fecha_registro)s, %(foto)s, %(fecha_vencimiento_garantia)s, %(numero_serie)s, %(fecha_inicio_garantia)s, %(costo)s,
+                %(voltaje)s, %(corriente)s, %(potencia)s, %(vida_util)s, %(temperatura)s, %(peso)s, %(dimensiones)s, %(bateria_respaldo)s, %(resolucion)s, %(version_software)s, %(humedad)s, %(suministro_gases)s, %(contexto_operacional)s, %(funciones_equipo)s, %(acciones_preventivas)s, %(acciones_falla)s, %(fallas_funcionales)s, %(causas_fallo)s, %(efectos_fallo)s, %(efecto_entorno)s, %(observaciones)s,
+                %(red_salud_id)s, %(red_salud_nombre)s, %(centro_salud_id)s, %(centro_salud_nombre)s, %(municipio_nombre)s, %(departamento_nombre)s,
+                %(sector_actual)s, %(persona_asignada)s, %(cargo_asignado)s, %(ci_asignado)s, %(codigo_sispam)s, %(bertin)s, %(sapm)s
+            )
+            ON CONFLICT (id) DO UPDATE SET
+                nombre=EXCLUDED.nombre, marca=EXCLUDED.marca, modelo=EXCLUDED.modelo, servicio=EXCLUDED.servicio, area=EXCLUDED.area, procedencia=EXCLUDED.procedencia, fabricante=EXCLUDED.fabricante, proveedor=EXCLUDED.proveedor, anio_fab=EXCLUDED.anio_fab,
+                t_elec=EXCLUDED.t_elec, t_elco=EXCLUDED.t_elco, t_mec=EXCLUDED.t_mec, t_hid=EXCLUDED.t_hid, t_neu=EXCLUDED.t_neu, t_vap=EXCLUDED.t_vap, a_comp=EXCLUDED.a_comp, a_como=EXCLUDED.a_como, a_don=EXCLUDED.a_don,
+                te_fijo=EXCLUDED.te_fijo, te_mov=EXCLUDED.te_mov, te_por=EXCLUDED.te_por, garantia=EXCLUDED.garantia, criticidad=EXCLUDED.criticidad, categorizacion_detalle=EXCLUDED.categorizacion_detalle, estado=EXCLUDED.estado, fecha_adquisicion=EXCLUDED.fecha_adquisicion, foto=EXCLUDED.foto, fecha_vencimiento_garantia=EXCLUDED.fecha_vencimiento_garantia, numero_serie=EXCLUDED.numero_serie, fecha_inicio_garantia=EXCLUDED.fecha_inicio_garantia, costo=EXCLUDED.costo,
+                voltaje=EXCLUDED.voltaje, corriente=EXCLUDED.corriente, potencia=EXCLUDED.potencia, vida_util=EXCLUDED.vida_util, temperatura=EXCLUDED.temperatura, peso=EXCLUDED.peso, dimensiones=EXCLUDED.dimensiones, bateria_respaldo=EXCLUDED.bateria_respaldo, resolucion=EXCLUDED.resolucion, version_software=EXCLUDED.version_software, humedad=EXCLUDED.humedad, suministro_gases=EXCLUDED.suministro_gases, contexto_operacional=EXCLUDED.contexto_operacional, funciones_equipo=EXCLUDED.funciones_equipo, acciones_preventivas=EXCLUDED.acciones_preventivas, acciones_falla=EXCLUDED.acciones_falla, fallas_funcionales=EXCLUDED.fallas_funcionales, causas_fallo=EXCLUDED.causas_fallo, efectos_fallo=EXCLUDED.efectos_fallo, efecto_entorno=EXCLUDED.efecto_entorno, observaciones=EXCLUDED.observaciones,
+                red_salud_id=EXCLUDED.red_salud_id, red_salud_nombre=EXCLUDED.red_salud_nombre, centro_salud_id=EXCLUDED.centro_salud_id, centro_salud_nombre=EXCLUDED.centro_salud_nombre, municipio_nombre=EXCLUDED.municipio_nombre, departamento_nombre=EXCLUDED.departamento_nombre,
+                sector_actual=EXCLUDED.sector_actual, persona_asignada=EXCLUDED.persona_asignada, cargo_asignado=EXCLUDED.cargo_asignado, ci_asignado=EXCLUDED.ci_asignado, codigo_sispam=EXCLUDED.codigo_sispam, bertin=EXCLUDED.bertin, sapm=EXCLUDED.sapm;
+        """
+        cur.execute(sql_ins, campos)
+        conn.commit()
+        cur.close()
+        conn.close()
+        return True, eq_id, "Equipo guardado y sincronizado exitosamente con la base de datos central"
+    except Exception as err:
+        print(f"[WARN] Error al guardar equipo en PostgreSQL: {err}. Guardando en cola offline...")
+        if conn:
+            try:
+                conn.rollback()
+                conn.close()
+            except: pass
+        guardar_equipo_offline_cola(eq)
+        return True, eq_id, f"Guardado en cola offline: {err}"
+
+# =========================================================================
+# COLAS DE SINCRONIZACIÓN OFFLINE (EQUIPOS, MUEBLERÍA, ÁREAS)
+# =========================================================================
+
+def guardar_equipo_offline_cola(equipo_dict):
+    """Almacena un equipo registrado o editado offline en la cola de sincronización."""
+    import os, json
+    ruta = _obtener_ruta_cola_equipos()
+    try:
+        cola = []
+        if os.path.exists(ruta):
+            with open(ruta, "r", encoding="utf-8") as f:
+                cola = json.load(f)
+        idx_existente = next((i for i, item in enumerate(cola) if str(item.get("id")) == str(equipo_dict.get("id"))), None)
+        if idx_existente is not None:
+            cola[idx_existente] = equipo_dict
+        else:
+            cola.append(equipo_dict)
+        with open(ruta, "w", encoding="utf-8") as f:
+            json.dump(cola, f, cls=DateTimeEncoder, indent=2)
+        print(f"[OFFLINE] Equipo {equipo_dict.get('id')} guardado en cola local.")
+        return True
+    except Exception as e:
+        print(f"[ERROR] Error al guardar equipo en cola offline: {e}")
+        return False
+
+def obtener_cola_equipos_offline():
+    """Retorna la lista de equipos pendientes en la cola offline."""
+    import os, json
+    ruta = _obtener_ruta_cola_equipos()
+    if not os.path.exists(ruta):
+        return []
+    try:
+        with open(ruta, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except:
+        return []
+
+def sincronizar_equipos_offline_cola(callback_actualizar_local=None):
+    """
+    Sube a PostgreSQL todos los equipos registrados o editados offline.
+    Si se detecta que un ID ya fue ocupado en línea, ajusta sumando +1 automáticamente
+    hasta encontrar uno libre para garantizar que NUNCA ocurra error de duplicidad.
+    """
+    import os, json
+    ruta = _obtener_ruta_cola_equipos()
+    if not os.path.exists(ruta):
+        return 0, "No hay equipos pendientes."
+    
+    conn = obtener_conexion()
+    if not conn:
+        return 0, "Sin conexión al servidor."
+
+    try:
+        with open(ruta, "r", encoding="utf-8") as f:
+            cola = json.load(f)
+        if not cola:
+            return 0, "Cola vacía."
+
+        cur = conn.cursor()
+        sincronizados = 0
+        pendientes_restantes = []
+        cambios_id = {}
+
+        for eq_data in cola:
+            try:
+                id_actual = eq_data.get("id")
+                # Verificar colisión en base de datos central
+                cur.execute("SELECT id FROM equipos WHERE id = %s;", (id_actual,))
+                existe_en_db = cur.fetchone()
+                
+                if existe_en_db and eq_data.get("_es_nuevo", True):
+                    r_nom = eq_data.get("red_salud_nombre")
+                    c_nom = eq_data.get("centro_salud_nombre")
+                    rcod = generar_codigo_red(r_nom)
+                    csig = generar_sigla_centro(c_nom)
+                    prefijo = f"GAMLP-{rcod}-{csig}-"
+                    
+                    cur.execute("SELECT id FROM equipos WHERE id LIKE %s;", (f"{prefijo}%",))
+                    nums_bd = []
+                    for row in cur.fetchall():
+                        suf = str(row[0])[len(prefijo):]
+                        if suf.isdigit():
+                            nums_bd.append(int(suf))
+                    siguiente_num = max(nums_bd, default=0) + 1
+                    nuevo_id = f"{prefijo}{siguiente_num:06d}"
+                    while True:
+                        cur.execute("SELECT id FROM equipos WHERE id = %s;", (nuevo_id,))
+                        if not cur.fetchone():
+                            break
+                        siguiente_num += 1
+                        nuevo_id = f"{prefijo}{siguiente_num:06d}"
+
+                    print(f"[RESOLUCION COLISION] Equipo {id_actual} reasignado a {nuevo_id} para evitar duplicidad.")
+                    cambios_id[id_actual] = nuevo_id
+                    eq_data["id"] = nuevo_id
+
+                red_id = None
+                cen_id = None
+                if eq_data.get("red_salud_nombre"):
+                    cur.execute("SELECT id FROM redes_salud WHERE nombre = %s OR codigo = %s OR nombre ILIKE %s LIMIT 1;", 
+                                (eq_data["red_salud_nombre"], eq_data.get("red_salud_nombre", ""), f"%{eq_data['red_salud_nombre']}%"))
+                    r_row = cur.fetchone()
+                    if r_row: red_id = r_row[0]
+                    
+                if eq_data.get("centro_salud_nombre"):
+                    cur.execute("SELECT id FROM centros_salud WHERE nombre = %s OR nombre ILIKE %s LIMIT 1;", 
+                                (eq_data["centro_salud_nombre"], f"%{eq_data['centro_salud_nombre']}%"))
+                    c_row = cur.fetchone()
+                    if c_row: cen_id = c_row[0]
+
+                sql_ins = """
+                    INSERT INTO equipos (
+                        id, nombre, marca, modelo, servicio, area, procedencia, fabricante, proveedor, anio_fab,
+                        t_elec, t_elco, t_mec, t_hid, t_neu, t_vap, a_comp, a_como, a_don, te_fijo, te_mov, te_por, garantia, criticidad, categorizacion_detalle, estado, fecha_adquisicion, fecha_registro, foto, fecha_vencimiento_garantia, numero_serie, fecha_inicio_garantia, costo,
+                        voltaje, corriente, potencia, vida_util, temperatura, peso, dimensiones, bateria_respaldo, resolucion, version_software, humedad, suministro_gases, contexto_operacional, funciones_equipo, acciones_preventivas, acciones_falla, fallas_funcionales, causas_fallo, efectos_fallo, efecto_entorno, observaciones,
+                        red_salud_id, red_salud_nombre, centro_salud_id, centro_salud_nombre, municipio_nombre, departamento_nombre,
+                        sector_actual, persona_asignada, cargo_asignado, ci_asignado, codigo_sispam, bertin, sapm
+                    )
+                    VALUES (
+                        %(id)s, %(nombre)s, %(marca)s, %(modelo)s, %(servicio)s, %(area)s, %(procedencia)s, %(fabricante)s, %(proveedor)s, %(anio_fab)s,
+                        %(t_elec)s, %(t_elco)s, %(t_mec)s, %(t_hid)s, %(t_neu)s, %(t_vap)s, %(a_comp)s, %(a_como)s, %(a_don)s, %(te_fijo)s, %(te_mov)s, %(te_por)s, %(garantia)s, %(criticidad)s, %(categorizacion_detalle)s, %(estado)s, %(fecha_adquisicion)s, %(fecha_registro)s, %(foto)s, %(fecha_vencimiento_garantia)s, %(numero_serie)s, %(fecha_inicio_garantia)s, %(costo)s,
+                        %(voltaje)s, %(corriente)s, %(potencia)s, %(vida_util)s, %(temperatura)s, %(peso)s, %(dimensiones)s, %(bateria_respaldo)s, %(resolucion)s, %(version_software)s, %(humedad)s, %(suministro_gases)s, %(contexto_operacional)s, %(funciones_equipo)s, %(acciones_preventivas)s, %(acciones_falla)s, %(fallas_funcionales)s, %(causas_fallo)s, %(efectos_fallo)s, %(efecto_entorno)s, %(observaciones)s,
+                        %(red_salud_id)s, %(red_salud_nombre)s, %(centro_salud_id)s, %(centro_salud_nombre)s, %(municipio_nombre)s, %(departamento_nombre)s,
+                        %(sector_actual)s, %(persona_asignada)s, %(cargo_asignado)s, %(ci_asignado)s, %(codigo_sispam)s, %(bertin)s, %(sapm)s
+                    )
+                    ON CONFLICT (id) DO UPDATE SET
+                        nombre=EXCLUDED.nombre, marca=EXCLUDED.marca, modelo=EXCLUDED.modelo, servicio=EXCLUDED.servicio, area=EXCLUDED.area, procedencia=EXCLUDED.procedencia, fabricante=EXCLUDED.fabricante, proveedor=EXCLUDED.proveedor, anio_fab=EXCLUDED.anio_fab,
+                        t_elec=EXCLUDED.t_elec, t_elco=EXCLUDED.t_elco, t_mec=EXCLUDED.t_mec, t_hid=EXCLUDED.t_hid, t_neu=EXCLUDED.t_neu, t_vap=EXCLUDED.t_vap, a_comp=EXCLUDED.a_comp, a_como=EXCLUDED.a_como, a_don=EXCLUDED.a_don,
+                        te_fijo=EXCLUDED.te_fijo, te_mov=EXCLUDED.te_mov, te_por=EXCLUDED.te_por, garantia=EXCLUDED.garantia, criticidad=EXCLUDED.criticidad, categorizacion_detalle=EXCLUDED.categorizacion_detalle, estado=EXCLUDED.estado, fecha_adquisicion=EXCLUDED.fecha_adquisicion, foto=EXCLUDED.foto, fecha_vencimiento_garantia=EXCLUDED.fecha_vencimiento_garantia, numero_serie=EXCLUDED.numero_serie, fecha_inicio_garantia=EXCLUDED.fecha_inicio_garantia, costo=EXCLUDED.costo,
+                        voltaje=EXCLUDED.voltaje, corriente=EXCLUDED.corriente, potencia=EXCLUDED.potencia, vida_util=EXCLUDED.vida_util, temperatura=EXCLUDED.temperatura, peso=EXCLUDED.peso, dimensiones=EXCLUDED.dimensiones, bateria_respaldo=EXCLUDED.bateria_respaldo, resolucion=EXCLUDED.resolucion, version_software=EXCLUDED.version_software, humedad=EXCLUDED.humedad, suministro_gases=EXCLUDED.suministro_gases, contexto_operacional=EXCLUDED.contexto_operacional, funciones_equipo=EXCLUDED.funciones_equipo, acciones_preventivas=EXCLUDED.acciones_preventivas, acciones_falla=EXCLUDED.acciones_falla, fallas_funcionales=EXCLUDED.fallas_funcionales, causas_fallo=EXCLUDED.causas_fallo, efectos_fallo=EXCLUDED.efectos_fallo, efecto_entorno=EXCLUDED.efecto_entorno, observaciones=EXCLUDED.observaciones,
+                        red_salud_id=EXCLUDED.red_salud_id, red_salud_nombre=EXCLUDED.red_salud_nombre, centro_salud_id=EXCLUDED.centro_salud_id, centro_salud_nombre=EXCLUDED.centro_salud_nombre, municipio_nombre=EXCLUDED.municipio_nombre, departamento_nombre=EXCLUDED.departamento_nombre,
+                        sector_actual=EXCLUDED.sector_actual, persona_asignada=EXCLUDED.persona_asignada, cargo_asignado=EXCLUDED.cargo_asignado, ci_asignado=EXCLUDED.ci_asignado, codigo_sispam=EXCLUDED.codigo_sispam, bertin=EXCLUDED.bertin, sapm=EXCLUDED.sapm;
+                """
+                cur.execute(sql_ins, {**eq_data, "red_salud_id": red_id, "centro_salud_id": cen_id})
+                sincronizados += 1
+            except Exception as item_err:
+                print(f"[WARN] Error al sincronizar equipo offline: {item_err}")
+                pendientes_restantes.append(eq_data)
+
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        if pendientes_restantes:
+            with open(ruta, "w", encoding="utf-8") as f:
+                json.dump(pendientes_restantes, f, cls=DateTimeEncoder, indent=2)
+        else:
+            try: os.remove(ruta)
+            except: pass
+
+        if callback_actualizar_local and cambios_id:
+            callback_actualizar_local(cambios_id)
+
+        return sincronizados, f"Se sincronizaron {sincronizados} equipos pendientes."
+    except Exception as e:
+        print(f"[ERROR] Error durante sincronización offline de equipos: {e}")
         return 0, str(e)
 
+def guardar_mueble_offline_cola(mueble_dict):
+    """Guarda un registro de mueblería/computación en la cola offline."""
+    import os, json
+    ruta = _obtener_ruta_cola_muebles()
+    try:
+        cola = []
+        if os.path.exists(ruta):
+            with open(ruta, "r", encoding="utf-8") as f:
+                cola = json.load(f)
+        cola.append(mueble_dict)
+        with open(ruta, "w", encoding="utf-8") as f:
+            json.dump(cola, f, cls=DateTimeEncoder, indent=2)
+        print(f"[OFFLINE] Mueblería guardada en cola local.")
+        return True
+    except Exception as e:
+        print(f"[ERROR] Error al guardar mueblería en cola offline: {e}")
+        return False
+
+def sincronizar_muebleria_offline_cola():
+    """Sincroniza activos de mueblería pendientes hacia PostgreSQL."""
+    import os, json
+    ruta = _obtener_ruta_cola_muebles()
+    if not os.path.exists(ruta):
+        return 0, "No hay pendientes."
+    conn = obtener_conexion()
+    if not conn:
+        return 0, "Sin conexión al servidor."
+    try:
+        with open(ruta, "r", encoding="utf-8") as f:
+            cola = json.load(f)
+        if not cola:
+            return 0, "Cola vacía."
+        
+        sincronizados = 0
+        pendientes_restantes = []
+        for m_data in cola:
+            try:
+                exito, _ = guardar_mueble_db(m_data)
+                if exito:
+                    sincronizados += 1
+                else:
+                    pendientes_restantes.append(m_data)
+            except Exception:
+                pendientes_restantes.append(m_data)
+
+        if pendientes_restantes:
+            with open(ruta, "w", encoding="utf-8") as f:
+                json.dump(pendientes_restantes, f, cls=DateTimeEncoder, indent=2)
+        else:
+            try: os.remove(ruta)
+            except: pass
+        return sincronizados, f"Se sincronizaron {sincronizados} activos de mueblería."
+    except Exception as e:
+        return 0, str(e)
+
+def guardar_area_offline_cola(area_dict):
+    """Guarda un área creada o editada offline en la cola de sincronización."""
+    import os, json
+    ruta = _obtener_ruta_cola_areas()
+    try:
+        cola = []
+        if os.path.exists(ruta):
+            with open(ruta, "r", encoding="utf-8") as f:
+                cola = json.load(f)
+        cola.append(area_dict)
+        with open(ruta, "w", encoding="utf-8") as f:
+            json.dump(cola, f, cls=DateTimeEncoder, indent=2)
+        print(f"[OFFLINE] Área guardada en cola local.")
+        return True
+    except Exception as e:
+        print(f"[ERROR] Error al guardar área en cola offline: {e}")
+        return False
+
+def sincronizar_areas_offline_cola():
+    """Sincroniza áreas pendientes hacia PostgreSQL."""
+    import os, json
+    ruta = _obtener_ruta_cola_areas()
+    if not os.path.exists(ruta):
+        return 0, "No hay pendientes."
+    conn = obtener_conexion()
+    if not conn:
+        return 0, "Sin conexión al servidor."
+    try:
+        with open(ruta, "r", encoding="utf-8") as f:
+            cola = json.load(f)
+        if not cola:
+            return 0, "Cola vacía."
+        cur = conn.cursor()
+        sincronizados = 0
+        pendientes_restantes = []
+        for a_data in cola:
+            try:
+                if a_data.get("id"):
+                    cur.execute("""
+                        UPDATE areas 
+                        SET centro_salud_id=%s, centro_salud_nombre=%s, red_salud_nombre=%s,
+                            nombre=%s, piso=%s, contacto=%s, encargado=%s, cargo=%s, ci_encargado=%s 
+                        WHERE id=%s
+                    """, (
+                        a_data.get("centro_salud_id"), a_data.get("centro_salud_nombre"), a_data.get("red_salud_nombre"),
+                        a_data.get("nombre"), a_data.get("piso"), a_data.get("contacto"),
+                        a_data.get("encargado"), a_data.get("cargo"), a_data.get("ci_encargado"), a_data["id"]
+                    ))
+                else:
+                    cur.execute("""
+                        INSERT INTO areas (centro_salud_id, centro_salud_nombre, red_salud_nombre, nombre, piso, contacto, encargado, cargo, ci_encargado)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    """, (
+                        a_data.get("centro_salud_id"), a_data.get("centro_salud_nombre"), a_data.get("red_salud_nombre"),
+                        a_data.get("nombre"), a_data.get("piso"), a_data.get("contacto"),
+                        a_data.get("encargado"), a_data.get("cargo"), a_data.get("ci_encargado")
+                    ))
+                sincronizados += 1
+            except Exception as ae:
+                print(f"[WARN] Error al sincronizar área: {ae}")
+                pendientes_restantes.append(a_data)
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        if pendientes_restantes:
+            with open(ruta, "w", encoding="utf-8") as f:
+                json.dump(pendientes_restantes, f, cls=DateTimeEncoder, indent=2)
+        else:
+            try: os.remove(ruta)
+            except: pass
+        return sincronizados, f"Se sincronizaron {sincronizados} áreas."
+    except Exception as e:
+        return 0, str(e)
+
+def sincronizar_todo_offline(app=None):
+    """Ejecuta la sincronización integral de todas las colas offline hacia PostgreSQL."""
+    total = 0
+    def _actualizar_local(cambios):
+        if app and hasattr(app, "datos") and "equipos" in app.datos:
+            for eq in app.datos["equipos"]:
+                if eq.get("id") in cambios:
+                    eq["id"] = cambios[eq["id"]]
+            guardar_cache_local_datos(app.datos)
+            if "Inventario" in getattr(app, "vistas", {}):
+                try: app.vistas["Inventario"].refrescar_datos()
+                except: pass
+
+    try:
+        s_ar, _ = sincronizar_areas_offline_cola()
+        total += s_ar
+    except: pass
+    try:
+        s_eq, _ = sincronizar_equipos_offline_cola(callback_actualizar_local=_actualizar_local)
+        total += s_eq
+    except: pass
+    try:
+        s_mu, _ = sincronizar_muebleria_offline_cola()
+        total += s_mu
+    except: pass
+    try:
+        s_ma, _ = sincronizar_mantenimientos_offline_cola()
+        total += s_ma
+    except: pass
+    return total
 
 def obtener_firma_datos_db():
     """

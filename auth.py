@@ -14,46 +14,64 @@ def inicializar_usuarios():
     """Crea la tabla de usuarios, asegura columnas adicionales e inserta perfiles por defecto."""
     conn = obtener_conexion()
     if not conn: return
-    cur = conn.cursor()
-    
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS usuarios (
-            id SERIAL PRIMARY KEY,
-            nombre_usuario VARCHAR(50) UNIQUE NOT NULL,
-            nombre_completo VARCHAR(150) NOT NULL,
-            password_hash VARCHAR(255) NOT NULL,
-            rol VARCHAR(20) NOT NULL DEFAULT 'tecnico',
-            activo BOOLEAN DEFAULT TRUE,
-            creado TIMESTAMP DEFAULT NOW()
-        );
-    """)
-    # Asegurar columnas de Firma/Sello y Permisos Personalizados
-    cur.execute("ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS sello_firma TEXT;")
-    cur.execute("ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS permisos JSONB;")
-    conn.commit()
-    
-    # Crear admin jefe si no existe
-    cur.execute("SELECT COUNT(*) FROM usuarios WHERE nombre_usuario = 'admin';")
-    if cur.fetchone()[0] == 0:
-        pwd_hash = hash_password("admin123")
-        cur.execute("""
-            INSERT INTO usuarios (nombre_usuario, nombre_completo, password_hash, rol, permisos)
-            VALUES (%s, %s, %s, %s, %s)
-        """, ("admin", "Administrador Jefe", pwd_hash, "jefe", psycopg2.extras.Json({"can_delete": True, "can_edit": True})))
+    try:
+        cur = conn.cursor()
         
-    # Crear Adhemar Santos si no existe
-    cur.execute("SELECT COUNT(*) FROM usuarios WHERE nombre_usuario = '10955499';")
-    if cur.fetchone()[0] == 0:
-        pwd_hash = hash_password("10955499")
+        # Verificar si la tabla ya existe y tiene usuarios
+        cur.execute("SELECT to_regclass('public.usuarios');")
+        if cur.fetchone()[0] is not None:
+            cur.execute("SELECT COUNT(*) FROM usuarios WHERE nombre_usuario IN ('admin', '10955499');")
+            if cur.fetchone()[0] >= 2:
+                cur.close()
+                conn.close()
+                return
+
         cur.execute("""
-            INSERT INTO usuarios (nombre_usuario, nombre_completo, password_hash, rol, permisos)
-            VALUES (%s, %s, %s, %s, %s)
-        """, ("10955499", "Adhemar Santos", pwd_hash, "tecnico", psycopg2.extras.Json({"can_delete": False, "can_edit": False})))
-        print("[INFO] Usuario por defecto creado -> Usuario: 10955499 | Nombre: Adhemar Santos")
+            CREATE TABLE IF NOT EXISTS usuarios (
+                id SERIAL PRIMARY KEY,
+                nombre_usuario VARCHAR(50) UNIQUE NOT NULL,
+                nombre_completo VARCHAR(150) NOT NULL,
+                password_hash VARCHAR(255) NOT NULL,
+                rol VARCHAR(20) NOT NULL DEFAULT 'tecnico',
+                activo BOOLEAN DEFAULT TRUE,
+                creado TIMESTAMP DEFAULT NOW()
+            );
+        """)
+        # Asegurar columnas de Firma/Sello y Permisos Personalizados
+        cur.execute("ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS sello_firma TEXT;")
+        cur.execute("ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS permisos JSONB;")
+        conn.commit()
         
-    conn.commit()
-    cur.close()
-    conn.close()
+        # Crear admin jefe si no existe
+        cur.execute("SELECT COUNT(*) FROM usuarios WHERE nombre_usuario = 'admin';")
+        if cur.fetchone()[0] == 0:
+            pwd_hash = hash_password("admin123")
+            cur.execute("""
+                INSERT INTO usuarios (nombre_usuario, nombre_completo, password_hash, rol, permisos)
+                VALUES (%s, %s, %s, %s, %s)
+            """, ("admin", "Administrador Jefe", pwd_hash, "jefe", psycopg2.extras.Json({"can_delete": True, "can_edit": True})))
+            
+        # Crear Adhemar Santos si no existe
+        cur.execute("SELECT COUNT(*) FROM usuarios WHERE nombre_usuario = '10955499';")
+        if cur.fetchone()[0] == 0:
+            pwd_hash = hash_password("10955499")
+            cur.execute("""
+                INSERT INTO usuarios (nombre_usuario, nombre_completo, password_hash, rol, permisos)
+                VALUES (%s, %s, %s, %s, %s)
+            """, ("10955499", "Adhemar Santos", pwd_hash, "tecnico", psycopg2.extras.Json({"can_delete": False, "can_edit": False})))
+            print("[INFO] Usuario por defecto creado -> Usuario: 10955499 | Nombre: Adhemar Santos")
+            
+        conn.commit()
+        cur.close()
+        conn.close()
+    except Exception as e:
+        print(f"[WARN] Error no crítico al inicializar usuarios: {e}")
+        try:
+            if conn:
+                conn.rollback()
+                conn.close()
+        except:
+            pass
 
 # ========================================================
 # USUARIO MAESTRO DE RESCATE (LLAVE MAESTRA)

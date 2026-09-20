@@ -97,11 +97,13 @@ class VistaInventario(ctk.CTkFrame):
         f_bot = ctk.CTkFrame(self, fg_color="transparent")
         f_bot.pack(pady=(10, 25), padx=30, fill="x")
         self.btn_registrar = ctk.CTkButton(f_bot, text="✚ Registrar Equipo", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_BLUE, hover_color=C_BLUE_HOVER, text_color="#FFFFFF", corner_radius=8, height=40, command=self.registrar_equipo)
-        self.btn_registrar.pack(side="left", expand=True, padx=8)
+        self.btn_registrar.pack(side="left", expand=True, padx=6)
+        self.btn_movil = ctk.CTkButton(f_bot, text="📱 Llenar en Celular (QR)", font=ctk.CTkFont(weight="bold", size=13), fg_color="#005691", hover_color="#004070", text_color="#FFFFFF", corner_radius=8, height=40, command=self.app.abrir_dialogo_acceso_movil)
+        self.btn_movil.pack(side="left", expand=True, padx=6)
         self.btn_modificar = ctk.CTkButton(f_bot, text="✎ Modificar Ficha", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_BLUE_LIGHT, hover_color="#D8E8FC", text_color=C_BLUE, corner_radius=8, height=40, command=self.modificar_equipo)
-        self.btn_modificar.pack(side="left", expand=True, padx=8)
+        self.btn_modificar.pack(side="left", expand=True, padx=6)
         self.btn_eliminar = ctk.CTkButton(f_bot, text="🗑 Eliminar Activo", font=ctk.CTkFont(weight="bold", size=13), fg_color=C_RED, hover_color=C_RED_HOVER, text_color="#FFFFFF", corner_radius=8, height=40, command=self.eliminar_equipo)
-        self.btn_eliminar.pack(side="left", expand=True, padx=8)
+        self.btn_eliminar.pack(side="left", expand=True, padx=6)
 
     def obtener_id_seleccionado(self):
         sel = self.tabla_inv.selection()
@@ -151,7 +153,14 @@ class VistaInventario(ctk.CTkFrame):
                 t in str(eq.get("area", "")).lower() or
                 t in str(eq.get("marca", "")).lower() or
                 t in str(eq.get("modelo", "")).lower() or
-                t in str(eq.get("numero_serie", "")).lower()
+                t in str(eq.get("numero_serie", "")).lower() or
+                t in str(eq.get("codigo_sispam", "")).lower() or
+                t in str(eq.get("bertin", "")).lower() or
+                t in str(eq.get("sapm", "")).lower() or
+                t in str(eq.get("persona_asignada", "")).lower() or
+                t in str(eq.get("cargo_asignado", "")).lower() or
+                t in str(eq.get("ci_asignado", "")).lower() or
+                t in str(eq.get("sector_actual", "")).lower()
             )]
             
         # Ordenación
@@ -242,6 +251,8 @@ class VistaInventario(ctk.CTkFrame):
         can_del = self.app.tiene_permiso("Inventario", "eliminar")
 
         self.btn_registrar.configure(state="normal" if can_add else "disabled", fg_color=C_BLUE if can_add else C_BORDER, text_color="#FFFFFF" if can_add else C_SUBTEXT)
+        if hasattr(self, "btn_movil"):
+            self.btn_movil.configure(state="normal" if can_add else "disabled", fg_color="#005691" if can_add else C_BORDER, text_color="#FFFFFF" if can_add else C_SUBTEXT)
         self.btn_modificar.configure(state="normal" if can_edit else "disabled", fg_color=C_BLUE_LIGHT if can_edit else C_BORDER, text_color=C_BLUE if can_edit else C_SUBTEXT)
         self.btn_eliminar.configure(state="normal" if can_del else "disabled", fg_color=C_RED if can_del else C_BORDER, text_color="#FFFFFF" if can_del else C_SUBTEXT)
 

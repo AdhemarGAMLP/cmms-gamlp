@@ -12,8 +12,34 @@ try:
 except ImportError:
     pythoncom = None
     win32com = None
-from flask import Flask, render_template_string, request, redirect, url_for, send_from_directory, send_file
-from database import obtener_conexion
+from flask import Flask, render_template_string, request, redirect, url_for, send_from_directory, send_file, session, jsonify
+from functools import wraps
+from database import (
+    obtener_conexion,
+    comprimir_imagen_base64,
+    obtener_jerarquia_sedes_db,
+    generar_codigo_red,
+    generar_sigla_centro,
+    generar_siguiente_codigo_af,
+    guardar_mueble_db,
+    guardar_equipo_db,
+    obtener_areas_db,
+    obtener_catalogo_equipos_db,
+    obtener_equipos_db,
+    obtener_muebles_db,
+    guardar_area_db,
+    guardar_catalogo_db,
+    obtener_repuestos_db,
+    guardar_repuesto_db,
+    obtener_usuarios_db,
+    guardar_usuario_permisos_db,
+    obtener_intervenciones_db,
+    guardar_intervencion_db,
+    obtener_estadisticas_censo_db,
+    eliminar_registro_db
+)
+from auth import login as auth_login
+from vistas_web_movil import HTML_MOVIL_LOGIN, HTML_MOVIL_REGISTRO
 from datetime import date, datetime
 from excel_utils import (
     obtener_ruta_plantilla,
@@ -26,8 +52,18 @@ from excel_utils import (
 from config import CARPETAS, CONFIG
 
 app_web = Flask(__name__)
+app_web.secret_key = os.environ.get("FLASK_SECRET_KEY", "gamlp_sgem_secret_key_2026_super_secure")
 app = app_web  # Alias para servidores WSGI de producción (Gunicorn / Render / Vercel)
 app_gui = None  # Referencia global de la GUI de Tkinter para sincronización
+
+def login_requerido(f):
+    @wraps(f)
+    def decorada(*args, **kwargs):
+        if 'usuario' not in session:
+            return redirect(url_for('movil_login', next=request.path))
+        return f(*args, **kwargs)
+    return decorada
+
 
 # Pantalla de éxito responsiva con enlace de descarga Excel
 HTML_EXITO = """
@@ -378,12 +414,13 @@ HTML_INVENTARIO = """
 </head>
 <body>
     <div class="header">
-        <span class="badge-gamlp">GAMLP • SGEM v1.0</span>
+        <span class="badge-gamlp">GAMLP • SGEM v1.1</span>
         <h1>Sistema de Gestión de Equipamiento Médico</h1>
         <p>Inventario Descentralizado por Redes y Centros de Salud</p>
         <div class="nav-tabs">
             <a href="/inventario" class="nav-tab active">📦 Inventario</a>
             <a href="/analisis" class="nav-tab">📊 Análisis y Censo</a>
+            <a href="/movil" class="nav-tab">📱 Registro Móvil</a>
         </div>
     </div>
 
@@ -1052,12 +1089,13 @@ HTML_ANALISIS = """
 </head>
 <body>
     <div class="header">
-        <span class="badge-gamlp">GAMLP • SGEM v1.0</span>
+        <span class="badge-gamlp">GAMLP • SGEM v1.1</span>
         <h1>Sistema de Gestión de Equipamiento Médico</h1>
         <p>Análisis Estadístico y Censo Territorial</p>
         <div class="nav-tabs">
             <a href="/inventario" class="nav-tab">📦 Inventario</a>
             <a href="/analisis" class="nav-tab active">📊 Análisis y Censo</a>
+            <a href="/movil" class="nav-tab">📱 Registro Móvil</a>
         </div>
     </div>
 
@@ -2655,6 +2693,372 @@ def registrar_mantenimiento(id_equipo):
     except Exception as e:
         return f"Error en el servidor web: {e}"
 
+# =========================================================================
+# RUTAS DE AUTENTICACIÓN MÓVIL Y GESTIÓN DE SESIÓN
+# =========================================================================
+
+@app_web.route('/login', methods=['GET', 'POST'])
+@app_web.route('/movil/login', methods=['GET', 'POST'])
+def movil_login():
+    """Pantalla de acceso con usuario y contraseña para el registro móvil en celulares."""
+    error = None
+    next_url = request.args.get('next') or url_for('movil_registro')
+    
+    if request.method == 'POST':
+        u = request.form.get('usuario', '').strip()
+        p = request.form.get('password', '').strip()
+        
+        if not u or not p:
+            error = "Por favor ingrese su usuario y contraseña."
+        else:
+            user_info = auth_login(u, p)
+            if user_info:
+                session['usuario'] = user_info['nombre_usuario']
+                session['nombre_completo'] = user_info.get('nombre_completo', user_info['nombre_usuario'])
+                session['rol'] = user_info.get('rol', 'tecnico')
+                # Cargar y parsear permisos del usuario
+                raw_perms = user_info.get('permisos') or {}
+                if isinstance(raw_perms, str):
+                    try: raw_perms = json.loads(raw_perms)
+                    except: raw_perms = {}
+                session['permisos'] = raw_perms
+                session.permanent = True
+                return redirect(next_url)
+            else:
+                error = "Usuario o contraseña incorrectos. Verifique sus credenciales."
+                
+    elif 'usuario' in session:
+        return redirect(next_url)
+        
+    return render_template_string(HTML_MOVIL_LOGIN, error=error)
+
+@app_web.route('/logout')
+@app_web.route('/movil/logout')
+def movil_logout():
+    """Cierra la sesión del usuario actual."""
+    session.clear()
+    return redirect(url_for('movil_login'))
+
+# =========================================================================
+# RUTAS DE REGISTRO MÓVIL DESDE CELULARES
+# =========================================================================
+
+@app_web.route('/movil')
+@app_web.route('/movil/registro')
+@login_requerido
+def movil_registro():
+    """Formulario interactivo y táctil para registro de equipamiento médico desde celular."""
+    try:
+        sedes_data = obtener_jerarquia_sedes_db()
+        usuario_dict = {
+            "nombre_usuario": session.get('usuario', ''),
+            "nombre_completo": session.get('nombre_completo', session.get('usuario', 'Técnico')),
+            "rol": session.get('rol', 'tecnico'),
+            "permisos": session.get('permisos', {})
+        }
+        return render_template_string(
+            HTML_MOVIL_REGISTRO,
+            sedes=sedes_data,
+            usuario=usuario_dict
+        )
+    except Exception as e:
+        return f"Error cargando formulario móvil: {e}", 500
+
+# =========================================================================
+# API REST JSON PARA LA APLICACIÓN MÓVIL
+# =========================================================================
+
+@app_web.route('/api/sedes')
+def api_sedes():
+    """Retorna la jerarquía de redes y centros de salud en formato JSON."""
+    try:
+        data = obtener_jerarquia_sedes_db()
+        return jsonify(data)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app_web.route('/api/areas')
+def api_areas():
+    """Retorna las áreas registradas, opcionalmente filtradas por centro de salud."""
+    centro = request.args.get('centro', '').strip()
+    try:
+        areas = obtener_areas_db(centro)
+        return jsonify(areas)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app_web.route('/api/catalogo')
+def api_catalogo():
+    """Retorna la lista de modelos de equipos preconfigurados en el catálogo."""
+    try:
+        catalogo = obtener_catalogo_equipos_db()
+        return jsonify(catalogo)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app_web.route('/api/siguiente_af')
+def api_siguiente_af():
+    """Calcula y retorna el siguiente código correlativo de Activos Fijos (AF)."""
+    red = request.args.get('red', '').strip()
+    centro = request.args.get('centro', '').strip()
+    if not red or not centro:
+        return jsonify({"ok": False, "error": "Parámetros 'red' y 'centro' requeridos"}), 400
+    try:
+        codigo = generar_siguiente_codigo_af(red, centro)
+        return jsonify({"ok": True, "codigo_af": codigo})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+@app_web.route('/api/guardar_equipo', methods=['POST'])
+@login_requerido
+def api_guardar_equipo():
+    """Guarda un nuevo equipo médico registrado desde el celular con resolución de colisiones."""
+    global app_gui
+    try:
+        payload = request.get_json(force=True, silent=True)
+        if not payload:
+            return jsonify({"ok": False, "error": "Datos inválidos o cuerpo de solicitud vacío"}), 400
+
+        nom = str(payload.get("nombre") or "").strip()
+        if not nom:
+            return jsonify({"ok": False, "error": "El nombre del equipo es obligatorio."}), 400
+
+        # Guardar en base de datos PostgreSQL con resolución de colisión automática
+        exito, id_final, msg = guardar_equipo_db(payload)
+
+        # Si la ventana de escritorio de Tkinter está abierta, refrescarla en tiempo real
+        if app_gui:
+            try:
+                app_gui.after(300, app_gui.cargar_datos_en_segundo_plano)
+            except Exception as ge:
+                print(f"[DEBUG] No se pudo refrescar GUI de escritorio: {ge}")
+
+        return jsonify({
+            "ok": exito,
+            "id": id_final,
+            "nombre": nom,
+            "mensaje": msg
+        })
+    except Exception as e:
+        print(f"[ERROR] Error en api_guardar_equipo: {e}")
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+@app_web.route('/api/equipos')
+def api_equipos():
+    """Retorna la lista de equipos médicos registrados."""
+    centro = request.args.get('centro', '').strip()
+    try:
+        equipos = obtener_equipos_db(centro)
+        return jsonify(equipos)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app_web.route('/api/guardar_catalogo', methods=['POST'])
+@login_requerido
+def api_guardar_catalogo():
+    """Guarda un nuevo modelo en el catálogo central."""
+    global app_gui
+    try:
+        payload = request.get_json(force=True, silent=True) or {}
+        if not payload.get('nombre'):
+            return jsonify({"ok": False, "error": "El nombre del modelo es obligatorio"}), 400
+        ok, c_id = guardar_catalogo_db(payload)
+        if ok and app_gui:
+            try: app_gui.after(300, app_gui.cargar_datos_en_segundo_plano)
+            except: pass
+        return jsonify({"ok": ok, "id": c_id})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+@app_web.route('/api/muebles')
+def api_muebles():
+    """Retorna los activos de mueblería y computación."""
+    centro = request.args.get('centro', '').strip()
+    try:
+        muebles = obtener_muebles_db(centro)
+        return jsonify(muebles)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app_web.route('/api/guardar_mueble', methods=['POST'])
+@login_requerido
+def api_guardar_mueble():
+    """Guarda o actualiza un activo de mueblería o cómputo."""
+    global app_gui
+    try:
+        payload = request.get_json(force=True, silent=True) or {}
+        if not payload.get('tipo_activo') and not payload.get('descripcion'):
+            return jsonify({"ok": False, "error": "Tipo de activo o descripción requerida"}), 400
+        ok, m_id = guardar_mueble_db(payload)
+        if ok and app_gui:
+            try: app_gui.after(300, app_gui.cargar_datos_en_segundo_plano)
+            except: pass
+        return jsonify({"ok": ok, "id": m_id})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+@app_web.route('/api/guardar_area', methods=['POST'])
+@login_requerido
+def api_guardar_area():
+    """Guarda una nueva área por centro de salud."""
+    global app_gui
+    try:
+        payload = request.get_json(force=True, silent=True) or {}
+        if not payload.get('nombre'):
+            return jsonify({"ok": False, "error": "El nombre del área es obligatorio"}), 400
+        ok, msg = guardar_area_db(payload)
+        if ok and app_gui:
+            try: app_gui.after(300, app_gui.cargar_datos_en_segundo_plano)
+            except: pass
+        return jsonify({"ok": ok, "mensaje": msg})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+@app_web.route('/api/repuestos')
+def api_repuestos():
+    """Retorna la lista de repuestos en stock."""
+    centro = request.args.get('centro', '').strip()
+    try:
+        repuestos = obtener_repuestos_db(centro)
+        return jsonify(repuestos)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app_web.route('/api/guardar_repuesto', methods=['POST'])
+@login_requerido
+def api_guardar_repuesto():
+    """Guarda o actualiza un repuesto en la base de datos."""
+    global app_gui
+    try:
+        payload = request.get_json(force=True, silent=True) or {}
+        if not payload.get('nombre_repuesto'):
+            return jsonify({"ok": False, "error": "El nombre del repuesto es obligatorio"}), 400
+        ok, msg = guardar_repuesto_db(payload)
+        if ok and app_gui:
+            try: app_gui.after(300, app_gui.cargar_datos_en_segundo_plano)
+            except: pass
+        return jsonify({"ok": ok, "mensaje": msg})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+@app_web.route('/api/usuarios')
+@login_requerido
+def api_usuarios():
+    """Retorna la lista de usuarios con sus permisos (Solo administradores / jefes)."""
+    rol = str(session.get('rol', '')).strip().lower()
+    u = str(session.get('usuario', '')).strip().lower()
+    if rol not in ['admin', 'administrador', 'jefe'] and u != 'godhead':
+        return jsonify({"error": "Acceso restringido a administradores."}), 403
+    try:
+        users = obtener_usuarios_db()
+        return jsonify(users)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app_web.route('/api/guardar_usuario_permisos', methods=['POST'])
+@login_requerido
+def api_guardar_usuario_permisos():
+    """Guarda o actualiza un usuario, su rol y su matriz de permisos (Solo administradores / jefes)."""
+    rol = str(session.get('rol', '')).strip().lower()
+    u = str(session.get('usuario', '')).strip().lower()
+    if rol not in ['admin', 'administrador', 'jefe'] and u != 'godhead':
+        return jsonify({"ok": False, "error": "Acceso restringido a administradores."}), 403
+    try:
+        payload = request.get_json(force=True, silent=True) or {}
+        ok, msg = guardar_usuario_permisos_db(payload)
+        return jsonify({"ok": ok, "mensaje": msg})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+@app_web.route('/api/intervenciones')
+@login_requerido
+def api_intervenciones():
+    """Retorna historial de intervenciones y mantenimientos técnicos."""
+    centro = request.args.get('centro', '').strip()
+    eq_id = request.args.get('equipo_id', '').strip()
+    try:
+        data = obtener_intervenciones_db(centro_nombre=centro, equipo_id=eq_id)
+        return jsonify(data)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app_web.route('/api/guardar_intervencion', methods=['POST'])
+@login_requerido
+def api_guardar_intervencion():
+    """Registra una intervención técnica y actualiza el estado del equipo."""
+    global app_gui
+    try:
+        payload = request.get_json(force=True, silent=True) or {}
+        if not payload.get('equipo_id'):
+            return jsonify({"ok": False, "error": "El código del equipo es obligatorio."}), 400
+        
+        # Asignar técnico actual si no viene en el payload
+        if not payload.get('realizado_por'):
+            payload['realizado_por'] = session.get('nombre_completo', session.get('usuario', 'Técnico'))
+
+        ok, res = guardar_intervencion_db(payload)
+        if ok and app_gui:
+            try: app_gui.after(300, app_gui.cargar_datos_en_segundo_plano)
+            except: pass
+        return jsonify({"ok": ok, "id": res if ok else None, "mensaje": res if not ok else "Intervención guardada"})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+@app_web.route('/api/estadisticas')
+@login_requerido
+def api_estadisticas():
+    """Retorna indicadores y métricas de censo de equipos."""
+    centro = request.args.get('centro', '').strip()
+    try:
+        stats = obtener_estadisticas_censo_db(centro)
+        return jsonify(stats)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app_web.route('/api/eliminar_registro', methods=['POST'])
+@login_requerido
+def api_eliminar_registro():
+    """Elimina de forma segura un registro de cualquier módulo (con verificación de permisos y papelera)."""
+    global app_gui
+    rol = str(session.get('rol', '')).strip().lower()
+    u_ci = str(session.get('usuario', '')).strip().lower()
+    es_admin = (rol in ['admin', 'administrador', 'jefe']) or (u_ci == 'godhead')
+
+    payload = request.get_json(force=True, silent=True) or {}
+    tabla = str(payload.get('tabla') or '').strip().lower()
+    id_reg = payload.get('id')
+
+    if not tabla or not id_reg:
+        return jsonify({"ok": False, "error": "Parámetros 'tabla' e 'id' son requeridos."}), 400
+
+    # Mapeo de tabla a módulo para control de permisos
+    modulo_map = {
+        "equipos": "Inventario",
+        "catalogo": "Catalogo",
+        "muebleria": "Muebleria",
+        "areas": "Areas",
+        "repuestos": "Repuestos",
+        "historial_intervenciones": "Historial",
+        "usuarios": "Usuarios"
+    }
+    mod_key = modulo_map.get(tabla)
+    if not es_admin:
+        perms = session.get('permisos') or {}
+        puede_eliminar = perms.get(mod_key, {}).get('eliminar', False) if mod_key else False
+        if not puede_eliminar:
+            return jsonify({"ok": False, "error": f"No tiene permisos para eliminar registros en {mod_key}."}), 403
+
+    usr = session.get('nombre_completo', session.get('usuario', 'web_user'))
+    ok, msg = eliminar_registro_db(tabla, id_reg, usuario=usr)
+
+    if ok and app_gui:
+        try:
+            app_gui.after(300, app_gui.cargar_datos_en_segundo_plano)
+        except Exception:
+            pass
+
+    return jsonify({"ok": ok, "mensaje": msg})
+
 def iniciar_servidor_web():
     import logging
     logging.getLogger('werkzeug').setLevel(logging.ERROR)
@@ -2689,7 +3093,7 @@ if __name__ == '__main__':
 
     ip = obtener_ip_local()
     print("="*60)
-    print("     SGEM GAMLP - SERVIDOR WEB INDEPENDIENTE (v1.0)")
+    print("     SGEM GAMLP - SERVIDOR WEB INDEPENDIENTE (v1.1)")
     print(f" Servidor activo en: http://{ip}:5000")
     print(" Mantén esta ventana abierta para que los códigos QR funcionen")
     print(" incluso cuando el programa principal esté cerrado.")

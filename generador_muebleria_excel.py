@@ -16,6 +16,7 @@ COLUMNAS_OFICIALES = [
     "CI_ASIGNADO",
     "TIPO_ACTIVO",
     "DESCRIPCION",
+    "MARCA",
     "MODELO",
     "SERIE",
     "DETALLE_TRANSACCION",
@@ -24,7 +25,7 @@ COLUMNAS_OFICIALES = [
     "SAPM",
     "OBSERVACIONES_DE_ASIGNACION",
     "UBICACION",
-    "FECHA_INCORPORACION"
+    "ESTADO"
 ]
 
 def obtener_ruta_plantilla_muebleria():
@@ -94,23 +95,24 @@ def exportar_muebleria_excel(lista_muebles, ruta_salida):
             str(m.get("ci_asignado") or ""),
             str(m.get("tipo_activo") or ""),
             str(m.get("descripcion") or ""),
+            str(m.get("marca") or ""),
             str(m.get("modelo") or ""),
-            str(m.get("serie") or ""),
-            str(m.get("detalle_transaccion") or "ASIGNACION"),
-            str(m.get("codigo_sispam") or ""),
-            str(m.get("bertin") or ""),
-            str(m.get("sapm") or ""),
+            str(m.get("serie") or "S/C"),
+            str(m.get("detalle_transaccion") or "Asignacion 2026"),
+            str(m.get("codigo_sispam") or "S/C"),
+            str(m.get("bertin") or "S/C"),
+            str(m.get("sapm") or "S/C"),
             str(m.get("observaciones_de_asignacion") or ""),
             str(m.get("ubicacion") or ""),
-            str(m.get("fecha_incorporacion") or "")
+            str(m.get("estado_conservacion") or m.get("estado_bien") or "Bueno")
         ]
 
         for col_idx, val in enumerate(valores, start=1):
             c = ws.cell(row=row_idx, column=col_idx, value=val)
             c.font = font_data
             c.border = thin_border
-            # Alineación centrada para códigos, fechas, sectores; izquierda para descripciones
-            if col_idx in (1, 4, 7, 10, 11, 12, 13, 14, 15, 18):
+            # Alineación centrada para códigos, fechas, sectores, estado; izquierda para descripciones
+            if col_idx in (1, 4, 7, 10, 11, 12, 13, 14, 15, 16, 19):
                 c.alignment = align_center
             else:
                 c.alignment = align_left
@@ -135,7 +137,7 @@ def exportar_muebleria_excel(lista_muebles, ruta_salida):
 def importar_muebleria_excel(ruta_archivo):
     """
     Lee un archivo Excel y retorna una lista de diccionarios normalizados
-    con las 18 columnas oficiales de Mueblería y Computadoras.
+    con las 19 columnas oficiales de Mueblería y Computadoras.
     """
     if not os.path.exists(ruta_archivo):
         return [], 0, "El archivo especificado no existe."
@@ -159,7 +161,7 @@ def importar_muebleria_excel(ruta_archivo):
                     col_map[val] = c_idx
             break
 
-    # Si no encontró por nombre exacto, mapear por posición estándar 1..18
+    # Si no encontró por nombre exacto, mapear por posición estándar 1..19
     if not col_map:
         for idx, col_name in enumerate(COLUMNAS_OFICIALES, start=1):
             col_map[col_name] = idx
@@ -183,6 +185,7 @@ def importar_muebleria_excel(ruta_archivo):
         unidad = _get_val("UNIDAD_ORGANIZACIONAL", "")
         tipo_activo = _get_val("TIPO_ACTIVO", "")
         descripcion = _get_val("DESCRIPCION", "")
+        marca = _get_val("MARCA", "")
         modelo = _get_val("MODELO", "")
         serie = _get_val("SERIE", "")
         sispam = _get_val("CODIGO_SISPAM", "")
@@ -190,7 +193,7 @@ def importar_muebleria_excel(ruta_archivo):
         sapm = _get_val("SAPM", "")
 
         # Verificar si la fila está completamente vacía
-        if not any([sector, direccion, unidad, tipo_activo, descripcion, modelo, serie, sispam, bertin, sapm]):
+        if not any([sector, direccion, unidad, tipo_activo, descripcion, marca, modelo, serie, sispam, bertin, sapm]):
             continue
 
         item = {
@@ -203,15 +206,16 @@ def importar_muebleria_excel(ruta_archivo):
             "ci_asignado": _get_val("CI_ASIGNADO", ""),
             "tipo_activo": tipo_activo or "COMPUTADORA",
             "descripcion": descripcion,
+            "marca": marca,
             "modelo": modelo,
-            "serie": serie,
-            "detalle_transaccion": _get_val("DETALLE_TRANSACCION", "ASIGNACION"),
-            "codigo_sispam": sispam,
-            "bertin": bertin,
-            "sapm": sapm,
+            "serie": serie or "S/C",
+            "detalle_transaccion": _get_val("DETALLE_TRANSACCION", "Asignacion 2026") or "Asignacion 2026",
+            "codigo_sispam": sispam or "S/C",
+            "bertin": bertin or "S/C",
+            "sapm": sapm or "S/C",
             "observaciones_de_asignacion": _get_val("OBSERVACIONES_DE_ASIGNACION", ""),
             "ubicacion": _get_val("UBICACION", ""),
-            "fecha_incorporacion": _get_val("FECHA_INCORPORACION", ""),
+            "estado_conservacion": _get_val("ESTADO", "Bueno") or "Bueno",
             "estado": "Activo"
         }
 
