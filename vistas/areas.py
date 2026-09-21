@@ -72,7 +72,7 @@ class VistaAreas(ctk.CTkFrame):
                 if red_obj:
                     red_inicial = red_nom
                     centros_iniciales = ["[ Todos los Centros ]"] + [c["nombre"] for c in sedes.get("centros", []) if c.get("red_salud_id") == red_obj["id"]]
-            if cen_nom and not str(cen_nom).startswith("[ Todos"):
+            if cen_nom and not str(cen_nom).startswith(("Todos", "[ Todos")):
                 centro_inicial = cen_nom
 
         # Filtro Red
@@ -192,7 +192,7 @@ class VistaAreas(ctk.CTkFrame):
                 if red_obj:
                     centros = ["[ Todos los Centros ]"] + [c["nombre"] for c in sedes.get("centros", []) if c.get("red_salud_id") == red_obj["id"]]
                     self.combo_filtro_centro.configure(values=centros)
-            if cen_nom and not str(cen_nom).startswith("[ Todos"):
+            if cen_nom and not str(cen_nom).startswith(("Todos", "[ Todos")):
                 self.combo_filtro_centro.set(cen_nom)
 
     def limpiar_filtros(self):

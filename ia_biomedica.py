@@ -600,7 +600,7 @@ def generar_pronostico_repuestos_ia(equipos, repuestos_stock, red_filtro=None):
     estimada de repuestos críticos para los próximos 6 meses.
     """
     equipos_filtrados = equipos
-    if red_filtro and not str(red_filtro).startswith("[ Todas"):
+    if red_filtro and not str(red_filtro).startswith(("Todas", "[ Todas")):
         equipos_filtrados = [e for e in equipos if e.get("red_salud_nombre") == red_filtro]
 
     conteo_tipos = {}

@@ -958,7 +958,7 @@ def generar_html_mapa_gamlp(centros_geo, red_filtro=None):
     mapa de calor ultra-preciso, buscador en vivo y popups biomédicos enriquecidos.
     """
     centros_filtrados = centros_geo
-    if red_filtro and not str(red_filtro).startswith("[ Todas"):
+    if red_filtro and not str(red_filtro).startswith(("Todas", "[ Todas")):
         centros_filtrados = [c for c in centros_geo if c.get("red") == red_filtro]
 
     # Datos para mapa de calor: [lat, lon, intensidad]

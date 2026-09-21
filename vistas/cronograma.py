@@ -466,9 +466,9 @@ class VistaCronograma(ctk.CTkFrame):
         cen_nom = sede_activa.get("centro_salud")
         red_nom = sede_activa.get("red_salud")
         
-        if cen_nom and not str(cen_nom).startswith("[ Todos"):
+        if cen_nom and not str(cen_nom).startswith(("Todos", "[ Todos")):
             sufijo_sede = str(cen_nom).replace(" ", "_").replace("/", "_")
-        elif red_nom and not str(red_nom).startswith("[ Todas"):
+        elif red_nom and not str(red_nom).startswith(("Todas", "[ Todas")):
             sufijo_sede = str(red_nom).split("(")[0].strip().replace(" ", "_")
         else:
             sufijo_sede = "GAMLP_General"

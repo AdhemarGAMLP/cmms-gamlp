@@ -118,9 +118,9 @@ class VistaAnalisis(ctk.CTkFrame):
         if contexto and not contexto.get("es_global", True):
             cen_nom = contexto.get("centro_salud")
             red_nom = contexto.get("red_salud")
-            if cen_nom and not str(cen_nom).startswith("[ Todos"):
+            if cen_nom and not str(cen_nom).startswith(("Todos", "[ Todos")):
                 cen_ctx = cen_nom
-            elif red_nom and not str(red_nom).startswith("[ Todas"):
+            elif red_nom and not str(red_nom).startswith(("Todas", "[ Todas")):
                 red_ctx = red_nom
 
         # Prevalencia del drill-down interactivo

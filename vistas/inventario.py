@@ -131,12 +131,12 @@ class VistaInventario(ctk.CTkFrame):
             red_id = contexto.get("red_salud_id")
             red_nom = contexto.get("red_salud")
 
-            if cen_id or (cen_nom and not str(cen_nom).startswith("[ Todos")):
+            if cen_id or (cen_nom and not str(cen_nom).startswith(("Todos", "[ Todos"))):
                 equipos = [eq for eq in equipos if 
                            (cen_id and eq.get("centro_salud_id") == cen_id) or 
                            (cen_nom and str(eq.get("centro_salud_nombre", "")).strip().lower() == str(cen_nom).strip().lower()) or
                            (cen_nom and str(eq.get("servicio", "")).strip().lower() == str(cen_nom).strip().lower())]
-            elif red_id or (red_nom and not str(red_nom).startswith("[ Todas")):
+            elif red_id or (red_nom and not str(red_nom).startswith(("Todas", "[ Todas"))):
                 equipos = [eq for eq in equipos if 
                            (red_id and eq.get("red_salud_id") == red_id) or 
                            (red_nom and str(eq.get("red_salud_nombre", "")).strip().lower() == str(red_nom).strip().lower())]
