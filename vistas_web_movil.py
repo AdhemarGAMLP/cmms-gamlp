@@ -384,6 +384,10 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
 
         /* MEDIA QUERIES PARA ESCRITORIO / PANTALLA GRANDE (>= 1024px) */
         @media (min-width: 1024px) {
+            .container {
+                max-width: 96% !important;
+                padding: 16px 24px;
+            }
             .cards-grid {
                 grid-template-columns: repeat(3, 1fr);
             }
@@ -391,6 +395,79 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                 grid-template-columns: repeat(4, 1fr);
             }
         }
+
+        /* TABLA DE DATOS ESTILO SOFTWARE DE ESCRITORIO */
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            background: #FFFFFF;
+            border-radius: var(--radius-card);
+            border: 1px solid var(--border);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+            margin-top: 10px;
+            margin-bottom: 20px;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            text-align: left;
+            white-space: nowrap;
+        }
+        .data-table th {
+            background: #F1F5F9;
+            color: #1E293B;
+            font-weight: 700;
+            padding: 11px 14px;
+            border-bottom: 2px solid #CBD5E1;
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 0.4px;
+        }
+        .data-table td {
+            padding: 9px 14px;
+            border-bottom: 1px solid #E2E8F0;
+            color: #1E293B;
+            vertical-align: middle;
+        }
+        .data-table tbody tr:nth-child(even) {
+            background: #F8FAFC;
+        }
+        .data-table tbody tr:hover {
+            background: #F0F9FF;
+        }
+        .btn-table-action {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 9px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            text-decoration: none;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: all 0.15s ease;
+        }
+        .btn-table-view {
+            background: #E0F2FE;
+            color: #0369A1;
+            border-color: #BAE6FD;
+        }
+        .btn-table-view:hover { background: #BAE6FD; }
+        .btn-table-edit {
+            background: #FEF3C7;
+            color: #B45309;
+            border-color: #FDE68A;
+        }
+        .btn-table-edit:hover { background: #FDE68A; }
+        .btn-table-del {
+            background: #FEE2E2;
+            color: #B91C1C;
+            border-color: #FECACA;
+        }
+        .btn-table-del:hover { background: #FECACA; }
 
         .tab-pane { display: none; }
         .tab-pane.active {
@@ -686,6 +763,11 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             border-color: var(--accent);
             background: #FFFFFF;
             box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+        }
+        .form-control::placeholder {
+            color: #94A3B8;
+            opacity: 0.7;
+            font-style: italic;
         }
         textarea.form-control {
             min-height: 80px !important;
@@ -1116,9 +1198,9 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
         {% if es_admin or perms.get('Inventario', {}).get('ver', True) %}
         <section id="pane_inventario" class="tab-pane active">
             <div class="tab-tools-bar">
-                <input type="text" id="busq_inventario" class="search-input" placeholder="Buscar equipo o mueble por AF, nombre, área..." oninput="filtrarListaInventario()">
+                <input type="text" id="busq_inventario" class="search-input" placeholder="Buscar equipo o mueble por AF, nombre, marca, serie, área..." oninput="filtrarListaInventario()">
                 {% if es_admin or perms.get('Inventario', {}).get('agregar', True) %}
-                <button class="btn-add-action" onclick="abrirModalRegistroEquipo()">✚ Registrar</button>
+                <button class="btn-add-action" onclick="abrirModalRegistroEquipo()">✚ Registrar Equipo</button>
                 {% endif %}
             </div>
             <!-- FILTRO UNIFICADO DE ACTIVOS -->
@@ -1133,7 +1215,7 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                     🛋️ Solo Muebles y TI <span id="cnt_inv_muebles" class="pill-count">0</span>
                 </button>
             </div>
-            <div id="lista_inventario" class="cards-grid">
+            <div id="lista_inventario">
                 <div class="empty-state"><span>⏳</span>Cargando activos del centro...</div>
             </div>
         </section>
@@ -1154,17 +1236,47 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
         </section>
         {% endif %}
 
-        <!-- 3. PESTAÑA: MUEBLES -->
+        <!-- 3. PESTAÑA: MUEBLES (MUEBLERÍA, EQUIPOS DE COMPUTACIÓN Y ACTIVOS FIJOS) -->
         {% if es_admin or perms.get('Muebleria', {}).get('ver', False) %}
         <section id="pane_muebles" class="tab-pane">
+            <!-- TARJETAS DE ESTADÍSTICAS IDÉNTICAS AL SOFTWARE DE ESCRITORIO -->
+            <div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); margin-bottom: 12px;">
+                <div class="kpi-card" style="padding: 10px 14px; text-align: left;">
+                    <div class="kpi-label" style="font-size: 11px; margin-bottom: 4px;">📦 Total Activos Fijos</div>
+                    <div id="stat_mue_total" class="kpi-value" style="color: var(--primary); font-size: 22px;">0</div>
+                </div>
+                <div class="kpi-card" style="padding: 10px 14px; text-align: left;">
+                    <div class="kpi-label" style="font-size: 11px; margin-bottom: 4px;">🛋️ Mobiliario / TI</div>
+                    <div id="stat_mue_muebles" class="kpi-value" style="color: #D97706; font-size: 22px;">0</div>
+                </div>
+                <div class="kpi-card" style="padding: 10px 14px; text-align: left;">
+                    <div class="kpi-label" style="font-size: 11px; margin-bottom: 4px;">🩺 Equipos Médicos</div>
+                    <div id="stat_mue_equipos" class="kpi-value" style="color: #0284C7; font-size: 22px;">0</div>
+                </div>
+            </div>
+
             <div class="tab-tools-bar">
-                <input type="text" id="busq_muebles" class="search-input" placeholder="Buscar mueble, PC, serie, SISPAM..." oninput="filtrarListaMuebles()">
+                <input type="text" id="busq_muebles" class="search-input" placeholder="Buscar mueble o equipo por código, descripción, marca, serie, custodio..." oninput="filtrarListaMuebles()">
                 {% if es_admin or perms.get('Muebleria', {}).get('agregar', False) %}
-                <button class="btn-add-action" onclick="abrirModalMueble()">✚ Registrar Mueble</button>
+                <button class="btn-add-action" onclick="abrirModalMueble()">✚ Registrar Activo Fijo</button>
                 {% endif %}
             </div>
-            <div id="lista_muebles" class="cards-grid">
-                <div class="empty-state"><span>⏳</span>Cargando activos de mueblería y TI...</div>
+
+            <!-- FILTRO DE ACTIVOS EN MUEBLES -->
+            <div class="asset-filters-bar">
+                <button type="button" class="btn-filter-pill active" id="pill_mue_todo" onclick="setFiltroTipoMuebles('todo')">
+                    🌐 Ver Todos los Activos <span id="cnt_mue_todo" class="pill-count">0</span>
+                </button>
+                <button type="button" class="btn-filter-pill" id="pill_mue_muebles" onclick="setFiltroTipoMuebles('muebles')">
+                    🛋️ Solo Mueblería y TI <span id="cnt_mue_muebles" class="pill-count">0</span>
+                </button>
+                <button type="button" class="btn-filter-pill" id="pill_mue_equipos" onclick="setFiltroTipoMuebles('equipos')">
+                    🩺 Solo Equipos Médicos <span id="cnt_mue_equipos" class="pill-count">0</span>
+                </button>
+            </div>
+
+            <div id="lista_muebles">
+                <div class="empty-state"><span>⏳</span>Cargando activos fijos del centro...</div>
             </div>
         </section>
         {% endif %}
@@ -1549,7 +1661,7 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                 <div class="row-2">
                     <div class="form-group">
                         <label class="form-label" for="modal_eq_serie">N° Serie (Por defecto S/C):</label>
-                        <input type="text" id="modal_eq_serie" class="form-control" value="S/C">
+                        <input type="text" id="modal_eq_serie" class="form-control" placeholder="S/C">
                     </div>
                     <div class="form-group">
                         <label class="form-label" for="modal_eq_estado">Estado:</label>
@@ -1566,15 +1678,15 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                 <div class="row-3">
                     <div class="form-group">
                         <label class="form-label" for="modal_eq_sispam">Cód. SISPAM:</label>
-                        <input type="text" id="modal_eq_sispam" class="form-control" value="S/C">
+                        <input type="text" id="modal_eq_sispam" class="form-control" placeholder="S/C">
                     </div>
                     <div class="form-group">
                         <label class="form-label" for="modal_eq_bertin">Cód. BERTIN:</label>
-                        <input type="text" id="modal_eq_bertin" class="form-control" value="S/C">
+                        <input type="text" id="modal_eq_bertin" class="form-control" placeholder="S/C">
                     </div>
                     <div class="form-group">
                         <label class="form-label" for="modal_eq_sapm">Cód. SAPM:</label>
-                        <input type="text" id="modal_eq_sapm" class="form-control" value="S/C">
+                        <input type="text" id="modal_eq_sapm" class="form-control" placeholder="S/C">
                     </div>
                 </div>
 
@@ -1944,7 +2056,7 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                     </div>
                     <div class="form-group">
                         <label class="form-label" for="mue_serie">Serie:</label>
-                        <input type="text" id="mue_serie" class="form-control" value="S/C">
+                        <input type="text" id="mue_serie" class="form-control" placeholder="S/C">
                     </div>
                 </div>
 
@@ -1952,11 +2064,11 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                 <div class="row-2">
                     <div class="form-group">
                         <label class="form-label" for="mue_sispam">Cód. SISPAM:</label>
-                        <input type="text" id="mue_sispam" class="form-control" value="S/C">
+                        <input type="text" id="mue_sispam" class="form-control" placeholder="S/C">
                     </div>
                     <div class="form-group">
                         <label class="form-label" for="mue_bertin">Cód. BERTIN:</label>
-                        <input type="text" id="mue_bertin" class="form-control" value="S/C">
+                        <input type="text" id="mue_bertin" class="form-control" placeholder="S/C">
                     </div>
                 </div>
 
@@ -1964,7 +2076,7 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                 <div class="row-2">
                     <div class="form-group">
                         <label class="form-label" for="mue_sapm">Cód. SAPM:</label>
-                        <input type="text" id="mue_sapm" class="form-control" value="S/C">
+                        <input type="text" id="mue_sapm" class="form-control" placeholder="S/C">
                     </div>
                     <div class="form-group">
                         <label class="form-label" for="mue_transaccion">Detalle Transacción:</label>
@@ -2283,6 +2395,7 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
         let LISTA_HISTORIAL = [];
         let LISTA_USUARIOS = [];
         let FILTRO_TIPO_ACTIVO = 'todo'; // 'todo' | 'equipos' | 'muebles'
+        let FILTRO_MUEBLES_TIPO = 'todo'; // 'todo' | 'muebles' | 'equipos'
 
         window.addEventListener('DOMContentLoaded', () => {
             alCambiarRedGlobal();
@@ -2892,6 +3005,7 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                 LISTA_EQUIPOS = await res.json();
                 actualizarContadoresInventario();
                 aplicarFiltroInventario();
+                aplicarFiltroMuebles();
 
                 const selInter = document.getElementById('inter_equipo');
                 if (selInter) {
@@ -2910,15 +3024,15 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
 
         async function cargarMueblesCentro(centro, red = '') {
             const cont = document.getElementById('lista_muebles');
-            if (cont) cont.innerHTML = '<div class="empty-state"><span>⏳</span>Cargando muebles...</div>';
+            if (cont) cont.innerHTML = '<div class="empty-state"><span>⏳</span>Cargando muebles y activos...</div>';
             try {
                 let url = `/api/muebles?centro=${encodeURIComponent(centro || '')}`;
                 if (red) url += `&red=${encodeURIComponent(red)}`;
                 const res = await fetch(url);
                 LISTA_MUEBLES = await res.json();
-                if (cont) renderizarListaMuebles(LISTA_MUEBLES);
                 actualizarContadoresInventario();
                 aplicarFiltroInventario();
+                aplicarFiltroMuebles();
             } catch (e) {
                 if (cont) cont.innerHTML = '<div class="empty-state"><span>⚠️</span>Error al cargar muebles</div>';
             }
@@ -3032,77 +3146,78 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                 cont.innerHTML = `<div class="empty-state"><span>📦</span>${msg}</div>`;
                 return;
             }
-            let html = '';
+
+            let rows = '';
             items.forEach(it => {
                 const esEquipo = it._tipo !== 'MUEBLE';
                 if (esEquipo) {
                     const st = (it.estado || 'Bueno').toLowerCase();
                     const badgeCls = st === 'bueno' ? 'status-bueno' : (st === 'regular' ? 'status-regular' : 'status-malo');
-                    const cr = (it.criticidad || 'Media').toLowerCase();
-                    const critCls = cr === 'alta' ? 'status-crit-alta' : (cr === 'media' ? 'status-crit-media' : 'status-crit-baja');
-
-                    let actionsHtml = `<a href="/equipo/${encodeURIComponent(it.id)}" class="btn-card-view">📋 Ficha</a>`;
+                    let actionsHtml = `<a href="/equipo/${encodeURIComponent(it.id)}" class="btn-table-action btn-table-view">📋 Ficha</a>`;
                     if (puede('Inventario', 'cambiar')) {
-                        actionsHtml += `<button type="button" class="btn-card-edit" onclick="editarEquipo('${it.id}')">✎ Editar</button>`;
+                        actionsHtml += `<button type="button" class="btn-table-action btn-table-edit" onclick="editarEquipo('${it.id}')">✎ Editar</button>`;
                     }
                     if (puede('Inventario', 'eliminar')) {
-                        actionsHtml += `<button type="button" class="btn-card-del" onclick="eliminarRegistro('equipos', '${it.id}', '${escaparJs(it.nombre || it.id)}')">🗑️ Eliminar</button>`;
+                        actionsHtml += `<button type="button" class="btn-table-action btn-table-del" onclick="eliminarRegistro('equipos', '${it.id}', '${escaparJs(it.nombre || it.id)}')">🗑️</button>`;
                     }
 
-                    html += `
-                    <div class="card-item" style="border-top: 3px solid #0284C7;">
-                        <div class="card-item-header">
-                            <span class="badge-af">${it.id}</span>
-                            <div style="display:flex; gap:4px; align-items:center;">
-                                <span class="badge-status" style="background:#E0F2FE; color:#0284C7; font-size:10px; font-weight:800;">🩺 EQUIPO</span>
-                                <span class="badge-status ${critCls}">Crit: ${it.criticidad || 'Media'}</span>
-                                <span class="badge-status ${badgeCls}">${it.estado || 'Bueno'}</span>
-                            </div>
-                        </div>
-                        <div class="item-title">${it.nombre}</div>
-                        <div class="item-subtitle">
-                            <span>🏷️ ${it.marca || 'S/M'} ${it.modelo || ''}</span>
-                            <span>•</span>
-                            <span>📍 ${it.area || 'Sin Área'}</span>
-                        </div>
-                        ${it.persona_asignada ? `<div class="item-detail-row">👤 <strong>Responsable:</strong> ${it.persona_asignada} ${it.cargo_asignado ? `(${it.cargo_asignado})` : ''}</div>` : ''}
-                        <div class="item-actions">
-                            ${actionsHtml}
-                        </div>
-                    </div>`;
+                    rows += `
+                    <tr>
+                        <td><strong style="color:#0284C7; font-family:monospace; font-size:12px;">${it.id}</strong></td>
+                        <td><span class="badge-status" style="background:#E0F2FE; color:#0284C7; font-size:10px; font-weight:800;">🩺 EQUIPO</span></td>
+                        <td><strong style="color:#0F172A;">${it.nombre}</strong></td>
+                        <td>${it.marca || 'S/M'} ${it.modelo || ''}</td>
+                        <td><code style="font-size:11px; background:#F1F5F9; padding:2px 5px; border-radius:4px;">${it.numero_serie || 'S/C'}</code></td>
+                        <td>📍 ${it.area || 'General'}</td>
+                        <td>👤 ${it.persona_asignada || 'Sin asignar'} ${it.cargo_asignado ? `<span style="color:#64748B; font-size:11px;">(${it.cargo_asignado})</span>` : ''}</td>
+                        <td><span class="badge-status ${badgeCls}">${it.estado || 'Bueno'}</span></td>
+                        <td style="text-align:center;"><div style="display:inline-flex; gap:4px;">${actionsHtml}</div></td>
+                    </tr>`;
                 } else {
                     let actionsHtml = '';
                     if (puede('Muebleria', 'cambiar')) {
-                        actionsHtml += `<button type="button" class="btn-card-edit" onclick="editarMueble(${it.id})">✎ Editar</button>`;
+                        actionsHtml += `<button type="button" class="btn-table-action btn-table-edit" onclick="editarMueble(${it.id})">✎ Editar</button>`;
                     }
                     if (puede('Muebleria', 'eliminar')) {
-                        actionsHtml += `<button type="button" class="btn-card-del" onclick="eliminarRegistro('muebleria', ${it.id}, '${escaparJs(it.descripcion || it.tipo_activo)}')">🗑️ Eliminar</button>`;
+                        actionsHtml += `<button type="button" class="btn-table-action btn-table-del" onclick="eliminarRegistro('muebleria', ${it.id}, '${escaparJs(it.descripcion || it.tipo_activo)}')">🗑️</button>`;
                     }
 
-                    html += `
-                    <div class="card-item" style="border-top: 3px solid #D97706;">
-                        <div class="card-item-header">
-                            <span class="badge-af" style="color:#B45309; background:#FEF3C7; border-color:#FDE68A;">${it.codigo_sispam || it.id || 'MUEBLE'}</span>
-                            <div style="display:flex; gap:4px; align-items:center;">
-                                <span class="badge-status" style="background:#FEF3C7; color:#B45309; font-size:10px; font-weight:800;">🛋️ MUEBLE/TI</span>
-                                <span class="badge-status status-bueno">${it.estado_conservacion || 'Bueno'}</span>
-                            </div>
-                        </div>
-                        <div class="item-title">${it.descripcion || it.tipo_activo}</div>
-                        <div class="item-subtitle">
-                            <span>🏷️ ${it.marca || 'S/M'} ${it.modelo || ''}</span>
-                            <span>•</span>
-                            <span>Serie: ${it.serie || 'S/S'}</span>
-                        </div>
-                        <div class="item-detail-row">
-                            📍 <strong>Ubicación:</strong> ${it.ubicacion || 'General'}
-                            ${it.persona_asignada ? `<br>👤 <strong>Asignado:</strong> ${it.persona_asignada}` : ''}
-                        </div>
-                        ${actionsHtml ? `<div class="item-actions">${actionsHtml}</div>` : ''}
-                    </div>`;
+                    rows += `
+                    <tr>
+                        <td><strong style="color:#B45309; font-family:monospace; font-size:12px;">${it.codigo_sispam || it.id || 'MUEBLE'}</strong></td>
+                        <td><span class="badge-status" style="background:#FEF3C7; color:#B45309; font-size:10px; font-weight:800;">🛋️ ${it.tipo_activo || 'ACTIVO FIJO'}</span></td>
+                        <td><strong style="color:#0F172A;">${it.descripcion || it.tipo_activo}</strong></td>
+                        <td>${it.marca || 'S/M'} ${it.modelo || ''}</td>
+                        <td><code style="font-size:11px; background:#F1F5F9; padding:2px 5px; border-radius:4px;">${it.serie || 'S/C'}</code></td>
+                        <td>📍 ${it.ubicacion || 'General'}</td>
+                        <td>👤 ${it.persona_asignada || 'Sin asignar'}</td>
+                        <td><span class="badge-status status-bueno">${it.estado_conservacion || 'Bueno'}</span></td>
+                        <td style="text-align:center;"><div style="display:inline-flex; gap:4px;">${actionsHtml}</div></td>
+                    </tr>`;
                 }
             });
-            cont.innerHTML = html;
+
+            cont.innerHTML = `
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th style="min-width:130px;">Cód. AF / ID</th>
+                            <th style="min-width:110px;">Tipo</th>
+                            <th style="min-width:180px;">Equipo / Activo</th>
+                            <th style="min-width:130px;">Marca / Modelo</th>
+                            <th style="min-width:110px;">N° Serie</th>
+                            <th style="min-width:140px;">Piso / Área</th>
+                            <th style="min-width:150px;">Responsable Asignado</th>
+                            <th style="min-width:90px;">Estado</th>
+                            <th style="text-align:center; min-width:130px;">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows}
+                    </tbody>
+                </table>
+            </div>`;
         }
 
         function renderizarListaCatalogo(items) {
@@ -3139,39 +3254,89 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             const cont = document.getElementById('lista_muebles');
             if (!cont) return;
             if (!items || items.length === 0) {
-                cont.innerHTML = '<div class="empty-state"><span>🛋️</span>No hay activos de mueblería o TI</div>';
+                cont.innerHTML = '<div class="empty-state"><span>🛋️</span>No hay activos registrados en este centro</div>';
                 return;
             }
-            let html = '';
-            items.forEach(m => {
+
+            let rows = '';
+            items.forEach(it => {
+                const esEq = it._origen === 'EQUIPO';
                 let actionsHtml = '';
-                if (puede('Muebleria', 'cambiar')) {
-                    actionsHtml += `<button type="button" class="btn-card-edit" onclick="editarMueble(${m.id})">✎ Editar</button>`;
-                }
-                if (puede('Muebleria', 'eliminar')) {
-                    actionsHtml += `<button type="button" class="btn-card-del" onclick="eliminarRegistro('muebleria', ${m.id}, '${m.descripcion || m.tipo_activo}')">🗑️ Eliminar</button>`;
+                if (esEq) {
+                    actionsHtml += `<a href="/equipo/${encodeURIComponent(it.id)}" class="btn-table-action btn-table-view">📋 Ficha</a>`;
+                    if (puede('Inventario', 'cambiar')) {
+                        actionsHtml += `<button type="button" class="btn-table-action btn-table-edit" onclick="editarEquipo('${it.id}')">✎ Editar</button>`;
+                    }
+                    if (puede('Inventario', 'eliminar')) {
+                        actionsHtml += `<button type="button" class="btn-table-action btn-table-del" onclick="eliminarRegistro('equipos', '${it.id}', '${escaparJs(it.nombre || it.id)}')">🗑️</button>`;
+                    }
+                } else {
+                    if (puede('Muebleria', 'cambiar')) {
+                        actionsHtml += `<button type="button" class="btn-table-action btn-table-edit" onclick="editarMueble(${it.id})">✎ Editar</button>`;
+                    }
+                    if (puede('Muebleria', 'eliminar')) {
+                        actionsHtml += `<button type="button" class="btn-table-action btn-table-del" onclick="eliminarRegistro('muebleria', ${it.id}, '${escaparJs(it.descripcion || it.tipo_activo)}')">🗑️</button>`;
+                    }
                 }
 
-                html += `
-                <div class="card-item">
-                    <div class="card-item-header">
-                        <span class="badge-af">${m.tipo_activo || 'ACTIVO'}</span>
-                        <span class="badge-status status-bueno">${m.estado_conservacion || 'Bueno'}</span>
-                    </div>
-                    <div class="item-title">${m.descripcion || m.tipo_activo}</div>
-                    <div class="item-subtitle">
-                        <span>🏷️ ${m.marca || ''} ${m.modelo || ''}</span>
-                        <span>•</span>
-                        <span>Serie: ${m.serie || 'S/C'}</span>
-                    </div>
-                    <div class="item-detail-row">
-                        📍 <strong>Ubicación:</strong> ${m.ubicacion || 'General'}
-                        ${m.persona_asignada ? `<br>👤 <strong>Asignado a:</strong> ${m.persona_asignada}` : ''}
-                    </div>
-                    ${actionsHtml ? `<div class="item-actions">${actionsHtml}</div>` : ''}
-                </div>`;
+                const badgeTipo = esEq 
+                    ? `<span class="badge-status" style="background:#E0F2FE; color:#0284C7; font-size:10px; font-weight:800;">🩺 EQUIPO MÉDICO</span>`
+                    : `<span class="badge-status" style="background:#FEF3C7; color:#B45309; font-size:10px; font-weight:800;">🛋️ ${it.tipo_activo || 'ACTIVO FIJO'}</span>`;
+
+                const st = (it.estado_conservacion || it.estado || 'Bueno').toLowerCase();
+                const badgeStCls = st === 'bueno' ? 'status-bueno' : (st === 'regular' ? 'status-regular' : 'status-malo');
+
+                rows += `
+                <tr>
+                    <td><strong style="color:${esEq ? '#0284C7' : '#B45309'}; font-family:monospace; font-size:12px;">${it.id}</strong></td>
+                    <td>${it.sector_actual || 'SALUD'}</td>
+                    <td style="font-size:11px; color:#475569;">${it.direccion_administrativa || it.red_salud_nombre || ''}</td>
+                    <td style="font-size:11px; font-weight:600;">${it.unidad_organizacional || it.centro_salud_nombre || ''}</td>
+                    <td>${badgeTipo}</td>
+                    <td><strong style="color:#0F172A;">${it.descripcion || it.nombre || it.tipo_activo}</strong></td>
+                    <td>${it.marca || 'S/M'}</td>
+                    <td>${it.modelo || 'S/M'}</td>
+                    <td><code style="font-size:11px; background:#F1F5F9; padding:2px 5px; border-radius:4px;">${it.serie || it.numero_serie || 'S/C'}</code></td>
+                    <td>👤 ${it.persona_asignada || 'Sin asignar'}</td>
+                    <td style="font-family:monospace; font-size:11px;">${it.ci_asignado || 'S/C'}</td>
+                    <td><code style="font-size:11px; background:#F1F5F9; padding:2px 5px; border-radius:4px;">${it.codigo_sispam || 'S/C'}</code></td>
+                    <td><code style="font-size:11px; background:#F1F5F9; padding:2px 5px; border-radius:4px;">${it.bertin || 'S/C'}</code></td>
+                    <td><code style="font-size:11px; background:#F1F5F9; padding:2px 5px; border-radius:4px;">${it.sapm || 'S/C'}</code></td>
+                    <td>📍 ${it.ubicacion || it.area || 'General'}</td>
+                    <td><span class="badge-status ${badgeStCls}">${it.estado_conservacion || it.estado || 'Bueno'}</span></td>
+                    <td style="text-align:center;"><div style="display:inline-flex; gap:4px;">${actionsHtml}</div></td>
+                </tr>`;
             });
-            cont.innerHTML = html;
+
+            cont.innerHTML = `
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th style="min-width:60px;">ID</th>
+                            <th style="min-width:80px;">Sector</th>
+                            <th style="min-width:130px;">Red de Salud</th>
+                            <th style="min-width:150px;">Unidad / Centro</th>
+                            <th style="min-width:140px;">Tipo Activo</th>
+                            <th style="min-width:180px;">Descripción</th>
+                            <th style="min-width:100px;">Marca</th>
+                            <th style="min-width:95px;">Modelo</th>
+                            <th style="min-width:95px;">Serie</th>
+                            <th style="min-width:150px;">Persona Asignada</th>
+                            <th style="min-width:95px;">C.I. Asignado</th>
+                            <th style="min-width:95px;">Cód. SISPAM</th>
+                            <th style="min-width:85px;">BERTIN</th>
+                            <th style="min-width:85px;">SAPM</th>
+                            <th style="min-width:130px;">Ubicación</th>
+                            <th style="min-width:85px;">Estado</th>
+                            <th style="text-align:center; min-width:130px;">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows}
+                    </tbody>
+                </table>
+            </div>`;
         }
 
         function renderizarListaAreas(items) {
@@ -3454,14 +3619,80 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             renderizarListaCatalogo(filt);
         }
 
+        function setFiltroTipoMuebles(tipo) {
+            FILTRO_MUEBLES_TIPO = tipo;
+            ['todo', 'muebles', 'equipos'].forEach(t => {
+                const btn = document.getElementById(`pill_mue_${t}`);
+                if (btn) {
+                    if (t === tipo) btn.classList.add('active');
+                    else btn.classList.remove('active');
+                }
+            });
+            aplicarFiltroMuebles();
+        }
+
+        function aplicarFiltroMuebles() {
+            const numEq = (LISTA_EQUIPOS || []).length;
+            const numMu = (LISTA_MUEBLES || []).length;
+            const numTodo = numEq + numMu;
+
+            const statTot = document.getElementById('stat_mue_total');
+            const statMu = document.getElementById('stat_mue_muebles');
+            const statEq = document.getElementById('stat_mue_equipos');
+            if (statTot) statTot.textContent = numTodo;
+            if (statMu) statMu.textContent = numMu;
+            if (statEq) statEq.textContent = numEq;
+
+            const cTodo = document.getElementById('cnt_mue_todo');
+            const cMu = document.getElementById('cnt_mue_muebles');
+            const cEq = document.getElementById('cnt_mue_equipos');
+            if (cTodo) cTodo.textContent = numTodo;
+            if (cMu) cMu.textContent = numMu;
+            if (cEq) cEq.textContent = numEq;
+
+            const q = (document.getElementById('busq_muebles') ? document.getElementById('busq_muebles').value : '').toLowerCase().trim();
+            let items = [];
+
+            if (FILTRO_MUEBLES_TIPO === 'todo' || FILTRO_MUEBLES_TIPO === 'muebles') {
+                const mus = (LISTA_MUEBLES || []).map(m => ({ ...m, _origen: 'MUEBLE' }));
+                items = items.concat(mus);
+            }
+            if (FILTRO_MUEBLES_TIPO === 'todo' || FILTRO_MUEBLES_TIPO === 'equipos') {
+                const eqs = (LISTA_EQUIPOS || []).map(e => ({
+                    ...e,
+                    _origen: 'EQUIPO',
+                    descripcion: e.nombre,
+                    tipo_activo: 'EQUIPO MÉDICO',
+                    serie: e.numero_serie || 'S/C',
+                    ubicacion: e.area,
+                    estado_conservacion: e.estado
+                }));
+                items = items.concat(eqs);
+            }
+
+            if (q) {
+                items = items.filter(it => {
+                    const idStr = String(it.id || '').toLowerCase();
+                    const descStr = String(it.descripcion || it.nombre || it.tipo_activo || '').toLowerCase();
+                    const marStr = String(it.marca || '').toLowerCase();
+                    const modStr = String(it.modelo || '').toLowerCase();
+                    const serStr = String(it.serie || it.numero_serie || '').toLowerCase();
+                    const ubiStr = String(it.ubicacion || it.area || '').toLowerCase();
+                    const perStr = String(it.persona_asignada || '').toLowerCase();
+                    const sisStr = String(it.codigo_sispam || '').toLowerCase();
+                    const berStr = String(it.bertin || '').toLowerCase();
+                    const sapStr = String(it.sapm || '').toLowerCase();
+                    return idStr.includes(q) || descStr.includes(q) || marStr.includes(q) || modStr.includes(q) ||
+                           serStr.includes(q) || ubiStr.includes(q) || perStr.includes(q) || sisStr.includes(q) ||
+                           berStr.includes(q) || sapStr.includes(q);
+                });
+            }
+
+            renderizarListaMuebles(items);
+        }
+
         function filtrarListaMuebles() {
-            const q = document.getElementById('busq_muebles').value.toLowerCase().trim();
-            const filt = LISTA_MUEBLES.filter(m => 
-                (m.descripcion || '').toLowerCase().includes(q) ||
-                (m.tipo_activo || '').toLowerCase().includes(q) ||
-                (m.serie || '').toLowerCase().includes(q)
-            );
-            renderizarListaMuebles(filt);
+            aplicarFiltroMuebles();
         }
 
         function filtrarListaAreas() {
@@ -3717,11 +3948,11 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             document.getElementById('modal_eq_nombre').value = '';
             document.getElementById('modal_eq_marca').value = '';
             document.getElementById('modal_eq_modelo').value = '';
-            document.getElementById('modal_eq_serie').value = 'S/C';
+            document.getElementById('modal_eq_serie').value = '';
             document.getElementById('modal_eq_estado').value = 'Bueno';
-            document.getElementById('modal_eq_sispam').value = 'S/C';
-            document.getElementById('modal_eq_bertin').value = 'S/C';
-            document.getElementById('modal_eq_sapm').value = 'S/C';
+            document.getElementById('modal_eq_sispam').value = '';
+            document.getElementById('modal_eq_bertin').value = '';
+            document.getElementById('modal_eq_sapm').value = '';
 
             // Auto-llenar datos del área seleccionada
             alCambiarAreaModal();
@@ -3731,7 +3962,7 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             document.getElementById('modal_eq_fabricante').value = '';
             document.getElementById('modal_eq_proveedor').value = '';
             document.getElementById('modal_eq_anio_fab').value = '';
-            document.getElementById('modal_eq_fecha_instalacion').value = '';
+            document.getElementById('modal_eq_fecha_instalacion').value = new Date().toISOString().slice(0, 10);
             const rCompra = document.querySelector('input[name="modalidad_adq"][value="Compra"]');
             if (rCompra) rCompra.checked = true;
             toggleModalidadAdq('Compra');
@@ -3830,11 +4061,11 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             document.getElementById('modal_eq_nombre').value = eq.nombre || '';
             document.getElementById('modal_eq_marca').value = eq.marca || '';
             document.getElementById('modal_eq_modelo').value = eq.modelo || '';
-            document.getElementById('modal_eq_serie').value = eq.numero_serie || 'S/C';
+            document.getElementById('modal_eq_serie').value = (eq.numero_serie && eq.numero_serie !== 'S/C') ? eq.numero_serie : '';
             document.getElementById('modal_eq_estado').value = eq.estado || 'Bueno';
-            document.getElementById('modal_eq_sispam').value = eq.codigo_sispam || 'S/C';
-            document.getElementById('modal_eq_bertin').value = eq.bertin || 'S/C';
-            document.getElementById('modal_eq_sapm').value = eq.sapm || 'S/C';
+            document.getElementById('modal_eq_sispam').value = (eq.codigo_sispam && eq.codigo_sispam !== 'S/C') ? eq.codigo_sispam : '';
+            document.getElementById('modal_eq_bertin').value = (eq.bertin && eq.bertin !== 'S/C') ? eq.bertin : '';
+            document.getElementById('modal_eq_sapm').value = (eq.sapm && eq.sapm !== 'S/C') ? eq.sapm : '';
 
             // Sección 2: Adquisición
             document.getElementById('modal_eq_procedencia').value = eq.procedencia || '';
@@ -3978,10 +4209,10 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             document.getElementById('mue_desc').value = '';
             document.getElementById('mue_marca').value = '';
             document.getElementById('mue_modelo').value = '';
-            document.getElementById('mue_serie').value = 'S/C';
-            document.getElementById('mue_sispam').value = 'S/C';
-            document.getElementById('mue_bertin').value = 'S/C';
-            document.getElementById('mue_sapm').value = 'S/C';
+            document.getElementById('mue_serie').value = '';
+            document.getElementById('mue_sispam').value = '';
+            document.getElementById('mue_bertin').value = '';
+            document.getElementById('mue_sapm').value = '';
             document.getElementById('mue_transaccion').value = 'Asignacion 2026';
             document.getElementById('mue_fecha_asig').value = new Date().toISOString().slice(0, 10);
             document.getElementById('mue_persona').value = '';
@@ -4013,10 +4244,10 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             document.getElementById('mue_desc').value = m.descripcion || '';
             document.getElementById('mue_marca').value = m.marca || '';
             document.getElementById('mue_modelo').value = m.modelo || '';
-            document.getElementById('mue_serie').value = m.serie || 'S/C';
-            document.getElementById('mue_sispam').value = m.codigo_sispam || 'S/C';
-            document.getElementById('mue_bertin').value = m.bertin || 'S/C';
-            document.getElementById('mue_sapm').value = m.sapm || 'S/C';
+            document.getElementById('mue_serie').value = (m.serie && m.serie !== 'S/C') ? m.serie : '';
+            document.getElementById('mue_sispam').value = (m.codigo_sispam && m.codigo_sispam !== 'S/C') ? m.codigo_sispam : '';
+            document.getElementById('mue_bertin').value = (m.bertin && m.bertin !== 'S/C') ? m.bertin : '';
+            document.getElementById('mue_sapm').value = (m.sapm && m.sapm !== 'S/C') ? m.sapm : '';
             document.getElementById('mue_transaccion').value = m.detalle_transaccion || 'Asignacion 2026';
             document.getElementById('mue_fecha_asig').value = (m.fecha_asignacion || '').slice(0, 10);
             
@@ -4458,10 +4689,10 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                 nombre: document.getElementById('modal_eq_nombre').value,
                 marca: document.getElementById('modal_eq_marca').value,
                 modelo: document.getElementById('modal_eq_modelo').value,
-                numero_serie: document.getElementById('modal_eq_serie').value,
-                codigo_sispam: document.getElementById('modal_eq_sispam').value,
-                bertin: document.getElementById('modal_eq_bertin').value || "S/C",
-                sapm: document.getElementById('modal_eq_sapm').value || "S/C",
+                numero_serie: document.getElementById('modal_eq_serie').value.trim() || "S/C",
+                codigo_sispam: document.getElementById('modal_eq_sispam').value.trim() || "S/C",
+                bertin: document.getElementById('modal_eq_bertin').value.trim() || "S/C",
+                sapm: document.getElementById('modal_eq_sapm').value.trim() || "S/C",
                 estado: document.getElementById('modal_eq_estado').value,
                 criticidad: document.getElementById('modal_eq_criticidad').value,
                 categorizacion_detalle: JSON.stringify(detallesCat),

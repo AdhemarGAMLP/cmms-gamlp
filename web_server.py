@@ -4076,12 +4076,7 @@ def api_muebles():
     red = request.args.get('red', '').strip()
     try:
         muebles = obtener_muebles_db(centro_nombre=centro or None, limite=3000, red_nombre=red or None)
-        equipos = obtener_equipos_db(centro_nombre=centro or None, limite=3000, red_nombre=red or None)
-        EXENTOS = {"", "S/C", "0", "DONACION", "SIN CODIGO", "SIN SERIE", "NINGUNO", "N/A", "NO APLICA", "S/N", "SN", "-"}
-        series_eq = {str(eq.get('numero_serie') or '').strip().upper() for eq in equipos if str(eq.get('numero_serie') or '').strip().upper() not in EXENTOS}
-        sispam_eq = {str(eq.get('codigo_sispam') or '').strip().upper() for eq in equipos if str(eq.get('codigo_sispam') or '').strip().upper() not in EXENTOS}
-        muebles_limpios = [m for m in muebles if str(m.get('serie') or '').strip().upper() not in series_eq and str(m.get('codigo_sispam') or '').strip().upper() not in sispam_eq]
-        return jsonify(muebles_limpios)
+        return jsonify(muebles)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
