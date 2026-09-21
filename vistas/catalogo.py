@@ -146,7 +146,7 @@ class VistaCatalogo(ctk.CTkFrame):
         ctk.CTkLabel(v, text="Área:", font=ctk.CTkFont(weight="bold")).pack(anchor="w", padx=100, pady=(5, 0))
         sede_activa = getattr(self.app, "contexto_sede", {}) or {}
         centro_activo = sede_activa.get("centro_salud")
-        if centro_activo and not str(centro_activo).startswith("[ Todos"):
+        if centro_activo and not str(centro_activo).startswith(("Todos", "[ Todos")):
             areas_disponibles = [a for a in self.app.datos.get("areas", []) if str(a.get("centro_salud_nombre") or "").strip().upper() == str(centro_activo).strip().upper()]
         else:
             areas_disponibles = self.app.datos.get("areas", [])

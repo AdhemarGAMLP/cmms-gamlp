@@ -58,7 +58,17 @@ def habilitar_autocompletado(combobox, todas_opciones):
                 if not typed:
                     combobox.configure(values=todas_opciones)
                 else:
-                    filtradas = [o for o in todas_opciones if typed.lower() in o.lower()]
+                    typed_low = typed.lower()
+                    filtradas = [o for o in todas_opciones if typed_low in o.lower()]
+                    # Si no hay coincidencias directas o son pocas, buscar aproximadas / parecidas
+                    if not filtradas or len(filtradas) < 3:
+                        import difflib
+                        opc_map = {o.lower(): o for o in todas_opciones}
+                        cercanas = difflib.get_close_matches(typed_low, list(opc_map.keys()), n=5, cutoff=0.35)
+                        for c in cercanas:
+                            cand = opc_map[c]
+                            if cand not in filtradas:
+                                filtradas.append(cand)
                     combobox.configure(values=filtradas if filtradas else ["No hay coincidencias"])
             except Exception:
                 pass

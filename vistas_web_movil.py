@@ -809,6 +809,63 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
         }
         .btn-modal-submit:active { transform: scale(0.98); }
 
+        /* AUTOCOMPLETADO Y SUGERENCIAS PREDICTIVAS INTELIGENTES */
+        .predictive-wrapper {
+            position: relative;
+            width: 100%;
+        }
+        .predictive-box {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #FFFFFF;
+            border: 1.5px solid #CBD5E1;
+            border-top: none;
+            border-radius: 0 0 10px 10px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.14);
+            max-height: 220px;
+            overflow-y: auto;
+            z-index: 2000;
+            display: none;
+        }
+        .predictive-item {
+            padding: 9px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #F1F5F9;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            transition: background 0.15s ease;
+            text-align: left;
+        }
+        .predictive-item:last-child {
+            border-bottom: none;
+        }
+        .predictive-item:hover, .predictive-item.active {
+            background: #EFF6FF;
+        }
+        .predictive-title {
+            font-size: 13.5px;
+            font-weight: 800;
+            color: #0F172A;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .predictive-badge {
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: #E2E8F0;
+            color: #334155;
+            font-weight: 700;
+        }
+        .predictive-subtitle {
+            font-size: 11.5px;
+            color: #64748B;
+        }
+
         /* DETALLES DE AF Y CHIPS */
         .af-box {
             background: #EFF6FF;
@@ -1407,6 +1464,17 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
 
                 <div class="row-2">
                     <div class="form-group">
+                        <label class="form-label">Dirección Administrativa (Red de Salud):</label>
+                        <input type="text" id="modal_eq_red_display" class="form-control" readonly style="background:#F1F5F9; font-weight:700; color:#003B64;">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Unidad Organizacional (Centro de Salud):</label>
+                        <input type="text" id="modal_eq_centro_display" class="form-control" readonly style="background:#F1F5F9; font-weight:700; color:#003B64;">
+                    </div>
+                </div>
+
+                <div class="row-2">
+                    <div class="form-group">
                         <label class="form-label" for="modal_eq_sector">Sector Actual:</label>
                         <select id="modal_eq_sector" class="form-control">
                             <option value="SALUD" selected>SALUD</option>
@@ -1419,50 +1487,59 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label class="form-label" for="modal_eq_catalogo">Modelo de Catálogo (Autocompletado):</label>
-                    <select id="modal_eq_catalogo" class="form-control" onchange="alSeleccionarCatalogoModal(this.value)">
-                        <option value="">-- Seleccionar o escribir manual --</option>
-                    </select>
+                <!-- MODELO DE CATÁLOGO CON BÚSQUEDA PREDICTIVA -->
+                <div class="form-group predictive-wrapper">
+                    <label class="form-label" for="modal_eq_catalogo_input">Modelo de Catálogo (Búsqueda Predictiva Inteligente):</label>
+                    <input type="text" id="modal_eq_catalogo_input" class="form-control" placeholder="🔍 Escribe para buscar modelo (ej. Des, Monitor, Bomba, Electro...)" autocomplete="off" oninput="buscarSugerenciasCatalogo(this.value)" onfocus="buscarSugerenciasCatalogo(this.value)">
+                    <div id="modal_eq_catalogo_predictive" class="predictive-box"></div>
                 </div>
 
-                <div class="form-group">
-                    <label class="form-label" for="modal_eq_area">Área / Ubicación Física (*):</label>
-                    <select id="modal_eq_area" class="form-control" onchange="alCambiarAreaModal()" required>
-                        <option value="">Cargando áreas...</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label" for="modal_eq_persona">Doctor(a) / Responsable Asignado:</label>
-                    <input type="text" id="modal_eq_persona" class="form-control" placeholder="Nombre de la responsable...">
-                </div>
-
-                <div class="row-2">
-                    <div class="form-group">
-                        <label class="form-label" for="modal_eq_cargo">Cargo:</label>
-                        <input type="text" id="modal_eq_cargo" class="form-control" placeholder="Ej: Médico General">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label" for="modal_eq_ci">C.I.:</label>
-                        <input type="text" id="modal_eq_ci" class="form-control" placeholder="Ej: 4892114 LP">
-                    </div>
-                </div>
-
-                <div class="form-group">
+                <!-- NOMBRE DEL EQUIPO CON RECOMENDACIONES DE ESCRITURA -->
+                <div class="form-group predictive-wrapper">
                     <label class="form-label" for="modal_eq_nombre">Nombre del Equipo (*):</label>
-                    <input type="text" id="modal_eq_nombre" class="form-control" placeholder="Ej: Monitor Multiparámetro" required>
+                    <input type="text" id="modal_eq_nombre" class="form-control" placeholder="Ej: Desfibrilador, Monitor Multiparámetro" autocomplete="off" required oninput="buscarSugerenciasNombreEquipo(this.value)" onfocus="buscarSugerenciasNombreEquipo(this.value)">
+                    <div id="modal_eq_nombre_predictive" class="predictive-box"></div>
                 </div>
 
                 <div class="row-2">
-                    <div class="form-group">
+                    <div class="form-group predictive-wrapper">
                         <label class="form-label" for="modal_eq_marca">Marca:</label>
-                        <input type="text" id="modal_eq_marca" class="form-control" placeholder="Ej: Mindray">
+                        <input type="text" id="modal_eq_marca" class="form-control" placeholder="Ej: Mindray, Bionet, GE" autocomplete="off" oninput="buscarSugerenciasMarca(this.value, 'modal_eq_marca_predictive', 'modal_eq_marca')" onfocus="buscarSugerenciasMarca(this.value, 'modal_eq_marca_predictive', 'modal_eq_marca')">
+                        <div id="modal_eq_marca_predictive" class="predictive-box"></div>
                     </div>
                     <div class="form-group">
                         <label class="form-label" for="modal_eq_modelo">Modelo:</label>
-                        <input type="text" id="modal_eq_modelo" class="form-control" placeholder="Ej: uMEC 10">
+                        <input type="text" id="modal_eq_modelo" class="form-control" placeholder="Ej: BeneHeart D6, uMEC 10">
                     </div>
+                </div>
+
+                <div class="row-2">
+                    <div class="form-group">
+                        <label class="form-label" for="modal_eq_area">Ubicación Física (Piso - Área) (*):</label>
+                        <select id="modal_eq_area" class="form-control" onchange="alCambiarAreaModal()" required>
+                            <option value="">Cargando áreas...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="modal_eq_piso">Piso:</label>
+                        <input type="text" id="modal_eq_piso" class="form-control" placeholder="Piso (se llena solo)" readonly style="background:#F8FAFC;">
+                    </div>
+                </div>
+
+                <div class="row-2">
+                    <div class="form-group">
+                        <label class="form-label" for="modal_eq_persona">Doctor(a) / Responsable Asignado:</label>
+                        <input type="text" id="modal_eq_persona" class="form-control" placeholder="Nombre de la responsable...">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="modal_eq_ci">C.I.:</label>
+                        <input type="text" id="modal_eq_ci" class="form-control" placeholder="Ej: 10954587">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="modal_eq_cargo">Cargo:</label>
+                    <input type="text" id="modal_eq_cargo" class="form-control" placeholder="Ej: Médico General / Responsable">
                 </div>
 
                 <div class="row-2">
@@ -1790,25 +1867,34 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
     <div id="modal_mueble" class="modal-overlay">
         <div class="modal-content-sheet">
             <div class="modal-header-bar">
-                <h2 id="modal_mue_title">🛋️ Registrar Activo Mueblería / TI</h2>
+                <h2 id="modal_mue_title">🛋️ Registrar Activo Fijo (Mueblería / TI)</h2>
                 <button class="btn-close-modal" onclick="cerrarModal('modal_mueble')">✕</button>
             </div>
             <form onsubmit="guardarNuevoMueble(event)">
                 <input type="hidden" id="mue_id" value="">
+
+                <!-- FILA 1: RED Y CENTRO DE SALUD -->
                 <div class="row-2">
                     <div class="form-group">
-                        <label class="form-label" for="mue_tipo">Tipo de Activo (*):</label>
-                        <select id="mue_tipo" class="form-control">
-                            <option value="COMPUTADORA">Computadora / Laptop</option>
-                            <option value="IMPRESORA">Impresora / Escáner</option>
-                            <option value="ESCRITORIO">Escritorio / Mesa</option>
-                            <option value="SILLA">Silla / Sillón</option>
-                            <option value="VITRINA">Vitrina / Estante</option>
-                            <option value="OTRO">Otro Activo</option>
+                        <label class="form-label">Dirección Administrativa (Red de Salud):</label>
+                        <input type="text" id="mue_red_display" class="form-control" readonly style="background:#F1F5F9; font-weight:700; color:#003B64;">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Unidad Organizacional (Centro de Salud):</label>
+                        <input type="text" id="mue_centro_display" class="form-control" readonly style="background:#F1F5F9; font-weight:700; color:#003B64;">
+                    </div>
+                </div>
+
+                <!-- FILA 2: UBICACIÓN FÍSICA Y SECTOR -->
+                <div class="row-2">
+                    <div class="form-group">
+                        <label class="form-label" for="mue_area">Ubicación Física (Piso - Área) (*):</label>
+                        <select id="mue_area" class="form-control" onchange="alCambiarAreaMuebleModal()" required>
+                            <option value="">Cargando áreas...</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label class="form-label" for="mue_sector">Sector:</label>
+                        <label class="form-label" for="mue_sector">Sector Actual:</label>
                         <select id="mue_sector" class="form-control">
                             <option value="SALUD" selected>SALUD</option>
                             <option value="G.A.M.L.P.">G.A.M.L.P.</option>
@@ -1816,78 +1902,70 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label class="form-label" for="mue_desc">Descripción del Bien (*):</label>
-                    <input type="text" id="mue_desc" class="form-control" placeholder="Ej: CPU Lenovo ThinkCentre Core i5" required>
-                </div>
-
+                <!-- FILA 3: PERSONA Y CI ASIGNADOS (SE LLENA SOLO POR ÁREA) -->
                 <div class="row-2">
                     <div class="form-group">
-                        <label class="form-label" for="mue_marca">Marca:</label>
-                        <input type="text" id="mue_marca" class="form-control" placeholder="Ej: HP, Lenovo">
+                        <label class="form-label" for="mue_persona">Persona Asignada (Doctora / Custodio):</label>
+                        <input type="text" id="mue_persona" class="form-control" placeholder="Nombre completo del custodio...">
                     </div>
+                    <div class="form-group">
+                        <label class="form-label" for="mue_ci">C.I. Asignado:</label>
+                        <input type="text" id="mue_ci" class="form-control" placeholder="Ej: 10954587">
+                    </div>
+                </div>
+
+                <!-- FILA 4: TIPO DE ACTIVO LLENABLE CON RECOMENDACIONES Y MARCA -->
+                <div class="row-2">
+                    <div class="form-group predictive-wrapper">
+                        <label class="form-label" for="mue_tipo">Tipo de Activo (*) (Editable / Sugerencias):</label>
+                        <input type="text" id="mue_tipo" class="form-control" placeholder="Ej: COMPUTADORA DE ESCRITORIO, SILLA, ESCRITORIO..." autocomplete="off" required oninput="buscarSugerenciasTipoMueble(this.value)" onfocus="buscarSugerenciasTipoMueble(this.value)">
+                        <div id="mue_tipo_predictive" class="predictive-box"></div>
+                    </div>
+                    <div class="form-group predictive-wrapper">
+                        <label class="form-label" for="mue_marca">Marca:</label>
+                        <input type="text" id="mue_marca" class="form-control" placeholder="Ej: HP, Lenovo, Melamina" autocomplete="off" oninput="buscarSugerenciasMarca(this.value, 'mue_marca_predictive', 'mue_marca')" onfocus="buscarSugerenciasMarca(this.value, 'mue_marca_predictive', 'mue_marca')">
+                        <div id="mue_marca_predictive" class="predictive-box"></div>
+                    </div>
+                </div>
+
+                <!-- FILA 5: MODELO Y SERIE -->
+                <div class="row-2">
                     <div class="form-group">
                         <label class="form-label" for="mue_modelo">Modelo:</label>
                         <input type="text" id="mue_modelo" class="form-control" placeholder="Ej: ProDesk 400">
                     </div>
-                </div>
-
-                <div class="row-2">
                     <div class="form-group">
                         <label class="form-label" for="mue_serie">Serie:</label>
                         <input type="text" id="mue_serie" class="form-control" value="S/C">
                     </div>
+                </div>
+
+                <!-- FILA 6: CÓD. SISPAM Y BERTIN -->
+                <div class="row-2">
                     <div class="form-group">
                         <label class="form-label" for="mue_sispam">Cód. SISPAM:</label>
                         <input type="text" id="mue_sispam" class="form-control" value="S/C">
                     </div>
-                </div>
-
-                <div class="row-2">
                     <div class="form-group">
                         <label class="form-label" for="mue_bertin">Cód. BERTIN:</label>
                         <input type="text" id="mue_bertin" class="form-control" value="S/C">
                     </div>
+                </div>
+
+                <!-- FILA 7: SAPM Y TRANSACCIÓN -->
+                <div class="row-2">
                     <div class="form-group">
                         <label class="form-label" for="mue_sapm">Cód. SAPM:</label>
                         <input type="text" id="mue_sapm" class="form-control" value="S/C">
                     </div>
-                </div>
-
-                <div class="row-2">
                     <div class="form-group">
                         <label class="form-label" for="mue_transaccion">Detalle Transacción:</label>
                         <input type="text" id="mue_transaccion" class="form-control" value="Asignacion 2026">
                     </div>
-                    <div class="form-group">
-                        <label class="form-label" for="mue_fecha_asig">Fecha Asignación:</label>
-                        <input type="date" id="mue_fecha_asig" class="form-control">
-                    </div>
                 </div>
 
-                <div class="form-group">
-                    <label class="form-label" for="mue_area">Ubicación / Área (*):</label>
-                    <select id="mue_area" class="form-control" required>
-                        <option value="">Cargando áreas...</option>
-                    </select>
-                </div>
-
+                <!-- FILA 8: ESTADO Y FECHA DE ASIGNACIÓN -->
                 <div class="row-2">
-                    <div class="form-group">
-                        <label class="form-label" for="mue_persona">Persona Asignada:</label>
-                        <input type="text" id="mue_persona" class="form-control" placeholder="Nombre completo">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label" for="mue_cargo">Cargo Asignado:</label>
-                        <input type="text" id="mue_cargo" class="form-control" placeholder="Cargo">
-                    </div>
-                </div>
-
-                <div class="row-2">
-                    <div class="form-group">
-                        <label class="form-label" for="mue_ci">C.I. Asignado:</label>
-                        <input type="text" id="mue_ci" class="form-control" placeholder="Ej: 6928114 LP">
-                    </div>
                     <div class="form-group">
                         <label class="form-label" for="mue_estado">Estado Conservación:</label>
                         <select id="mue_estado" class="form-control">
@@ -1897,14 +1975,31 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                             <option value="Baja">Baja</option>
                         </select>
                     </div>
+                    <div class="form-group">
+                        <label class="form-label" for="mue_fecha_asig">Fecha Asignación:</label>
+                        <input type="date" id="mue_fecha_asig" class="form-control">
+                    </div>
                 </div>
 
+                <!-- FILA 9: CARGO Y DESCRIPCIÓN DEL BIEN -->
+                <div class="row-2">
+                    <div class="form-group">
+                        <label class="form-label" for="mue_cargo">Cargo Asignado:</label>
+                        <input type="text" id="mue_cargo" class="form-control" placeholder="Ej: Biomedico, Médico General">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="mue_desc">Descripción del Bien (*):</label>
+                        <input type="text" id="mue_desc" class="form-control" placeholder="Ej: CPU Lenovo ThinkCentre Core i5" required>
+                    </div>
+                </div>
+
+                <!-- FILA 10: OBSERVACIONES -->
                 <div class="form-group">
                     <label class="form-label" for="mue_obs">Observaciones:</label>
                     <textarea id="mue_obs" class="form-control" placeholder="Observaciones del bien mueble o TI..."></textarea>
                 </div>
 
-                <button type="submit" id="btn_guardar_mue" class="btn-modal-submit">💾 Guardar Activo Mueble / TI</button>
+                <button type="submit" id="btn_guardar_mue" class="btn-modal-submit">💾 Guardar Activo Fijo</button>
             </form>
         </div>
     </div>
@@ -2268,6 +2363,317 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
         // CARGAS DE DATOS DE LA API
         // =====================================================================
 
+        // =====================================================================
+        // UTILIDADES DE ÁREAS Y UBICACIÓN FÍSICA
+        // =====================================================================
+
+        function formatearAreaNombre(a) {
+            if (!a) return '';
+            const nom = (a.nombre || '').trim();
+            let piso = (a.piso || '').trim();
+            if (!piso || piso === '-') return nom;
+            const low = piso.toLowerCase();
+            if (!low.startsWith('piso') && !low.startsWith('planta') && !low.startsWith('pb')) {
+                piso = 'Piso ' + piso;
+            }
+            return `${piso} - ${nom}`;
+        }
+
+        function obtenerAreaObj(val) {
+            if (!val) return null;
+            const v = String(val).toLowerCase().trim();
+            return (LISTA_AREAS || []).find(a => {
+                const fmt = formatearAreaNombre(a).toLowerCase().trim();
+                const nom = (a.nombre || '').toLowerCase().trim();
+                if (fmt === v || nom === v || String(a.id) === v) return true;
+                if (v.endsWith('- ' + nom) || v.endsWith(nom)) return true;
+                if (nom && v.includes(nom)) return true;
+                return false;
+            }) || null;
+        }
+
+        // =====================================================================
+        // MOTOR PREDICTIVO DE ESCRITURA Y AUTOCOMPLETADO INTELIGENTE
+        // =====================================================================
+
+        function calcularSimilitud(s1, s2) {
+            if (!s1 || !s2) return 0;
+            const str1 = s1.toLowerCase().trim();
+            const str2 = s2.toLowerCase().trim();
+            if (str1 === str2) return 1.0;
+            if (str2.startsWith(str1) || str1.startsWith(str2)) return 0.95;
+            if (str2.includes(str1) || str1.includes(str2)) return 0.85;
+
+            // Levenshtein para tolerancia a errores ortográficos y variaciones
+            const m = str1.length, n = str2.length;
+            const d = [];
+            for (let i = 0; i <= m; i++) d[i] = [i];
+            for (let j = 0; j <= n; j++) d[0][j] = j;
+            for (let i = 1; i <= m; i++) {
+                for (let j = 1; j <= n; j++) {
+                    const cost = str1[i - 1] === str2[j - 1] ? 0 : 1;
+                    d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + cost);
+                }
+            }
+            const dist = d[m][n];
+            const maxLen = Math.max(m, n);
+            return maxLen === 0 ? 1 : (1 - dist / maxLen);
+        }
+
+        function cerrarCajasPredictivas() {
+            document.querySelectorAll('.predictive-box').forEach(b => {
+                b.style.display = 'none';
+                b.innerHTML = '';
+            });
+        }
+
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.predictive-wrapper')) {
+                cerrarCajasPredictivas();
+            }
+        });
+
+        const NOMBRES_EQUIPOS_ESTANDAR = [
+            "Desfibrilador", "Desfibrilador Bifásico", "Desfibrilador Monofásico",
+            "Monitor Multiparámetro", "Monitor de Signos Vitales", "Electrocardiógrafo",
+            "Bomba de Infusión", "Bomba de Jeringa", "Incubadora Neonatal", "Incubadora de Transporte",
+            "Aspirador de Secreciones", "Esterilizador Autoclave", "Autoclave a Vapor",
+            "Centrífuga de Laboratorio", "Microscopio Binocular", "Ecógrafo Portátil", "Ecógrafo Doppler",
+            "Lámpara Cialítica", "Mesa de Operaciones", "Oxímetro de Pulso", "Tensiómetro Digital",
+            "Tensiómetro Aneroide", "Termómetro Infrarrojo", "Laringoscopio", "Negatoscopio",
+            "Balanza con Altimetro", "Glucómetro", "Ambulancia Móvil", "Equipo de Rayos X Portátil",
+            "Equipo de Rayos X Dental", "Sillón Odontológico", "Doppler Fetal", "Fototerapia Neonatal",
+            "Concentrador de Oxígeno", "Ventilador Mecánico / Respirador"
+        ];
+
+        const TIPOS_MUEBLES_BASE = [
+            "COMPUTADORA DE ESCRITORIO",
+            "COMPUTADORA PORTÁTIL / LAPTOP",
+            "IMPRESORA LÁSER / MULTIFUNCIONAL",
+            "ESCÁNER DOCUMENTAL",
+            "MONITOR / PANTALLA LED",
+            "ESTABILIZADOR DE VOLTAJE",
+            "UPS / SISTEMA DE RESPALDO",
+            "ESCRITORIO METÁLICO / MELAMINA",
+            "SILLA GIRATORIA ERGONÓMICA",
+            "SILLA TANDEM / ESPERA",
+            "SILLÓN EJECUTIVO",
+            "VITRINA MÉDICA DE VIDRIO",
+            "ESTANTE METÁLICO",
+            "GAVETERO / ARCHIVADOR",
+            "MESA DE CURACIONES / EXAMEN",
+            "PORTASUERO METÁLICO",
+            "BIOMBO CLÍNICO",
+            "CAMILLA DE TRANSPORTE",
+            "REFRIGERADOR DE BIOLÓGICOS / VACUNAS",
+            "AIRE ACONDICIONADO"
+        ];
+
+        const MARCAS_BASE = [
+            "Mindray", "GE Healthcare", "Philips", "Nihon Kohden", "Bionet",
+            "Welch Allyn", "Contec", "Edan", "Dräger", "Siemens", "HP", "Lenovo",
+            "Dell", "Epson", "Canon", "Brother", "Samsung", "LG", "AOC",
+            "Kingston", "APC", "Melamina GAMLP", "Metálica GAMLP"
+        ];
+
+        function buscarSugerenciasCatalogo(query) {
+            const box = document.getElementById('modal_eq_catalogo_predictive');
+            if (!box) return;
+            const q = (query || '').trim();
+            const items = (LISTA_CATALOGO || []).map(c => {
+                const fullStr = `${c.nombre || ''} ${c.marca || ''} ${c.modelo || ''}`.trim();
+                const score = q ? Math.max(
+                    calcularSimilitud(q, c.nombre || ''),
+                    calcularSimilitud(q, c.marca || ''),
+                    calcularSimilitud(q, c.modelo || ''),
+                    calcularSimilitud(q, fullStr)
+                ) : 1;
+                return { item: c, score: score, fullStr: fullStr };
+            }).filter(x => !q || x.score >= 0.38 || x.fullStr.toLowerCase().includes(q.toLowerCase()))
+              .sort((a, b) => b.score - a.score)
+              .slice(0, 8);
+
+            if (items.length === 0) {
+                box.innerHTML = `<div class="predictive-item" style="cursor:default; color:#94A3B8;">Sin coincidencias en catálogo. Escribe el nombre abajo.</div>`;
+                box.style.display = 'block';
+                return;
+            }
+
+            let html = '';
+            items.forEach(it => {
+                const c = it.item;
+                html += `
+                <div class="predictive-item" onclick="seleccionarCatalogoSugerido(${c.id})">
+                    <div class="predictive-title">
+                        <span>${c.nombre}</span>
+                        <span class="predictive-badge">Catálogo</span>
+                    </div>
+                    <div class="predictive-subtitle">
+                        ${c.marca ? `<strong>Marca:</strong> ${c.marca}` : ''} 
+                        ${c.modelo ? `| <strong>Modelo:</strong> ${c.modelo}` : ''}
+                        ${c.area ? `| <strong>Área sugerida:</strong> ${c.area}` : ''}
+                    </div>
+                </div>`;
+            });
+            box.innerHTML = html;
+            box.style.display = 'block';
+        }
+
+        function seleccionarCatalogoSugerido(catId) {
+            const c = (LISTA_CATALOGO || []).find(it => String(it.id) === String(catId));
+            if (!c) return;
+            const inpCat = document.getElementById('modal_eq_catalogo_input');
+            if (inpCat) inpCat.value = `${c.nombre} (${c.marca || ''} ${c.modelo || ''})`.replace(/\\(\\s*\\)/g, '').trim();
+
+            document.getElementById('modal_eq_nombre').value = c.nombre || '';
+            if (c.marca) document.getElementById('modal_eq_marca').value = c.marca;
+            if (c.modelo) document.getElementById('modal_eq_modelo').value = c.modelo;
+
+            if (c.area) {
+                const matchArea = obtenerAreaObj(c.area);
+                if (matchArea) {
+                    document.getElementById('modal_eq_area').value = formatearAreaNombre(matchArea);
+                    alCambiarAreaModal();
+                }
+            }
+            cerrarCajasPredictivas();
+        }
+
+        function buscarSugerenciasNombreEquipo(query) {
+            const box = document.getElementById('modal_eq_nombre_predictive');
+            if (!box) return;
+            const q = (query || '').trim();
+
+            const poolNombres = new Set();
+            NOMBRES_EQUIPOS_ESTANDAR.forEach(n => poolNombres.add(n));
+            (LISTA_CATALOGO || []).forEach(c => { if (c.nombre) poolNombres.add(c.nombre); });
+            (LISTA_EQUIPOS || []).forEach(e => { if (e.nombre) poolNombres.add(e.nombre); });
+
+            const lista = Array.from(poolNombres).map(n => ({
+                nombre: n,
+                score: q ? calcularSimilitud(q, n) : 1
+            })).filter(x => !q || x.score >= 0.4 || x.nombre.toLowerCase().includes(q.toLowerCase()))
+              .sort((a, b) => b.score - a.score)
+              .slice(0, 8);
+
+            if (lista.length === 0) {
+                box.style.display = 'none';
+                return;
+            }
+
+            let html = '';
+            lista.forEach(item => {
+                html += `
+                <div class="predictive-item" onclick="seleccionarNombreEquipoSugerido('${item.nombre.replace(/'/g, "\\'")}')">
+                    <div class="predictive-title">
+                        <span>${item.nombre}</span>
+                        <span class="predictive-badge">Equipo</span>
+                    </div>
+                </div>`;
+            });
+            box.innerHTML = html;
+            box.style.display = 'block';
+        }
+
+        function seleccionarNombreEquipoSugerido(nombre) {
+            document.getElementById('modal_eq_nombre').value = nombre;
+            const cat = (LISTA_CATALOGO || []).find(c => (c.nombre || '').toLowerCase() === nombre.toLowerCase());
+            if (cat) {
+                const eMarca = document.getElementById('modal_eq_marca');
+                const eModelo = document.getElementById('modal_eq_modelo');
+                if (eMarca && !eMarca.value && cat.marca) eMarca.value = cat.marca;
+                if (eModelo && !eModelo.value && cat.modelo) eModelo.value = cat.modelo;
+            }
+            cerrarCajasPredictivas();
+        }
+
+        function buscarSugerenciasTipoMueble(query) {
+            const box = document.getElementById('mue_tipo_predictive');
+            if (!box) return;
+            const q = (query || '').trim();
+
+            const pool = new Set();
+            TIPOS_MUEBLES_BASE.forEach(t => pool.add(t));
+            (LISTA_MUEBLES || []).forEach(m => { if (m.tipo_activo) pool.add(m.tipo_activo.toUpperCase()); });
+
+            const lista = Array.from(pool).map(t => ({
+                tipo: t,
+                score: q ? calcularSimilitud(q, t) : 1
+            })).filter(x => !q || x.score >= 0.38 || x.tipo.toLowerCase().includes(q.toLowerCase()))
+              .sort((a, b) => b.score - a.score)
+              .slice(0, 8);
+
+            if (lista.length === 0) {
+                box.style.display = 'none';
+                return;
+            }
+
+            let html = '';
+            lista.forEach(it => {
+                html += `
+                <div class="predictive-item" onclick="seleccionarTipoMuebleSugerido('${it.tipo.replace(/'/g, "\\'")}')">
+                    <div class="predictive-title">
+                        <span>${it.tipo}</span>
+                        <span class="predictive-badge">Tipo Activo</span>
+                    </div>
+                </div>`;
+            });
+            box.innerHTML = html;
+            box.style.display = 'block';
+        }
+
+        function seleccionarTipoMuebleSugerido(tipo) {
+            document.getElementById('mue_tipo').value = tipo;
+            cerrarCajasPredictivas();
+        }
+
+        function buscarSugerenciasMarca(query, boxId, inputId) {
+            const box = document.getElementById(boxId);
+            if (!box) return;
+            const q = (query || '').trim();
+
+            const pool = new Set();
+            MARCAS_BASE.forEach(m => pool.add(m));
+            (LISTA_CATALOGO || []).forEach(c => { if (c.marca) pool.add(c.marca); });
+            (LISTA_EQUIPOS || []).forEach(e => { if (e.marca) pool.add(e.marca); });
+            (LISTA_MUEBLES || []).forEach(m => { if (m.marca) pool.add(m.marca); });
+
+            const lista = Array.from(pool).map(m => ({
+                marca: m,
+                score: q ? calcularSimilitud(q, m) : 1
+            })).filter(x => !q || x.score >= 0.4 || x.marca.toLowerCase().includes(q.toLowerCase()))
+              .sort((a, b) => b.score - a.score)
+              .slice(0, 8);
+
+            if (lista.length === 0) {
+                box.style.display = 'none';
+                return;
+            }
+
+            let html = '';
+            lista.forEach(it => {
+                html += `
+                <div class="predictive-item" onclick="seleccionarMarcaSugerida('${it.marca.replace(/'/g, "\\'")}', '${inputId}')">
+                    <div class="predictive-title">
+                        <span>${it.marca}</span>
+                        <span class="predictive-badge">Marca</span>
+                    </div>
+                </div>`;
+            });
+            box.innerHTML = html;
+            box.style.display = 'block';
+        }
+
+        function seleccionarMarcaSugerida(marca, inputId) {
+            const inp = document.getElementById(inputId);
+            if (inp) inp.value = marca;
+            cerrarCajasPredictivas();
+        }
+
+        // =====================================================================
+        // CARGA DE ÁREAS VINCULADAS AL CENTRO SELECCIONADO
+        // =====================================================================
+
         async function cargarAreasGlobal(centro, red = '') {
             try {
                 let url = `/api/areas?centro=${encodeURIComponent(centro || '')}`;
@@ -2278,22 +2684,35 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
 
                 const selEqArea = document.getElementById('modal_eq_area');
                 const selMueArea = document.getElementById('mue_area');
-                if (selEqArea) selEqArea.innerHTML = '<option value="">-- Seleccionar Área --</option>';
-                if (selMueArea) selMueArea.innerHTML = '<option value="">-- Seleccionar Área --</option>';
+                if (selEqArea) selEqArea.innerHTML = '<option value="">-- Seleccionar Ubicación (Piso - Área) --</option>';
+                if (selMueArea) selMueArea.innerHTML = '<option value="">-- Seleccionar Ubicación (Piso - Área) --</option>';
 
                 LISTA_AREAS.forEach(a => {
-                    const p = a.piso ? ` (${a.piso})` : '';
+                    const fmt = formatearAreaNombre(a);
                     if (selEqArea) {
                         const o1 = document.createElement('option');
-                        o1.value = a.nombre; o1.textContent = a.nombre + p;
+                        o1.value = fmt; o1.textContent = fmt;
                         selEqArea.appendChild(o1);
                     }
                     if (selMueArea) {
                         const o2 = document.createElement('option');
-                        o2.value = a.nombre; o2.textContent = a.nombre + p;
+                        o2.value = fmt; o2.textContent = fmt;
                         selMueArea.appendChild(o2);
                     }
                 });
+
+                // Auto-seleccionar primer área si existe para autollenar datos de doctor y custodio
+                if (LISTA_AREAS.length > 0) {
+                    const primerFmt = formatearAreaNombre(LISTA_AREAS[0]);
+                    if (selEqArea && (!selEqArea.value || selEqArea.selectedIndex <= 0)) {
+                        selEqArea.value = primerFmt;
+                        alCambiarAreaModal();
+                    }
+                    if (selMueArea && (!selMueArea.value || selMueArea.selectedIndex <= 0)) {
+                        selMueArea.value = primerFmt;
+                        alCambiarAreaMuebleModal();
+                    }
+                }
             } catch (e) { console.error(e); }
         }
 
@@ -3138,10 +3557,15 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             document.getElementById('modal_eq_id_af').value = '';
             document.getElementById('modal_eq_es_edicion').value = "0";
 
+            // Sede context y modelo
+            if (document.getElementById('modal_eq_red_display')) document.getElementById('modal_eq_red_display').value = red || 'RED GAMLP';
+            if (document.getElementById('modal_eq_centro_display')) document.getElementById('modal_eq_centro_display').value = centro || 'GENERAL';
+            if (document.getElementById('modal_eq_catalogo_input')) document.getElementById('modal_eq_catalogo_input').value = '';
+            if (document.getElementById('modal_eq_catalogo')) document.getElementById('modal_eq_catalogo').value = '';
+
             // Limpiar campos Sección 1
             document.getElementById('modal_eq_sector').value = 'SALUD';
             document.getElementById('modal_eq_servicio').value = '';
-            document.getElementById('modal_eq_catalogo').value = '';
             document.getElementById('modal_eq_persona').value = '';
             document.getElementById('modal_eq_cargo').value = '';
             document.getElementById('modal_eq_ci').value = '';
@@ -3153,6 +3577,9 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             document.getElementById('modal_eq_sispam').value = 'S/C';
             document.getElementById('modal_eq_bertin').value = 'S/C';
             document.getElementById('modal_eq_sapm').value = 'S/C';
+
+            // Auto-llenar datos del área seleccionada
+            alCambiarAreaModal();
 
             // Limpiar campos Sección 2
             document.getElementById('modal_eq_procedencia').value = '';
@@ -3239,10 +3666,25 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             document.getElementById('modal_eq_es_edicion').value = "1";
 
             // Sección 1: Identificación y Ubicación
+            const red = document.getElementById('top_red').value;
+            const centro = document.getElementById('top_centro').value;
+            if (document.getElementById('modal_eq_red_display')) document.getElementById('modal_eq_red_display').value = eq.red_salud_nombre || red || 'RED GAMLP';
+            if (document.getElementById('modal_eq_centro_display')) document.getElementById('modal_eq_centro_display').value = eq.centro_salud_nombre || centro || 'GENERAL';
+            if (document.getElementById('modal_eq_catalogo_input')) document.getElementById('modal_eq_catalogo_input').value = '';
+            if (document.getElementById('modal_eq_catalogo')) document.getElementById('modal_eq_catalogo').value = '';
+
             document.getElementById('modal_eq_sector').value = eq.sector_actual || 'SALUD';
             document.getElementById('modal_eq_servicio').value = eq.servicio || '';
             const selArea = document.getElementById('modal_eq_area');
-            if (eq.area) selArea.value = eq.area;
+            if (eq.area) {
+                const match = obtenerAreaObj(eq.area);
+                if (match) {
+                    selArea.value = formatearAreaNombre(match);
+                    if (document.getElementById('modal_eq_piso')) document.getElementById('modal_eq_piso').value = match.piso || '';
+                } else {
+                    selArea.value = eq.area;
+                }
+            }
             document.getElementById('modal_eq_persona').value = eq.persona_asignada || '';
             document.getElementById('modal_eq_cargo').value = eq.cargo_asignado || '';
             document.getElementById('modal_eq_ci').value = eq.ci_asignado || '';
@@ -3386,8 +3828,15 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
         }
 
         function abrirModalMueble() {
-            document.getElementById('modal_mue_title').textContent = '🛋️ Registrar Activo Mueblería / TI';
+            document.getElementById('modal_mue_title').textContent = '🛋️ Registrar Activo Fijo (Mueblería / TI)';
             document.getElementById('mue_id').value = '';
+
+            const red = document.getElementById('top_red').value;
+            const centro = document.getElementById('top_centro').value;
+            if (document.getElementById('mue_red_display')) document.getElementById('mue_red_display').value = red || 'RED GAMLP';
+            if (document.getElementById('mue_centro_display')) document.getElementById('mue_centro_display').value = centro || 'GENERAL';
+
+            document.getElementById('mue_tipo').value = '';
             document.getElementById('mue_desc').value = '';
             document.getElementById('mue_marca').value = '';
             document.getElementById('mue_modelo').value = '';
@@ -3396,13 +3845,17 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             document.getElementById('mue_bertin').value = 'S/C';
             document.getElementById('mue_sapm').value = 'S/C';
             document.getElementById('mue_transaccion').value = 'Asignacion 2026';
-            document.getElementById('mue_fecha_asig').value = '';
+            document.getElementById('mue_fecha_asig').value = new Date().toISOString().slice(0, 10);
             document.getElementById('mue_persona').value = '';
             document.getElementById('mue_cargo').value = '';
             document.getElementById('mue_ci').value = '';
             document.getElementById('mue_estado').value = 'Bueno';
             document.getElementById('mue_obs').value = '';
-            document.getElementById('btn_guardar_mue').textContent = '💾 Guardar Activo Mueble / TI';
+            document.getElementById('btn_guardar_mue').textContent = '💾 Guardar Activo Fijo';
+
+            // Auto-llenar datos del área seleccionada
+            alCambiarAreaMuebleModal();
+
             abrirModal('modal_mueble');
         }
 
@@ -3411,7 +3864,13 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             if (!m) return;
             document.getElementById('modal_mue_title').textContent = `✎ Modificar Activo [${m.descripcion || m.tipo_activo}]`;
             document.getElementById('mue_id').value = m.id;
-            document.getElementById('mue_tipo').value = m.tipo_activo || 'COMPUTADORA';
+
+            const red = document.getElementById('top_red').value;
+            const centro = document.getElementById('top_centro').value;
+            if (document.getElementById('mue_red_display')) document.getElementById('mue_red_display').value = m.direccion_administrativa || red || 'RED GAMLP';
+            if (document.getElementById('mue_centro_display')) document.getElementById('mue_centro_display').value = m.unidad_organizacional || centro || 'GENERAL';
+
+            document.getElementById('mue_tipo').value = m.tipo_activo || '';
             document.getElementById('mue_sector').value = m.sector_actual || 'SALUD';
             document.getElementById('mue_desc').value = m.descripcion || '';
             document.getElementById('mue_marca').value = m.marca || '';
@@ -3422,16 +3881,21 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             document.getElementById('mue_sapm').value = m.sapm || 'S/C';
             document.getElementById('mue_transaccion').value = m.detalle_transaccion || 'Asignacion 2026';
             document.getElementById('mue_fecha_asig').value = (m.fecha_asignacion || '').slice(0, 10);
-            if (m.ubicacion && m.ubicacion.includes(' - ')) {
-                const parts = m.ubicacion.split(' - ');
-                document.getElementById('mue_area').value = parts[parts.length - 1].trim();
+            
+            if (m.ubicacion) {
+                const match = obtenerAreaObj(m.ubicacion);
+                if (match) {
+                    document.getElementById('mue_area').value = formatearAreaNombre(match);
+                } else {
+                    document.getElementById('mue_area').value = m.ubicacion;
+                }
             }
             document.getElementById('mue_persona').value = m.persona_asignada || '';
             document.getElementById('mue_cargo').value = m.cargo_asignado || '';
             document.getElementById('mue_ci').value = m.ci_asignado || '';
             document.getElementById('mue_estado').value = m.estado_conservacion || 'Bueno';
             document.getElementById('mue_obs').value = m.observaciones_de_asignacion || '';
-            document.getElementById('btn_guardar_mue').textContent = '💾 Actualizar Activo Mueble / TI';
+            document.getElementById('btn_guardar_mue').textContent = '💾 Actualizar Activo Fijo';
             abrirModal('modal_mueble');
         }
 
@@ -3619,11 +4083,23 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
         function alCambiarAreaModal() {
             const aNom = document.getElementById('modal_eq_area').value;
             if (!aNom) return;
-            const match = LISTA_AREAS.find(a => a.nombre === aNom);
+            const match = obtenerAreaObj(aNom);
             if (match) {
                 if (match.encargado) document.getElementById('modal_eq_persona').value = match.encargado;
                 if (match.cargo) document.getElementById('modal_eq_cargo').value = match.cargo;
                 if (match.ci_encargado) document.getElementById('modal_eq_ci').value = match.ci_encargado;
+                if (match.piso && document.getElementById('modal_eq_piso')) document.getElementById('modal_eq_piso').value = match.piso;
+            }
+        }
+
+        function alCambiarAreaMuebleModal() {
+            const aNom = document.getElementById('mue_area').value;
+            if (!aNom) return;
+            const match = obtenerAreaObj(aNom);
+            if (match) {
+                if (match.encargado) document.getElementById('mue_persona').value = match.encargado;
+                if (match.cargo) document.getElementById('mue_cargo').value = match.cargo;
+                if (match.ci_encargado) document.getElementById('mue_ci').value = match.ci_encargado;
             }
         }
 
@@ -3636,13 +4112,9 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             if (it.modelo) document.getElementById('modal_eq_modelo').value = it.modelo;
 
             if (it.area && LISTA_AREAS.length > 0) {
-                const matchArea = LISTA_AREAS.find(a => 
-                    a.nombre.toLowerCase().trim() === it.area.toLowerCase().trim() ||
-                    a.nombre.toLowerCase().includes(it.area.toLowerCase()) ||
-                    it.area.toLowerCase().includes(a.nombre.toLowerCase())
-                );
+                const matchArea = obtenerAreaObj(it.area);
                 if (matchArea) {
-                    document.getElementById('modal_eq_area').value = matchArea.nombre;
+                    document.getElementById('modal_eq_area').value = formatearAreaNombre(matchArea);
                     alCambiarAreaModal();
                 }
             }
@@ -3939,25 +4411,39 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
         async function guardarNuevoMueble(event) {
             event.preventDefault();
             const idVal = document.getElementById('mue_id').value;
+            const redSel = document.getElementById('top_red').value;
+            const cenSel = document.getElementById('top_centro').value;
+            const redes = SEDES_DATA.redes || [];
+            const rObj = redes.find(r => r.nombre === redSel);
+            const rId = rObj ? rObj.id : null;
+            const centros = SEDES_DATA.centros || [];
+            const cObj = centros.find(c => c.nombre === cenSel);
+            const cId = cObj ? cObj.id : null;
+
             const payload = {
+                id: idVal ? parseInt(idVal) : null,
                 m_id: idVal ? parseInt(idVal) : null,
-                sector_actual: document.getElementById('mue_sector').value,
-                tipo_activo: document.getElementById('mue_tipo').value,
-                descripcion: document.getElementById('mue_desc').value,
-                marca: document.getElementById('mue_marca').value,
-                modelo: document.getElementById('mue_modelo').value,
-                serie: document.getElementById('mue_serie').value,
-                codigo_sispam: document.getElementById('mue_sispam').value,
-                bertin: document.getElementById('mue_bertin') ? document.getElementById('mue_bertin').value : 'S/C',
-                sapm: document.getElementById('mue_sapm') ? document.getElementById('mue_sapm').value : 'S/C',
-                detalle_transaccion: document.getElementById('mue_transaccion') ? document.getElementById('mue_transaccion').value : 'Asignacion 2026',
+                direccion_administrativa: redSel,
+                unidad_organizacional: cenSel,
+                red_salud_id: rId,
+                centro_salud_id: cId,
+                sector_actual: document.getElementById('mue_sector').value || 'SALUD',
+                tipo_activo: document.getElementById('mue_tipo').value.trim() || 'COMPUTADORA DE ESCRITORIO',
+                descripcion: document.getElementById('mue_desc').value.trim(),
+                marca: document.getElementById('mue_marca').value.trim(),
+                modelo: document.getElementById('mue_modelo').value.trim(),
+                serie: document.getElementById('mue_serie').value.trim() || 'S/C',
+                codigo_sispam: document.getElementById('mue_sispam').value.trim() || 'S/C',
+                bertin: document.getElementById('mue_bertin') ? document.getElementById('mue_bertin').value.trim() || 'S/C' : 'S/C',
+                sapm: document.getElementById('mue_sapm') ? document.getElementById('mue_sapm').value.trim() || 'S/C' : 'S/C',
+                detalle_transaccion: document.getElementById('mue_transaccion') ? document.getElementById('mue_transaccion').value.trim() || 'Asignacion 2026' : 'Asignacion 2026',
                 fecha_asignacion: document.getElementById('mue_fecha_asig') ? document.getElementById('mue_fecha_asig').value : '',
-                ubicacion: `${document.getElementById('top_centro').value} - ${document.getElementById('mue_area').value}`,
-                persona_asignada: document.getElementById('mue_persona').value,
-                cargo_asignado: document.getElementById('mue_cargo').value,
-                ci_asignado: document.getElementById('mue_ci').value,
+                ubicacion: document.getElementById('mue_area').value,
+                persona_asignada: document.getElementById('mue_persona').value.trim(),
+                cargo_asignado: document.getElementById('mue_cargo').value.trim(),
+                ci_asignado: document.getElementById('mue_ci').value.trim(),
                 estado_conservacion: document.getElementById('mue_estado').value,
-                observaciones_de_asignacion: document.getElementById('mue_obs') ? document.getElementById('mue_obs').value : '',
+                observaciones_de_asignacion: document.getElementById('mue_obs') ? document.getElementById('mue_obs').value.trim() : '',
                 estado: "Activo"
             };
             try {
@@ -3968,12 +4454,12 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                 });
                 const data = await res.json();
                 if (data.ok) {
-                    alert('✅ Activo de mueblería guardado');
+                    alert('✅ Activo de mueblería / TI guardado con éxito');
                     cerrarModal('modal_mueble');
-                    cargarMueblesCentro(document.getElementById('top_centro').value);
-                    cargarEstadisticasCentro(document.getElementById('top_centro').value);
+                    cargarMueblesCentro(cenSel, redSel);
+                    cargarEstadisticasCentro(cenSel, redSel);
                 } else {
-                    alert('Error: ' + data.error);
+                    alert('Error: ' + (data.error || 'No se pudo guardar'));
                 }
             } catch (e) { alert('Fallo de conexión: ' + e.message); }
         }

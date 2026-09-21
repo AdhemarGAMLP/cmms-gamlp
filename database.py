@@ -957,7 +957,7 @@ def guardar_mueble_db(datos):
         return False, "Error al conectar con la base de datos"
     try:
         cur = conn.cursor()
-        m_id = datos.get("id")
+        m_id = datos.get("id") or datos.get("m_id")
         sector_actual = str(datos.get("sector_actual") or "SALUD").strip()
         direccion_administrativa = str(datos.get("direccion_administrativa") or "").strip()
         unidad_organizacional = str(datos.get("unidad_organizacional") or "").strip()
@@ -1761,13 +1761,18 @@ def obtener_areas_db(centro_nombre=None, perfil=None):
     if conn:
         try:
             cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-            if centro_nombre:
+            if centro_nombre and str(centro_nombre).strip() and str(centro_nombre).strip() not in ("Todos los Centros", "-- Todos los Centros --"):
+                cen_raw = str(centro_nombre).strip()
+                cen_clean = cen_raw.replace("C.S.", "").replace("CS", "").replace("CENTRO DE SALUD", "").replace("HOSPITAL", "").strip()
                 cur.execute("""
                     SELECT id, nombre, piso, encargado, cargo, ci_encargado, contacto, centro_salud_nombre, red_salud_nombre 
                     FROM areas 
-                    WHERE centro_salud_nombre = %s OR centro_salud_nombre ILIKE %s 
+                    WHERE centro_salud_nombre ILIKE %s 
+                       OR %s ILIKE ('%%' || centro_salud_nombre || '%%') 
+                       OR centro_salud_nombre ILIKE %s
+                       OR (centro_salud_nombre IS NULL OR centro_salud_nombre = '' OR centro_salud_nombre = '-')
                     ORDER BY piso DESC, nombre ASC;
-                """, (centro_nombre, f"%{centro_nombre}%"))
+                """, (f"%{cen_clean}%", cen_raw, f"%{cen_raw}%"))
             else:
                 cur.execute("""
                     SELECT id, nombre, piso, encargado, cargo, ci_encargado, contacto, centro_salud_nombre, red_salud_nombre 
