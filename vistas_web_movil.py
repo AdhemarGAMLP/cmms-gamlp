@@ -224,7 +224,7 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             -webkit-font-smoothing: antialiased;
         }
 
-        /* BARRA SUPERIOR */
+        /* BARRA SUPERIOR BASE */
         .top-navbar {
             background: #0F172A;
             border-bottom: 1px solid #1E293B;
@@ -236,33 +236,103 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             display: flex;
             align-items: center;
             justify-content: space-between;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            gap: 12px;
         }
-        .brand-info h1 { font-size: 17px; font-weight: 800; letter-spacing: 0.3px; }
-        .brand-info span { font-size: 11px; opacity: 0.85; }
-        .user-actions { display: flex; align-items: center; gap: 10px; }
+        .top-navbar-main {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            flex: 1;
+        }
+        .brand-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .brand-title-wrap {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .brand-title {
+            font-size: 17px;
+            font-weight: 800;
+            letter-spacing: 0.3px;
+            color: #FFFFFF;
+            line-height: 1.2;
+        }
+        .badge-suite-movil {
+            background: #0284C7;
+            color: #FFFFFF;
+            font-size: 10px;
+            font-weight: 800;
+            padding: 2px 6px;
+            border-radius: 4px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        .brand-sub {
+            font-size: 11px;
+            color: #94A3B8;
+            line-height: 1.2;
+        }
+        .user-profile-actions, .user-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
         .user-badge {
-            background: rgba(255, 255, 255, 0.18);
+            background: rgba(255, 255, 255, 0.15);
             padding: 5px 12px;
             border-radius: 20px;
             font-size: 12px;
             font-weight: 600;
-            max-width: 200px;
+            max-width: 180px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            color: #F8FAFC;
         }
         .btn-nav-action {
             background: rgba(239, 68, 68, 0.9);
             color: white;
             border: none;
-            padding: 6px 14px;
+            padding: 6px 12px;
             border-radius: 8px;
             font-size: 12px;
             font-weight: 700;
             text-decoration: none;
-            display: inline-block;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            transition: background 0.15s ease;
         }
+        .btn-nav-action:hover { background: #DC2626; }
+        .top-navbar-links {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-nav-quick {
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 700;
+            text-decoration: none;
+            color: #FFFFFF;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            transition: opacity 0.15s ease;
+            white-space: nowrap;
+        }
+        .btn-nav-quick:hover { opacity: 0.9; }
+        .btn-quick-portal { background: #0284C7; }
+        .btn-quick-analisis { background: #4F46E5; }
 
         /* SELECTOR TERRITORIAL PERMANENTE (RED Y CENTRO) */
         .selector-sede-bar {
@@ -1101,6 +1171,272 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             grid-column: 1 / -1;
         }
         .empty-state span { font-size: 38px; display: block; margin-bottom: 8px; }
+
+        /* ===================================================================== */
+        /* RESPONSIVE DESIGN INTELIGENTE PARA CELULARES Y DISPOSITIVOS MÓVILES   */
+        /* (PANTALLAS <= 767px: SMARTPHONES VERTICALES Y HORIZONTALES)          */
+        /* ===================================================================== */
+        @media (max-width: 767px) {
+            body {
+                padding-bottom: 85px;
+            }
+
+            /* 1. Barra Superior Adaptativa */
+            .top-navbar {
+                padding: 10px 12px;
+                flex-direction: column;
+                align-items: stretch;
+                gap: 8px;
+            }
+            .top-navbar-main {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                width: 100%;
+                gap: 6px;
+            }
+            .brand-title {
+                font-size: 15.5px;
+            }
+            .badge-suite-movil {
+                font-size: 9.5px;
+                padding: 2px 5px;
+            }
+            .brand-sub {
+                font-size: 10.5px;
+                max-width: 150px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            .user-profile-actions, .user-actions {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                flex-shrink: 0;
+            }
+            .user-badge {
+                font-size: 11px;
+                padding: 4px 8px;
+                max-width: 105px;
+                border-radius: 16px;
+            }
+            .btn-nav-action {
+                padding: 5px 9px;
+                font-size: 11.5px;
+                border-radius: 6px;
+            }
+            .top-navbar-links {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 6px;
+                width: 100%;
+            }
+            .btn-nav-quick {
+                height: 34px;
+                font-size: 11.5px;
+                padding: 0 6px;
+                border-radius: 6px;
+            }
+
+            /* 2. Selector Territorial Permanente (Red y Centro) */
+            .selector-sede-bar {
+                padding: 8px 12px;
+                gap: 6px;
+            }
+            .sede-grid {
+                grid-template-columns: 1fr !important;
+                gap: 8px;
+            }
+            .sede-sel-group label {
+                font-size: 11px;
+                margin-bottom: 2px;
+            }
+            .sede-select {
+                height: 42px;
+                font-size: 13.5px;
+                padding: 6px 10px;
+                border-radius: 8px;
+            }
+
+            /* 3. Navegación por Pestañas Táctil */
+            .tab-bar-nav {
+                padding: 5px 8px;
+                gap: 4px;
+            }
+            .tab-btn {
+                min-width: auto;
+                padding: 6px 11px;
+                font-size: 12px;
+                gap: 4px;
+                border-radius: 6px;
+            }
+
+            /* 4. Contenedor y Herramientas (Búsqueda + Botón Nuevo) */
+            .container {
+                padding: 8px 10px;
+                max-width: 100%;
+            }
+            .tab-tools-bar {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 8px;
+                margin-bottom: 10px;
+            }
+            .search-input {
+                width: 100%;
+                height: 44px;
+                font-size: 14.5px;
+                border-radius: 8px;
+            }
+            .btn-add-action {
+                width: 100%;
+                height: 44px;
+                justify-content: center;
+                font-size: 14px;
+                border-radius: 8px;
+            }
+
+            /* 5. Filtros Rápidos de Activos (Píldoras) */
+            .asset-filters-bar {
+                gap: 6px;
+                margin: 6px 0 10px 0;
+                padding-bottom: 6px;
+                flex-wrap: nowrap;
+            }
+            .btn-filter-pill {
+                flex-shrink: 0;
+                padding: 6px 11px;
+                font-size: 11.5px;
+                border-radius: 20px;
+            }
+            .pill-count {
+                padding: 1px 5px;
+                font-size: 10px;
+            }
+
+            /* 6. Tarjetas de Activos y Acciones Táctiles */
+            .cards-grid, .cards-grid-3 {
+                grid-template-columns: 1fr !important;
+                gap: 10px;
+            }
+            .card-item {
+                padding: 12px 12px;
+                margin-bottom: 8px;
+                border-radius: 12px;
+            }
+            .card-item-header {
+                flex-wrap: wrap;
+                gap: 4px;
+            }
+            .item-title {
+                font-size: 14px;
+            }
+            .item-subtitle {
+                font-size: 11.5px;
+                gap: 4px;
+            }
+            .item-detail-row {
+                font-size: 11.5px;
+                padding: 6px 8px;
+            }
+            .item-actions {
+                display: flex;
+                width: 100%;
+                gap: 5px;
+                justify-content: stretch;
+                margin-top: 8px;
+            }
+            .btn-card-view, .btn-card-edit, .btn-card-del {
+                flex: 1;
+                justify-content: center;
+                text-align: center;
+                height: 38px;
+                padding: 0 4px;
+                font-size: 11.5px;
+                border-radius: 7px;
+            }
+
+            /* 7. Modales Móviles (Bottom Sheet Táctil) */
+            .modal-overlay {
+                padding: 0;
+                align-items: flex-end;
+            }
+            .modal-content-sheet {
+                border-radius: 20px 20px 0 0;
+                max-height: 92vh;
+                width: 100%;
+                max-width: 100%;
+                padding: 16px 14px 34px 14px;
+            }
+            .modal-header-bar h2 {
+                font-size: 15.5px;
+            }
+            .row-2, .row-3 {
+                grid-template-columns: 1fr !important;
+                gap: 8px !important;
+            }
+            .form-group {
+                margin-bottom: 10px;
+            }
+            .form-label {
+                font-size: 11.5px;
+                margin-bottom: 4px;
+            }
+            .form-control, select.form-control {
+                font-size: 16px !important; /* Previene auto-zoom molesto en iPhone Safari */
+                height: 46px;
+                border-radius: 8px;
+            }
+            textarea.form-control {
+                font-size: 16px !important;
+                min-height: 85px !important;
+            }
+            .btn-modal-submit {
+                height: 48px;
+                font-size: 15px;
+                border-radius: 10px;
+            }
+            .af-box {
+                padding: 8px 12px;
+                flex-wrap: wrap;
+                gap: 6px;
+            }
+            .af-label {
+                font-size: 10.5px;
+            }
+            .af-code {
+                font-size: 14px;
+            }
+        }
+
+        /* 8. Ajustes para Celulares Pequeños (<= 380px) */
+        @media (max-width: 380px) {
+            .brand-title {
+                font-size: 14px;
+            }
+            .user-badge {
+                max-width: 80px;
+                font-size: 10px;
+                padding: 3px 6px;
+            }
+            .btn-nav-action {
+                padding: 4px 7px;
+                font-size: 11px;
+            }
+            .tab-btn {
+                padding: 5px 9px;
+                font-size: 11px;
+            }
+            .btn-filter-pill {
+                padding: 5px 9px;
+                font-size: 11px;
+            }
+            .btn-card-view, .btn-card-edit, .btn-card-del {
+                font-size: 10.5px;
+                height: 36px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -1109,19 +1445,26 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
     {% set es_admin = (rol_clean in ['administrador', 'admin', 'jefe']) or (usuario.get('nombre_usuario') == 'godhead') %}
     {% set perms = usuario.get('permisos') or {} %}
 
-    <!-- BARRA SUPERIOR -->
+    <!-- BARRA SUPERIOR RESPONSIVA -->
     <header class="top-navbar">
-        <div class="brand-info">
-            <h1>SGEM GAMLP • Suite Móvil</h1>
-            <span>{% if es_admin %}Panel de Administración y Control{% else %}Gestión en Centros de Salud{% endif %}</span>
+        <div class="top-navbar-main">
+            <div class="brand-info">
+                <div class="brand-title-wrap">
+                    <span class="brand-title">SGEM GAMLP</span>
+                    <span class="badge-suite-movil">MÓVIL</span>
+                </div>
+                <span class="brand-sub">{% if es_admin %}Panel de Administración y Control{% else %}Gestión en Centros de Salud{% endif %}</span>
+            </div>
+            <div class="user-profile-actions">
+                <span class="user-badge" title="{{ usuario.get('nombre_completo', '') }}">
+                    👤 {{ usuario.get('nombre_completo', usuario.get('nombre_usuario', 'Técnico')) }}
+                </span>
+                <a href="/movil/logout" class="btn-nav-action" title="Cerrar sesión">Salir 🚪</a>
+            </div>
         </div>
-        <div class="user-actions">
-            <a href="/" class="btn-nav-action" style="background:#0284C7;" title="Ir al Portal Web Principal">🌐 Portal</a>
-            <a href="/analisis" class="btn-nav-action" style="background:#4F46E5;" title="Ir a Análisis y Censo Territorial Oficial">📊 Análisis</a>
-            <span class="user-badge" title="{{ usuario.get('nombre_completo', '') }}">
-                👤 {{ usuario.get('nombre_completo', usuario.get('nombre_usuario', 'Técnico')) }}
-            </span>
-            <a href="/movil/logout" class="btn-nav-action">Salir</a>
+        <div class="top-navbar-links">
+            <a href="/" class="btn-nav-quick btn-quick-portal" title="Ir al Portal Web Principal">🌐 Portal Web</a>
+            <a href="/analisis" class="btn-nav-quick btn-quick-analisis" title="Ir a Análisis y Censo Territorial Oficial">📊 Análisis y Censo</a>
         </div>
     </header>
 
