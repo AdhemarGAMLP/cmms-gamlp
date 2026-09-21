@@ -1905,22 +1905,22 @@ class SistemaMantenimiento(ctk.CTk):
             fijar_codigo_af_ui(cod_af)
         
         ctk.CTkLabel(sf, text="Número de Serie (Por defecto S/C):", font=ctk.CTkFont(size=11, weight="bold"), text_color=C_TEXT).pack(anchor="w", padx=150, pady=(5, 0))
-        e_serie = ctk.CTkEntry(sf, placeholder_text="Número de Serie del Equipo", width=500)
+        e_serie = ctk.CTkEntry(sf, placeholder_text="S/C", width=500)
         e_serie.pack(pady=(0, 5))
         pop_ser = AutocompletarEntryPopup(e_serie, _obtener_lista_series)
 
         ctk.CTkLabel(sf, text="Código SISPAM (Por defecto S/C):", font=ctk.CTkFont(size=11, weight="bold"), text_color=C_TEXT).pack(anchor="w", padx=150, pady=(5, 0))
-        e_sispam_form = ctk.CTkEntry(sf, placeholder_text="Ej: SISPAM, DONACION, S/C...", width=500)
+        e_sispam_form = ctk.CTkEntry(sf, placeholder_text="S/C", width=500)
         e_sispam_form.pack(pady=(0, 5))
         pop_sis = AutocompletarEntryPopup(e_sispam_form, _obtener_lista_sispam)
 
         ctk.CTkLabel(sf, text="Código BERTIN (Por defecto S/C):", font=ctk.CTkFont(size=11, weight="bold"), text_color=C_TEXT).pack(anchor="w", padx=150, pady=(5, 0))
-        e_bertin_form = ctk.CTkEntry(sf, placeholder_text="Ej: BERTIN, S/C...", width=500)
+        e_bertin_form = ctk.CTkEntry(sf, placeholder_text="S/C", width=500)
         e_bertin_form.pack(pady=(0, 5))
         pop_ber = AutocompletarEntryPopup(e_bertin_form, _obtener_lista_bertin)
 
         ctk.CTkLabel(sf, text="Código SAPM (Por defecto S/C):", font=ctk.CTkFont(size=11, weight="bold"), text_color=C_TEXT).pack(anchor="w", padx=150, pady=(5, 0))
-        e_sapm_form = ctk.CTkEntry(sf, placeholder_text="Ej: SAPM, S/C...", width=500)
+        e_sapm_form = ctk.CTkEntry(sf, placeholder_text="S/C", width=500)
         e_sapm_form.pack(pady=(0, 5))
         pop_sap = AutocompletarEntryPopup(e_sapm_form, _obtener_lista_sapm)
 
@@ -2446,7 +2446,10 @@ class SistemaMantenimiento(ctk.CTk):
                 combo_sector_form.set(eq_edit.get("sector_actual"))
 
             fijar_codigo_af_ui(eq_edit["id"] or "")
-            e_serie.insert(0, eq_edit.get("numero_serie") or "")
+            ser_val = eq_edit.get("numero_serie") or ""
+            if ser_val and ser_val != "S/C":
+                e_serie.delete(0, "end")
+                e_serie.insert(0, ser_val)
             
             if eq_edit.get("persona_asignada"):
                 e_persona_form.delete(0, "end")
@@ -2457,15 +2460,19 @@ class SistemaMantenimiento(ctk.CTk):
             if eq_edit.get("ci_asignado"):
                 e_ci_form.delete(0, "end")
                 e_ci_form.insert(0, eq_edit["ci_asignado"])
-            if eq_edit.get("codigo_sispam"):
+            
+            sis_val = eq_edit.get("codigo_sispam") or ""
+            if sis_val and sis_val != "S/C":
                 e_sispam_form.delete(0, "end")
-                e_sispam_form.insert(0, eq_edit["codigo_sispam"])
-            if eq_edit.get("bertin"):
+                e_sispam_form.insert(0, sis_val)
+            ber_val = eq_edit.get("bertin") or ""
+            if ber_val and ber_val != "S/C":
                 e_bertin_form.delete(0, "end")
-                e_bertin_form.insert(0, eq_edit["bertin"])
-            if eq_edit.get("sapm"):
+                e_bertin_form.insert(0, ber_val)
+            sap_val = eq_edit.get("sapm") or ""
+            if sap_val and sap_val != "S/C":
                 e_sapm_form.delete(0, "end")
-                e_sapm_form.insert(0, eq_edit["sapm"])
+                e_sapm_form.insert(0, sap_val)
 
             e_servicio.insert(0, eq_edit.get("servicio") or "")
             combo_area.set(eq_edit.get("area") or "")

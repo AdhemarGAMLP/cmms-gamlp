@@ -1041,10 +1041,11 @@ class VistaMuebleria(ctk.CTkFrame):
         f_ser = ctk.CTkFrame(f_r5, fg_color="transparent")
         f_ser.grid(row=0, column=1, sticky="ew")
         ctk.CTkLabel(f_ser, text="Número de Serie (Por defecto S/C)", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(0, 2))
-        e_serie = ctk.CTkEntry(f_ser, placeholder_text="Ej: CN-0H754T-74261, S/C...", fg_color=C_CARD, border_color=C_BORDER)
+        e_serie = ctk.CTkEntry(f_ser, placeholder_text="S/C", fg_color=C_CARD, border_color=C_BORDER)
         e_serie.pack(fill="x")
-        if mueble_editar and mueble_editar.get("serie"):
-            e_serie.insert(0, mueble_editar["serie"])
+        ser_val = mueble_editar.get("serie") if mueble_editar else ""
+        if ser_val and ser_val != "S/C":
+            e_serie.insert(0, ser_val)
         pop_ser = AutocompletarEntryPopup(e_serie, self._obtener_lista_series)
 
         # -------------------------------------------------------------
@@ -1058,19 +1059,21 @@ class VistaMuebleria(ctk.CTkFrame):
         f_sispam = ctk.CTkFrame(f_r6, fg_color="transparent")
         f_sispam.grid(row=0, column=0, sticky="ew", padx=(0, 10))
         ctk.CTkLabel(f_sispam, text="Código SISPAM (Por defecto S/C o DONACION)", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(0, 2))
-        e_sispam = ctk.CTkEntry(f_sispam, placeholder_text="Ej: SISPAM, DONACION, S/C...", fg_color=C_CARD, border_color=C_BORDER)
+        e_sispam = ctk.CTkEntry(f_sispam, placeholder_text="S/C", fg_color=C_CARD, border_color=C_BORDER)
         e_sispam.pack(fill="x")
-        if mueble_editar and mueble_editar.get("codigo_sispam"):
-            e_sispam.insert(0, mueble_editar["codigo_sispam"])
+        sis_val = mueble_editar.get("codigo_sispam") if mueble_editar else ""
+        if sis_val and sis_val != "S/C":
+            e_sispam.insert(0, sis_val)
         pop_sis = AutocompletarEntryPopup(e_sispam, self._obtener_lista_sispam)
 
         f_bertin = ctk.CTkFrame(f_r6, fg_color="transparent")
         f_bertin.grid(row=0, column=1, sticky="ew")
         ctk.CTkLabel(f_bertin, text="BERTIN (Por defecto S/C)", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(0, 2))
-        e_bertin = ctk.CTkEntry(f_bertin, placeholder_text="Ej: BERTIN, S/C...", fg_color=C_CARD, border_color=C_BORDER)
+        e_bertin = ctk.CTkEntry(f_bertin, placeholder_text="S/C", fg_color=C_CARD, border_color=C_BORDER)
         e_bertin.pack(fill="x")
-        if mueble_editar and mueble_editar.get("bertin"):
-            e_bertin.insert(0, mueble_editar["bertin"])
+        ber_val = mueble_editar.get("bertin") if mueble_editar else ""
+        if ber_val and ber_val != "S/C":
+            e_bertin.insert(0, ber_val)
         pop_ber = AutocompletarEntryPopup(e_bertin, self._obtener_lista_bertin)
 
         # -------------------------------------------------------------
@@ -1084,10 +1087,11 @@ class VistaMuebleria(ctk.CTkFrame):
         f_sapm = ctk.CTkFrame(f_r7, fg_color="transparent")
         f_sapm.grid(row=0, column=0, sticky="ew", padx=(0, 10))
         ctk.CTkLabel(f_sapm, text="SAPM (Por defecto S/C)", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(0, 2))
-        e_sapm = ctk.CTkEntry(f_sapm, placeholder_text="Ej: SAPM, S/C...", fg_color=C_CARD, border_color=C_BORDER)
+        e_sapm = ctk.CTkEntry(f_sapm, placeholder_text="S/C", fg_color=C_CARD, border_color=C_BORDER)
         e_sapm.pack(fill="x")
-        if mueble_editar and mueble_editar.get("sapm"):
-            e_sapm.insert(0, mueble_editar["sapm"])
+        sap_val = mueble_editar.get("sapm") if mueble_editar else ""
+        if sap_val and sap_val != "S/C":
+            e_sapm.insert(0, sap_val)
         pop_sap = AutocompletarEntryPopup(e_sapm, self._obtener_lista_sapm)
 
         f_trans = ctk.CTkFrame(f_r7, fg_color="transparent")

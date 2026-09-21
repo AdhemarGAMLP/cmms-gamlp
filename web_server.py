@@ -4089,6 +4089,12 @@ def api_guardar_mueble():
         payload = request.get_json(force=True, silent=True) or {}
         if not payload.get('tipo_activo') and not payload.get('descripcion'):
             return jsonify({"ok": False, "error": "Tipo de activo o descripción requerida"}), 400
+        
+        usuario = session.get('usuario_movil') or session.get('usuario') or {}
+        nom_tecnico = (usuario.get('nombre_completo') or usuario.get('nombre_usuario') or '').strip()
+        if not payload.get('tecnico_inventareador') and nom_tecnico:
+            payload['tecnico_inventareador'] = nom_tecnico
+
         ok, m_id = guardar_mueble_db(payload)
         if ok and app_gui:
             try: app_gui.after(300, app_gui.cargar_datos_en_segundo_plano)

@@ -1606,21 +1606,21 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                 <!-- MODELO DE CATÁLOGO CON BÚSQUEDA PREDICTIVA -->
                 <div class="form-group predictive-wrapper">
                     <label class="form-label" for="modal_eq_catalogo_input">Modelo de Catálogo (Búsqueda Predictiva Inteligente):</label>
-                    <input type="text" id="modal_eq_catalogo_input" class="form-control" placeholder="🔍 Escribe para buscar modelo (ej. Des, Monitor, Bomba, Electro...)" autocomplete="off" oninput="buscarSugerenciasCatalogo(this.value)" onfocus="buscarSugerenciasCatalogo(this.value)">
+                    <input type="text" id="modal_eq_catalogo_input" class="form-control" placeholder="🔍 Escribe para buscar modelo (ej. Des, Monitor, Bomba, Electro...)" autocomplete="off" oninput="buscarSugerenciasCatalogo(this.value)" onfocus="buscarSugerenciasCatalogo(this.value)" onblur="cerrarSugerenciaRetraso(this)">
                     <div id="modal_eq_catalogo_predictive" class="predictive-box"></div>
                 </div>
 
                 <!-- NOMBRE DEL EQUIPO CON RECOMENDACIONES DE ESCRITURA -->
                 <div class="form-group predictive-wrapper">
                     <label class="form-label" for="modal_eq_nombre">Nombre del Equipo (*):</label>
-                    <input type="text" id="modal_eq_nombre" class="form-control" placeholder="Ej: Desfibrilador, Monitor Multiparámetro" autocomplete="off" required oninput="buscarSugerenciasNombreEquipo(this.value)" onfocus="buscarSugerenciasNombreEquipo(this.value)">
+                    <input type="text" id="modal_eq_nombre" class="form-control" placeholder="Ej: Desfibrilador, Monitor Multiparámetro" autocomplete="off" required oninput="buscarSugerenciasNombreEquipo(this.value)" onfocus="buscarSugerenciasNombreEquipo(this.value)" onblur="cerrarSugerenciaRetraso(this)">
                     <div id="modal_eq_nombre_predictive" class="predictive-box"></div>
                 </div>
 
                 <div class="row-2">
                     <div class="form-group predictive-wrapper">
                         <label class="form-label" for="modal_eq_marca">Marca:</label>
-                        <input type="text" id="modal_eq_marca" class="form-control" placeholder="Ej: Mindray, Bionet, GE" autocomplete="off" oninput="buscarSugerenciasMarca(this.value, 'modal_eq_marca_predictive', 'modal_eq_marca')" onfocus="buscarSugerenciasMarca(this.value, 'modal_eq_marca_predictive', 'modal_eq_marca')">
+                        <input type="text" id="modal_eq_marca" class="form-control" placeholder="Ej: Mindray, Bionet, GE" autocomplete="off" oninput="buscarSugerenciasMarca(this.value, 'modal_eq_marca_predictive', 'modal_eq_marca')" onfocus="buscarSugerenciasMarca(this.value, 'modal_eq_marca_predictive', 'modal_eq_marca')" onblur="cerrarSugerenciaRetraso(this)">
                         <div id="modal_eq_marca_predictive" class="predictive-box"></div>
                     </div>
                     <div class="form-group">
@@ -2038,12 +2038,12 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                 <div class="row-2">
                     <div class="form-group predictive-wrapper">
                         <label class="form-label" for="mue_tipo">Tipo de Activo (*) (Editable / Sugerencias):</label>
-                        <input type="text" id="mue_tipo" class="form-control" placeholder="Ej: COMPUTADORA DE ESCRITORIO, SILLA, ESCRITORIO..." autocomplete="off" required oninput="buscarSugerenciasTipoMueble(this.value)" onfocus="buscarSugerenciasTipoMueble(this.value)">
+                        <input type="text" id="mue_tipo" class="form-control" placeholder="Ej: COMPUTADORA DE ESCRITORIO, SILLA, ESCRITORIO..." autocomplete="off" required oninput="buscarSugerenciasTipoMueble(this.value)" onfocus="buscarSugerenciasTipoMueble(this.value)" onblur="cerrarSugerenciaRetraso(this)">
                         <div id="mue_tipo_predictive" class="predictive-box"></div>
                     </div>
                     <div class="form-group predictive-wrapper">
                         <label class="form-label" for="mue_marca">Marca:</label>
-                        <input type="text" id="mue_marca" class="form-control" placeholder="Ej: HP, Lenovo, Melamina" autocomplete="off" oninput="buscarSugerenciasMarca(this.value, 'mue_marca_predictive', 'mue_marca')" onfocus="buscarSugerenciasMarca(this.value, 'mue_marca_predictive', 'mue_marca')">
+                        <input type="text" id="mue_marca" class="form-control" placeholder="Ej: HP, Lenovo, Melamina" autocomplete="off" oninput="buscarSugerenciasMarca(this.value, 'mue_marca_predictive', 'mue_marca')" onfocus="buscarSugerenciasMarca(this.value, 'mue_marca_predictive', 'mue_marca')" onblur="cerrarSugerenciaRetraso(this)">
                         <div id="mue_marca_predictive" class="predictive-box"></div>
                     </div>
                 </div>
@@ -2113,9 +2113,15 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                     </div>
                 </div>
 
-                <!-- FILA 10: OBSERVACIONES -->
+                <!-- FILA 10: TÉCNICO INVENTARIADOR (LLENADO AUTOMÁTICO) -->
                 <div class="form-group">
-                    <label class="form-label" for="mue_obs">Observaciones:</label>
+                    <label class="form-label" for="mue_tecnico">Técnico Inventariador (Llenado automático):</label>
+                    <input type="text" id="mue_tecnico" class="form-control" placeholder="Nombre del técnico inventariador...">
+                </div>
+
+                <!-- FILA 11: OBSERVACIONES DE ASIGNACIÓN -->
+                <div class="form-group">
+                    <label class="form-label" for="mue_obs">Observaciones de Asignación:</label>
                     <textarea id="mue_obs" class="form-control" placeholder="Observaciones del bien mueble o TI..."></textarea>
                 </div>
 
@@ -2686,8 +2692,48 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             });
         }
 
+        function cerrarSugerenciaRetraso(inputElem) {
+            setTimeout(() => {
+                const wrapper = inputElem ? inputElem.closest('.predictive-wrapper') : null;
+                if (wrapper) {
+                    const box = wrapper.querySelector('.predictive-box');
+                    if (box && (!document.activeElement || !wrapper.contains(document.activeElement))) {
+                        box.style.display = 'none';
+                        box.innerHTML = '';
+                    }
+                }
+            }, 250);
+        }
+
+        // Si el usuario pasa a otro campo donde escribir (focusin), cerrar recomendaciones del anterior
+        document.addEventListener('focusin', function(e) {
+            document.querySelectorAll('.predictive-wrapper').forEach(wrapper => {
+                if (!wrapper.contains(e.target)) {
+                    const b = wrapper.querySelector('.predictive-box');
+                    if (b) {
+                        b.style.display = 'none';
+                        b.innerHTML = '';
+                    }
+                }
+            });
+        });
+
+        // Si hace clic fuera del wrapper activo, cerrar sugerencias
         document.addEventListener('click', function(e) {
-            if (!e.target.closest('.predictive-wrapper')) {
+            document.querySelectorAll('.predictive-wrapper').forEach(wrapper => {
+                if (!wrapper.contains(e.target)) {
+                    const b = wrapper.querySelector('.predictive-box');
+                    if (b) {
+                        b.style.display = 'none';
+                        b.innerHTML = '';
+                    }
+                }
+            });
+        });
+
+        // Cerrar sugerencias al presionar Escape
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
                 cerrarCajasPredictivas();
             }
         });
@@ -4220,6 +4266,8 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             document.getElementById('mue_ci').value = '';
             document.getElementById('mue_estado').value = 'Bueno';
             document.getElementById('mue_obs').value = '';
+            const nomUser = (USUARIO_ACTUAL.nombre_completo || USUARIO_ACTUAL.nombre_usuario || '').trim();
+            if (document.getElementById('mue_tecnico')) document.getElementById('mue_tecnico').value = nomUser;
             document.getElementById('btn_guardar_mue').textContent = '💾 Guardar Activo Fijo';
 
             abrirModal('modal_mueble');
@@ -4264,6 +4312,10 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             document.getElementById('mue_ci').value = m.ci_asignado || '';
             document.getElementById('mue_estado').value = m.estado_conservacion || 'Bueno';
             document.getElementById('mue_obs').value = m.observaciones_de_asignacion || '';
+            const nomUserEdit = (USUARIO_ACTUAL.nombre_completo || USUARIO_ACTUAL.nombre_usuario || '').trim();
+            if (document.getElementById('mue_tecnico')) {
+                document.getElementById('mue_tecnico').value = m.tecnico_inventareador || m.tecnico || nomUserEdit;
+            }
             document.getElementById('btn_guardar_mue').textContent = '💾 Actualizar Activo Fijo';
             abrirModal('modal_mueble');
         }
@@ -4837,6 +4889,7 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                 cargo_asignado: document.getElementById('mue_cargo').value.trim(),
                 ci_asignado: document.getElementById('mue_ci').value.trim(),
                 estado_conservacion: document.getElementById('mue_estado').value,
+                tecnico_inventareador: (document.getElementById('mue_tecnico') ? document.getElementById('mue_tecnico').value.trim() : '') || (USUARIO_ACTUAL.nombre_completo || USUARIO_ACTUAL.nombre_usuario || '').trim(),
                 observaciones_de_asignacion: document.getElementById('mue_obs') ? document.getElementById('mue_obs').value.trim() : '',
                 estado: "Activo"
             };
