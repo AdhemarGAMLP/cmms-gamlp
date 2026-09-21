@@ -1807,7 +1807,7 @@ def obtener_equipos_db(centro_nombre=None, limite=300, perfil=None, red_nombre=N
     if conn:
         try:
             cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-            conds = []
+            conds = ["COALESCE(estado, 'Operativo') NOT IN ('Inactivo', 'Eliminado')"]
             params = []
             if centro_nombre and not str(centro_nombre).startswith("["):
                 conds.append("(centro_salud_nombre = %s OR centro_salud_nombre ILIKE %s)")
@@ -1844,7 +1844,7 @@ def obtener_muebles_db(centro_nombre=None, limite=300, perfil=None, red_nombre=N
     if conn:
         try:
             cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-            conds = []
+            conds = ["COALESCE(estado, 'Activo') NOT IN ('Inactivo', 'Eliminado')"]
             params = []
             if centro_nombre and not str(centro_nombre).startswith("["):
                 conds.append("(ubicacion ILIKE %s OR descripcion ILIKE %s OR unidad_organizacional ILIKE %s)")
@@ -2294,7 +2294,7 @@ def eliminar_registro_db(tabla, id_registro, usuario="web_user"):
             except: pass
         return False, str(e)
 
-def obtener_estadisticas_censo_db(centro_nombre=None, perfil=None):
+def obtener_estadisticas_censo_db(centro_nombre=None, perfil=None, red_nombre=None):
     """Calcula indicadores y métricas en vivo para la pestaña de Análisis."""
     conn = obtener_conexion(perfil=perfil)
     if not conn:
@@ -2306,11 +2306,16 @@ def obtener_estadisticas_censo_db(centro_nombre=None, perfil=None):
         }
     try:
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        filtro_eq = ""
+        conds_eq = ["COALESCE(estado, 'Operativo') NOT IN ('Inactivo', 'Eliminado')"]
         params_eq = []
         if centro_nombre and not str(centro_nombre).startswith("["):
-            filtro_eq = "WHERE centro_salud_nombre = %s OR centro_salud_nombre ILIKE %s"
-            params_eq = [centro_nombre, f"%{centro_nombre}%"]
+            conds_eq.append("(centro_salud_nombre = %s OR centro_salud_nombre ILIKE %s)")
+            params_eq.extend([centro_nombre, f"%{centro_nombre}%"])
+        if red_nombre and not str(red_nombre).startswith("["):
+            conds_eq.append("(red_salud_nombre = %s OR red_salud_nombre ILIKE %s)")
+            params_eq.extend([red_nombre, f"%{red_nombre}%"])
+
+        filtro_eq = "WHERE " + " AND ".join(conds_eq)
 
         # Equipos por estado y criticidad
         sql_eq = f"""
@@ -2324,31 +2329,33 @@ def obtener_estadisticas_censo_db(centro_nombre=None, perfil=None):
                 COUNT(*) FILTER (WHERE criticidad ILIKE 'Baja') as crit_baja
             FROM equipos {filtro_eq};
         """
-        if params_eq:
-            cur.execute(sql_eq, tuple(params_eq))
-        else:
-            cur.execute(sql_eq)
+        cur.execute(sql_eq, tuple(params_eq))
         row_eq = cur.fetchone() or {}
 
         # Muebles
-        filtro_mu = ""
+        conds_mu = ["COALESCE(estado, 'Activo') NOT IN ('Inactivo', 'Eliminado')"]
         params_mu = []
         if centro_nombre and not str(centro_nombre).startswith("["):
-            filtro_mu = "WHERE ubicacion ILIKE %s"
-            params_mu = [f"%{centro_nombre}%"]
+            conds_mu.append("(ubicacion ILIKE %s OR descripcion ILIKE %s OR unidad_organizacional ILIKE %s)")
+            params_mu.extend([f"%{centro_nombre}%", f"%{centro_nombre}%", f"%{centro_nombre}%"])
+        if red_nombre and not str(red_nombre).startswith("["):
+            conds_mu.append("(ubicacion ILIKE %s OR descripcion ILIKE %s OR unidad_organizacional ILIKE %s)")
+            params_mu.extend([f"%{red_nombre}%", f"%{red_nombre}%", f"%{red_nombre}%"])
+        filtro_mu = "WHERE " + " AND ".join(conds_mu)
         sql_mu = f"SELECT COUNT(*) FROM muebleria {filtro_mu};"
-        if params_mu:
-            cur.execute(sql_mu, tuple(params_mu))
-        else:
-            cur.execute(sql_mu)
+        cur.execute(sql_mu, tuple(params_mu))
         tot_muebles = cur.fetchone()[0] or 0
 
         # Repuestos
-        filtro_rep = ""
+        conds_rep = []
         params_rep = []
         if centro_nombre and not str(centro_nombre).startswith("["):
-            filtro_rep = "WHERE centro_salud_nombre = %s OR centro_salud_nombre ILIKE %s"
-            params_rep = [centro_nombre, f"%{centro_nombre}%"]
+            conds_rep.append("(centro_salud_nombre = %s OR centro_salud_nombre ILIKE %s)")
+            params_rep.extend([centro_nombre, f"%{centro_nombre}%"])
+        if red_nombre and not str(red_nombre).startswith("["):
+            conds_rep.append("(centro_salud_nombre ILIKE %s)")
+            params_rep.append(f"%{red_nombre}%")
+        filtro_rep = ("WHERE " + " AND ".join(conds_rep)) if conds_rep else ""
         sql_rep = f"SELECT COUNT(*) FROM repuestos {filtro_rep};"
         if params_rep:
             cur.execute(sql_rep, tuple(params_rep))

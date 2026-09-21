@@ -838,7 +838,7 @@ def obtener_activos_unificados_db(red_filtro=None, centro_filtro=None):
         centros_db = [dict(r) for r in cur.fetchall()]
 
         # 2. Cargar Equipos
-        cur.execute("SELECT * FROM equipos ORDER BY nombre ASC")
+        cur.execute("SELECT * FROM equipos WHERE COALESCE(estado, 'Operativo') NOT IN ('Inactivo', 'Eliminado') ORDER BY nombre ASC")
         equipos_raw = [dict(r) for r in cur.fetchall()]
         
         # 3. Cargar Muebles y Computación
@@ -847,7 +847,7 @@ def obtener_activos_unificados_db(red_filtro=None, centro_filtro=None):
             FROM muebleria m 
             LEFT JOIN redes_salud r ON m.red_salud_id = r.id 
             LEFT JOIN centros_salud c ON m.centro_salud_id = c.id
-            WHERE m.estado != 'Inactivo'
+            WHERE COALESCE(m.estado, 'Activo') NOT IN ('Inactivo', 'Eliminado')
             ORDER BY m.id DESC
         """)
         muebles_raw = [dict(r) for r in cur.fetchall()]
@@ -1985,7 +1985,7 @@ def vista_analisis_web():
         chart_censo_labels = json.dumps([item["nombre_display"] for item in censo_items[:8]])
         chart_censo_data = json.dumps([item["cantidad"] for item in censo_items[:8]])
 
-        activos_json = json.dumps(activos_contexto)
+        activos_json = json.dumps(activos_contexto, default=str)
 
         return render_template_string(
             HTML_ANALISIS,
@@ -3694,7 +3694,7 @@ def registrar_mantenimiento(id_equipo):
                     <div class="campo" style="background: #FFF9E6; padding: 15px; border-radius: 10px; border: 1px solid #FFE0B2; margin-bottom: 20px;">
                         <label style="color: #FF9500; font-size: 13px;">🔒 Validar Credenciales (Seguridad)</label>
                         <div style="margin-bottom: 10px;">
-                            <input type="text" name="web_user" required placeholder="Usuario (Ej. 10955499)">
+                            <input type="text" name="web_user" required placeholder="Usuario">
                         </div>
                         <div>
                             <input type="password" name="web_pass" required placeholder="Contraseña">
@@ -4076,7 +4076,12 @@ def api_muebles():
     red = request.args.get('red', '').strip()
     try:
         muebles = obtener_muebles_db(centro_nombre=centro or None, limite=3000, red_nombre=red or None)
-        return jsonify(muebles)
+        equipos = obtener_equipos_db(centro_nombre=centro or None, limite=3000, red_nombre=red or None)
+        EXENTOS = {"", "S/C", "0", "DONACION", "SIN CODIGO", "SIN SERIE", "NINGUNO", "N/A", "NO APLICA", "S/N", "SN", "-"}
+        series_eq = {str(eq.get('numero_serie') or '').strip().upper() for eq in equipos if str(eq.get('numero_serie') or '').strip().upper() not in EXENTOS}
+        sispam_eq = {str(eq.get('codigo_sispam') or '').strip().upper() for eq in equipos if str(eq.get('codigo_sispam') or '').strip().upper() not in EXENTOS}
+        muebles_limpios = [m for m in muebles if str(m.get('serie') or '').strip().upper() not in series_eq and str(m.get('codigo_sispam') or '').strip().upper() not in sispam_eq]
+        return jsonify(muebles_limpios)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -4209,8 +4214,9 @@ def api_guardar_intervencion():
 def api_estadisticas():
     """Retorna indicadores y métricas de censo de equipos."""
     centro = request.args.get('centro', '').strip()
+    red = request.args.get('red', '').strip()
     try:
-        stats = obtener_estadisticas_censo_db(centro)
+        stats = obtener_estadisticas_censo_db(centro or None, red_nombre=red or None)
         return jsonify(stats)
     except Exception as e:
         return jsonify({"error": str(e)}), 500

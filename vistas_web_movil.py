@@ -163,10 +163,10 @@ HTML_MOVIL_LOGIN = """<!DOCTYPE html>
 
         <form method="POST">
             <div class="form-group">
-                <label class="form-label" for="usuario">Usuario / C.I.:</label>
+                <label class="form-label" for="usuario">Usuario:</label>
                 <div class="input-wrapper">
                     <span class="input-icon">👤</span>
-                    <input type="text" id="usuario" name="usuario" class="form-control" placeholder="Ej: admin o 10955499" required autofocus autocomplete="username">
+                    <input type="text" id="usuario" name="usuario" class="form-control" placeholder="Usuario" required autofocus autocomplete="username">
                 </div>
             </div>
 
@@ -977,6 +977,8 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             <span>{% if es_admin %}Panel de Administración y Control{% else %}Gestión en Centros de Salud{% endif %}</span>
         </div>
         <div class="user-actions">
+            <a href="/" class="btn-nav-action" style="background:#0284C7;" title="Ir al Portal Web Principal">🌐 Portal</a>
+            <a href="/analisis" class="btn-nav-action" style="background:#4F46E5;" title="Ir a Análisis y Censo Territorial Oficial">📊 Análisis</a>
             <span class="user-badge" title="{{ usuario.get('nombre_completo', '') }}">
                 👤 {{ usuario.get('nombre_completo', usuario.get('nombre_usuario', 'Técnico')) }}
             </span>
@@ -990,6 +992,7 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             <div class="sede-sel-group">
                 <label for="top_red">🌐 Red de Salud:</label>
                 <select id="top_red" class="sede-select" onchange="alCambiarRedGlobal()">
+                    <option value="">-- Todas las Redes (GAMLP) --</option>
                     {% for r in sedes.get('redes', []) %}
                     <option value="{{ r['nombre'] }}" data-id="{{ r['id'] }}">{{ r['nombre'] }}</option>
                     {% endfor %}
@@ -998,7 +1001,7 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             <div class="sede-sel-group">
                 <label for="top_centro">🏥 Centro de Salud:</label>
                 <select id="top_centro" class="sede-select" onchange="alCambiarCentroGlobal()">
-                    <option value="">Cargando centros...</option>
+                    <option value="">-- Todos los Centros --</option>
                 </select>
             </div>
         </div>
@@ -1157,6 +1160,16 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
         <!-- 7. PESTAÑA: ANÁLISIS ESTADÍSTICO -->
         {% if es_admin or perms.get('Analisis', {}).get('ver', False) %}
         <section id="pane_analisis" class="tab-pane">
+            <div style="background: linear-gradient(135deg, #003B64 0%, #0284C7 100%); color: white; padding: 14px 16px; border-radius: var(--radius-sm); margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+                <div>
+                    <div style="font-size: 15px; font-weight: 800;">📊 Tablero Oficial de Análisis y Censo Territorial</div>
+                    <div style="font-size: 12px; opacity: 0.92;">Navegación territorial completa por Red, Centro, Áreas y gráficos de censo en vivo.</div>
+                </div>
+                <a href="/analisis" target="_blank" style="background: white; color: #003B64; font-weight: 800; font-size: 12.5px; padding: 8px 16px; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.15);">
+                    🚀 Abrir Tablero Completo ➔
+                </a>
+            </div>
+
             <div class="kpi-grid">
                 <div class="kpi-card">
                     <div id="kpi_total_eq" class="kpi-value" style="color: var(--primary);">0</div>
@@ -2165,12 +2178,7 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
 
             const centros = (SEDES_DATA.centros || []).filter(c => !rId || c.red_salud_id === rId);
             const selCen = document.getElementById('top_centro');
-            selCen.innerHTML = '';
-
-            if (centros.length === 0) {
-                selCen.innerHTML = '<option value="">No hay centros</option>';
-                return;
-            }
+            selCen.innerHTML = '<option value="">-- Todos los Centros --</option>';
 
             centros.forEach(c => {
                 const opt = document.createElement('option');
@@ -2183,13 +2191,14 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
         }
 
         async function alCambiarCentroGlobal() {
+            const redSel = document.getElementById('top_red').value;
             const cenSel = document.getElementById('top_centro').value;
-            await cargarAreasGlobal(cenSel);
-            cargarInventarioCentro(cenSel);
-            cargarMueblesCentro(cenSel);
-            cargarRepuestosCentro(cenSel);
-            cargarHistorialCentro(cenSel);
-            cargarEstadisticasCentro(cenSel);
+            await cargarAreasGlobal(cenSel, redSel);
+            cargarInventarioCentro(cenSel, redSel);
+            cargarMueblesCentro(cenSel, redSel);
+            cargarRepuestosCentro(cenSel, redSel);
+            cargarHistorialCentro(cenSel, redSel);
+            cargarEstadisticasCentro(cenSel, redSel);
             renderizarSedesDirectorio();
         }
 
@@ -2259,10 +2268,11 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
         // CARGAS DE DATOS DE LA API
         // =====================================================================
 
-        async function cargarAreasGlobal(centro) {
-            if (!centro) return;
+        async function cargarAreasGlobal(centro, red = '') {
             try {
-                const res = await fetch(`/api/areas?centro=${encodeURIComponent(centro)}`);
+                let url = `/api/areas?centro=${encodeURIComponent(centro || '')}`;
+                if (red) url += `&red=${encodeURIComponent(red)}`;
+                const res = await fetch(url);
                 LISTA_AREAS = await res.json();
                 renderizarListaAreas(LISTA_AREAS);
 
@@ -2306,12 +2316,14 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             } catch (e) { console.error(e); }
         }
 
-        async function cargarInventarioCentro(centro) {
+        async function cargarInventarioCentro(centro, red = '') {
             const cont = document.getElementById('lista_inventario');
             if (!cont) return;
             cont.innerHTML = '<div class="empty-state"><span>⏳</span>Cargando equipos...</div>';
             try {
-                const res = await fetch(`/api/equipos?centro=${encodeURIComponent(centro)}`);
+                let url = `/api/equipos?centro=${encodeURIComponent(centro || '')}`;
+                if (red) url += `&red=${encodeURIComponent(red)}`;
+                const res = await fetch(url);
                 LISTA_EQUIPOS = await res.json();
                 actualizarContadoresInventario();
                 aplicarFiltroInventario();
@@ -2331,11 +2343,13 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             }
         }
 
-        async function cargarMueblesCentro(centro) {
+        async function cargarMueblesCentro(centro, red = '') {
             const cont = document.getElementById('lista_muebles');
             if (cont) cont.innerHTML = '<div class="empty-state"><span>⏳</span>Cargando muebles...</div>';
             try {
-                const res = await fetch(`/api/muebles?centro=${encodeURIComponent(centro)}`);
+                let url = `/api/muebles?centro=${encodeURIComponent(centro || '')}`;
+                if (red) url += `&red=${encodeURIComponent(red)}`;
+                const res = await fetch(url);
                 LISTA_MUEBLES = await res.json();
                 if (cont) renderizarListaMuebles(LISTA_MUEBLES);
                 actualizarContadoresInventario();
@@ -2345,12 +2359,14 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             }
         }
 
-        async function cargarRepuestosCentro(centro) {
+        async function cargarRepuestosCentro(centro, red = '') {
             const cont = document.getElementById('lista_repuestos');
             if (!cont) return;
             cont.innerHTML = '<div class="empty-state"><span>⏳</span>Cargando repuestos...</div>';
             try {
-                const res = await fetch(`/api/repuestos?centro=${encodeURIComponent(centro)}`);
+                let url = `/api/repuestos?centro=${encodeURIComponent(centro || '')}`;
+                if (red) url += `&red=${encodeURIComponent(red)}`;
+                const res = await fetch(url);
                 LISTA_REPUESTOS = await res.json();
                 renderizarListaRepuestos(LISTA_REPUESTOS);
             } catch (e) {
@@ -2358,12 +2374,14 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             }
         }
 
-        async function cargarHistorialCentro(centro) {
+        async function cargarHistorialCentro(centro, red = '') {
             const cont = document.getElementById('lista_historial');
             if (!cont) return;
             cont.innerHTML = '<div class="empty-state"><span>⏳</span>Cargando intervenciones...</div>';
             try {
-                const res = await fetch(`/api/intervenciones?centro=${encodeURIComponent(centro)}`);
+                let url = `/api/intervenciones?centro=${encodeURIComponent(centro || '')}`;
+                if (red) url += `&red=${encodeURIComponent(red)}`;
+                const res = await fetch(url);
                 LISTA_HISTORIAL = await res.json();
                 renderizarListaHistorial(LISTA_HISTORIAL);
                 renderizarListaCronograma(LISTA_HISTORIAL);
@@ -2372,10 +2390,12 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             }
         }
 
-        async function cargarEstadisticasCentro(centro) {
+        async function cargarEstadisticasCentro(centro, red = '') {
             if (!document.getElementById('pane_analisis')) return;
             try {
-                const res = await fetch(`/api/estadisticas?centro=${encodeURIComponent(centro)}`);
+                let url = `/api/estadisticas?centro=${encodeURIComponent(centro || '')}`;
+                if (red) url += `&red=${encodeURIComponent(red)}`;
+                const res = await fetch(url);
                 const st = await res.json();
                 document.getElementById('kpi_total_eq').textContent = st.total_equipos || 0;
                 document.getElementById('kpi_operativos').textContent = st.operativos || 0;
@@ -3525,23 +3545,22 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                 const data = await res.json();
                 if (data.ok) {
                     alert('🗑️ ' + data.mensaje);
+                    const redSel = document.getElementById('top_red').value;
                     const cenSel = document.getElementById('top_centro').value;
-                    if (tabla === 'equipos') {
-                        cargarInventarioCentro(cenSel);
-                        cargarEstadisticasCentro(cenSel);
+                    if (tabla === 'equipos' || tabla === 'muebleria') {
+                        cargarInventarioCentro(cenSel, redSel);
+                        cargarMueblesCentro(cenSel, redSel);
+                        cargarEstadisticasCentro(cenSel, redSel);
                     } else if (tabla === 'catalogo') {
                         cargarCatalogoGlobal();
-                    } else if (tabla === 'muebleria') {
-                        cargarMueblesCentro(cenSel);
-                        cargarEstadisticasCentro(cenSel);
                     } else if (tabla === 'areas') {
-                        cargarAreasGlobal(cenSel);
+                        cargarAreasGlobal(cenSel, redSel);
                     } else if (tabla === 'repuestos') {
-                        cargarRepuestosCentro(cenSel);
-                        cargarEstadisticasCentro(cenSel);
+                        cargarRepuestosCentro(cenSel, redSel);
+                        cargarEstadisticasCentro(cenSel, redSel);
                     } else if (tabla === 'historial_intervenciones') {
-                        cargarHistorialCentro(cenSel);
-                        cargarEstadisticasCentro(cenSel);
+                        cargarHistorialCentro(cenSel, redSel);
+                        cargarEstadisticasCentro(cenSel, redSel);
                     } else if (tabla === 'usuarios') {
                         cargarUsuariosGlobal();
                     }
