@@ -2373,7 +2373,18 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
         let FILTRO_TIPO_ACTIVO = 'todo'; // 'todo' | 'equipos' | 'muebles'
 
         window.addEventListener('DOMContentLoaded', () => {
-            alCambiarRedGlobal();
+            let redGuardada = '';
+            let cenGuardado = '';
+            try {
+                redGuardada = localStorage.getItem('cmms_top_red') || '';
+                cenGuardado = localStorage.getItem('cmms_top_centro') || '';
+            } catch(e){}
+
+            if (redGuardada && document.getElementById('top_red')) {
+                const optR = Array.from(document.getElementById('top_red').options).find(o => o.value === redGuardada);
+                if (optR) document.getElementById('top_red').value = redGuardada;
+            }
+            alCambiarRedGlobal(cenGuardado);
             cargarCatalogoGlobal();
             if (ES_ADMIN) {
                 cargarUsuariosGlobal();
@@ -2389,14 +2400,18 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
         });
 
         // 1. Selector Territorial
-        function alCambiarRedGlobal() {
+        function alCambiarRedGlobal(centroPreseleccionado = '') {
             const redSel = document.getElementById('top_red').value;
+            try { localStorage.setItem('cmms_top_red', redSel); } catch(e){}
+
             const redes = SEDES_DATA.redes || [];
             const rObj = redes.find(r => r.nombre === redSel);
             const rId = rObj ? rObj.id : null;
 
             const centros = (SEDES_DATA.centros || []).filter(c => !rId || c.red_salud_id === rId);
             const selCen = document.getElementById('top_centro');
+            const valorPrevio = centroPreseleccionado || selCen.value;
+
             selCen.innerHTML = '<option value="">-- Todos los Centros --</option>';
 
             centros.forEach(c => {
@@ -2406,12 +2421,18 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                 selCen.appendChild(opt);
             });
 
+            if (valorPrevio && centros.some(c => c.nombre === valorPrevio)) {
+                selCen.value = valorPrevio;
+            }
+
             alCambiarCentroGlobal();
         }
 
         async function alCambiarCentroGlobal() {
             const redSel = document.getElementById('top_red').value;
             const cenSel = document.getElementById('top_centro').value;
+            try { localStorage.setItem('cmms_top_centro', cenSel); } catch(e){}
+
             await cargarAreasGlobal(cenSel, redSel);
             cargarInventarioCentro(cenSel, redSel);
             cargarMueblesCentro(cenSel, redSel);
@@ -4677,6 +4698,7 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                         alCambiarCentroGlobal();
                     } else {
                         cargarInventarioCentro(cenVal, redVal);
+                        cargarMueblesCentro(cenVal, redVal);
                         cargarEstadisticasCentro(cenVal, redVal);
                     }
                 } else {
@@ -4777,6 +4799,7 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                         alCambiarCentroGlobal();
                     } else {
                         cargarMueblesCentro(cenSel, redSel);
+                        cargarInventarioCentro(cenSel, redSel);
                         cargarEstadisticasCentro(cenSel, redSel);
                     }
                 } else {

@@ -4090,8 +4090,17 @@ def api_guardar_mueble():
         if not payload.get('tipo_activo') and not payload.get('descripcion'):
             return jsonify({"ok": False, "error": "Tipo de activo o descripción requerida"}), 400
         
-        usuario = session.get('usuario_movil') or session.get('usuario') or {}
-        nom_tecnico = (usuario.get('nombre_completo') or usuario.get('nombre_usuario') or '').strip()
+        # Obtener nombre del técnico de la sesión de forma segura
+        nom_tecnico = ''
+        u_movil = session.get('usuario_movil')
+        if isinstance(u_movil, dict):
+            nom_tecnico = u_movil.get('nombre_completo') or u_movil.get('nombre_usuario') or ''
+        elif session.get('nombre_completo'):
+            nom_tecnico = str(session.get('nombre_completo'))
+        elif session.get('usuario'):
+            nom_tecnico = str(session.get('usuario'))
+        nom_tecnico = nom_tecnico.strip()
+
         if not payload.get('tecnico_inventareador') and nom_tecnico:
             payload['tecnico_inventareador'] = nom_tecnico
 

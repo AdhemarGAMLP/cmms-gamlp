@@ -1814,12 +1814,15 @@ def obtener_equipos_db(centro_nombre=None, limite=300, perfil=None, red_nombre=N
             cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
             conds = ["COALESCE(estado, 'Operativo') NOT IN ('Inactivo', 'Eliminado')"]
             params = []
-            if centro_nombre and not str(centro_nombre).startswith("["):
-                conds.append("(centro_salud_nombre = %s OR centro_salud_nombre ILIKE %s)")
-                params.extend([centro_nombre, f"%{centro_nombre}%"])
-            if red_nombre and not str(red_nombre).startswith("["):
-                conds.append("(red_salud_nombre = %s OR red_salud_nombre ILIKE %s)")
-                params.extend([red_nombre, f"%{red_nombre}%"])
+            if centro_nombre and not str(centro_nombre).startswith("[") and str(centro_nombre).strip() not in ("Todos los Centros", "-- Todos los Centros --"):
+                cen_raw = str(centro_nombre).strip()
+                cen_clean = cen_raw.replace("C.S.", "").replace("CS", "").replace("CENTRO DE SALUD", "").replace("HOSPITAL", "").strip()
+                conds.append("(centro_salud_nombre ILIKE %s OR %s ILIKE ('%%' || centro_salud_nombre || '%%'))")
+                params.extend([f"%{cen_clean}%", cen_raw])
+            if red_nombre and not str(red_nombre).startswith("[") and str(red_nombre).strip() not in ("Todas las Redes", "-- Todas las Redes (GAMLP) --"):
+                red_raw = str(red_nombre).strip()
+                conds.append("(red_salud_nombre ILIKE %s OR %s ILIKE ('%%' || red_salud_nombre || '%%'))")
+                params.extend([f"%{red_raw}%", red_raw])
 
             where_clause = ("WHERE " + " AND ".join(conds)) if conds else ""
             query = f"SELECT * FROM equipos {where_clause} ORDER BY id DESC LIMIT %s;"
@@ -1851,12 +1854,25 @@ def obtener_muebles_db(centro_nombre=None, limite=300, perfil=None, red_nombre=N
             cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
             conds = ["COALESCE(estado, 'Activo') NOT IN ('Inactivo', 'Eliminado')"]
             params = []
-            if centro_nombre and not str(centro_nombre).startswith("["):
-                conds.append("(ubicacion ILIKE %s OR descripcion ILIKE %s OR unidad_organizacional ILIKE %s)")
-                params.extend([f"%{centro_nombre}%", f"%{centro_nombre}%", f"%{centro_nombre}%"])
-            if red_nombre and not str(red_nombre).startswith("["):
-                conds.append("(ubicacion ILIKE %s OR descripcion ILIKE %s OR unidad_organizacional ILIKE %s)")
-                params.extend([f"%{red_nombre}%", f"%{red_nombre}%", f"%{red_nombre}%"])
+            if centro_nombre and not str(centro_nombre).startswith("[") and str(centro_nombre).strip() not in ("Todos los Centros", "-- Todos los Centros --"):
+                cen_raw = str(centro_nombre).strip()
+                cen_clean = cen_raw.replace("C.S.", "").replace("CS", "").replace("CENTRO DE SALUD", "").replace("HOSPITAL", "").strip()
+                conds.append("""(
+                    unidad_organizacional ILIKE %s 
+                    OR %s ILIKE ('%%' || unidad_organizacional || '%%')
+                    OR ubicacion ILIKE %s
+                    OR %s ILIKE ('%%' || ubicacion || '%%')
+                    OR descripcion ILIKE %s
+                )""")
+                params.extend([f"%{cen_clean}%", cen_raw, f"%{cen_clean}%", cen_raw, f"%{cen_clean}%"])
+            if red_nombre and not str(red_nombre).startswith("[") and str(red_nombre).strip() not in ("Todas las Redes", "-- Todas las Redes (GAMLP) --"):
+                red_raw = str(red_nombre).strip()
+                conds.append("""(
+                    direccion_administrativa ILIKE %s 
+                    OR %s ILIKE ('%%' || direccion_administrativa || '%%')
+                    OR (red_salud_id IN (SELECT id FROM redes_salud WHERE nombre ILIKE %s OR %s ILIKE ('%%' || nombre || '%%')))
+                )""")
+                params.extend([f"%{red_raw}%", red_raw, f"%{red_raw}%", red_raw])
 
             where_clause = ("WHERE " + " AND ".join(conds)) if conds else ""
             query = f"SELECT * FROM muebleria {where_clause} ORDER BY id DESC LIMIT %s;"
