@@ -1215,7 +1215,7 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                     🛋️ Solo Muebles y TI <span id="cnt_inv_muebles" class="pill-count">0</span>
                 </button>
             </div>
-            <div id="lista_inventario">
+            <div id="lista_inventario" class="cards-grid">
                 <div class="empty-state"><span>⏳</span>Cargando activos del centro...</div>
             </div>
         </section>
@@ -1236,47 +1236,17 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
         </section>
         {% endif %}
 
-        <!-- 3. PESTAÑA: MUEBLES (MUEBLERÍA, EQUIPOS DE COMPUTACIÓN Y ACTIVOS FIJOS) -->
+        <!-- 3. PESTAÑA: MUEBLES -->
         {% if es_admin or perms.get('Muebleria', {}).get('ver', False) %}
         <section id="pane_muebles" class="tab-pane">
-            <!-- TARJETAS DE ESTADÍSTICAS IDÉNTICAS AL SOFTWARE DE ESCRITORIO -->
-            <div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); margin-bottom: 12px;">
-                <div class="kpi-card" style="padding: 10px 14px; text-align: left;">
-                    <div class="kpi-label" style="font-size: 11px; margin-bottom: 4px;">📦 Total Activos Fijos</div>
-                    <div id="stat_mue_total" class="kpi-value" style="color: var(--primary); font-size: 22px;">0</div>
-                </div>
-                <div class="kpi-card" style="padding: 10px 14px; text-align: left;">
-                    <div class="kpi-label" style="font-size: 11px; margin-bottom: 4px;">🛋️ Mobiliario / TI</div>
-                    <div id="stat_mue_muebles" class="kpi-value" style="color: #D97706; font-size: 22px;">0</div>
-                </div>
-                <div class="kpi-card" style="padding: 10px 14px; text-align: left;">
-                    <div class="kpi-label" style="font-size: 11px; margin-bottom: 4px;">🩺 Equipos Médicos</div>
-                    <div id="stat_mue_equipos" class="kpi-value" style="color: #0284C7; font-size: 22px;">0</div>
-                </div>
-            </div>
-
             <div class="tab-tools-bar">
-                <input type="text" id="busq_muebles" class="search-input" placeholder="Buscar mueble o equipo por código, descripción, marca, serie, custodio..." oninput="filtrarListaMuebles()">
+                <input type="text" id="busq_muebles" class="search-input" placeholder="Buscar mueble, PC, serie, SISPAM..." oninput="filtrarListaMuebles()">
                 {% if es_admin or perms.get('Muebleria', {}).get('agregar', False) %}
-                <button class="btn-add-action" onclick="abrirModalMueble()">✚ Registrar Activo Fijo</button>
+                <button class="btn-add-action" onclick="abrirModalMueble()">✚ Registrar Mueble</button>
                 {% endif %}
             </div>
-
-            <!-- FILTRO DE ACTIVOS EN MUEBLES -->
-            <div class="asset-filters-bar">
-                <button type="button" class="btn-filter-pill active" id="pill_mue_todo" onclick="setFiltroTipoMuebles('todo')">
-                    🌐 Ver Todos los Activos <span id="cnt_mue_todo" class="pill-count">0</span>
-                </button>
-                <button type="button" class="btn-filter-pill" id="pill_mue_muebles" onclick="setFiltroTipoMuebles('muebles')">
-                    🛋️ Solo Mueblería y TI <span id="cnt_mue_muebles" class="pill-count">0</span>
-                </button>
-                <button type="button" class="btn-filter-pill" id="pill_mue_equipos" onclick="setFiltroTipoMuebles('equipos')">
-                    🩺 Solo Equipos Médicos <span id="cnt_mue_equipos" class="pill-count">0</span>
-                </button>
-            </div>
-
-            <div id="lista_muebles">
-                <div class="empty-state"><span>⏳</span>Cargando activos fijos del centro...</div>
+            <div id="lista_muebles" class="cards-grid">
+                <div class="empty-state"><span>⏳</span>Cargando activos de mueblería y TI...</div>
             </div>
         </section>
         {% endif %}
@@ -2401,7 +2371,6 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
         let LISTA_HISTORIAL = [];
         let LISTA_USUARIOS = [];
         let FILTRO_TIPO_ACTIVO = 'todo'; // 'todo' | 'equipos' | 'muebles'
-        let FILTRO_MUEBLES_TIPO = 'todo'; // 'todo' | 'muebles' | 'equipos'
 
         window.addEventListener('DOMContentLoaded', () => {
             alCambiarRedGlobal();
@@ -3051,7 +3020,6 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                 LISTA_EQUIPOS = await res.json();
                 actualizarContadoresInventario();
                 aplicarFiltroInventario();
-                aplicarFiltroMuebles();
 
                 const selInter = document.getElementById('inter_equipo');
                 if (selInter) {
@@ -3070,15 +3038,15 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
 
         async function cargarMueblesCentro(centro, red = '') {
             const cont = document.getElementById('lista_muebles');
-            if (cont) cont.innerHTML = '<div class="empty-state"><span>⏳</span>Cargando muebles y activos...</div>';
+            if (cont) cont.innerHTML = '<div class="empty-state"><span>⏳</span>Cargando muebles...</div>';
             try {
                 let url = `/api/muebles?centro=${encodeURIComponent(centro || '')}`;
                 if (red) url += `&red=${encodeURIComponent(red)}`;
                 const res = await fetch(url);
                 LISTA_MUEBLES = await res.json();
+                if (cont) renderizarListaMuebles(LISTA_MUEBLES);
                 actualizarContadoresInventario();
                 aplicarFiltroInventario();
-                aplicarFiltroMuebles();
             } catch (e) {
                 if (cont) cont.innerHTML = '<div class="empty-state"><span>⚠️</span>Error al cargar muebles</div>';
             }
@@ -3193,77 +3161,77 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                 return;
             }
 
-            let rows = '';
+            let html = '';
             items.forEach(it => {
                 const esEquipo = it._tipo !== 'MUEBLE';
                 if (esEquipo) {
                     const st = (it.estado || 'Bueno').toLowerCase();
                     const badgeCls = st === 'bueno' ? 'status-bueno' : (st === 'regular' ? 'status-regular' : 'status-malo');
-                    let actionsHtml = `<a href="/equipo/${encodeURIComponent(it.id)}" class="btn-table-action btn-table-view">📋 Ficha</a>`;
+                    const cr = (it.criticidad || 'Media').toLowerCase();
+                    const critCls = cr === 'alta' ? 'status-crit-alta' : (cr === 'media' ? 'status-crit-media' : 'status-crit-baja');
+
+                    let actionsHtml = `<a href="/equipo/${encodeURIComponent(it.id)}" class="btn-card-view">📋 Ficha</a>`;
                     if (puede('Inventario', 'cambiar')) {
-                        actionsHtml += `<button type="button" class="btn-table-action btn-table-edit" onclick="editarEquipo('${it.id}')">✎ Editar</button>`;
+                        actionsHtml += `<button type="button" class="btn-card-edit" onclick="editarEquipo('${it.id}')">✎ Editar</button>`;
                     }
                     if (puede('Inventario', 'eliminar')) {
-                        actionsHtml += `<button type="button" class="btn-table-action btn-table-del" onclick="eliminarRegistro('equipos', '${it.id}', '${escaparJs(it.nombre || it.id)}')">🗑️</button>`;
+                        actionsHtml += `<button type="button" class="btn-card-del" onclick="eliminarRegistro('equipos', '${it.id}', '${escaparJs(it.nombre || it.id)}')">🗑️ Eliminar</button>`;
                     }
 
-                    rows += `
-                    <tr>
-                        <td><strong style="color:#0284C7; font-family:monospace; font-size:12px;">${it.id}</strong></td>
-                        <td><span class="badge-status" style="background:#E0F2FE; color:#0284C7; font-size:10px; font-weight:800;">🩺 EQUIPO</span></td>
-                        <td><strong style="color:#0F172A;">${it.nombre}</strong></td>
-                        <td>${it.marca || 'S/M'} ${it.modelo || ''}</td>
-                        <td><code style="font-size:11px; background:#F1F5F9; padding:2px 5px; border-radius:4px;">${it.numero_serie || 'S/C'}</code></td>
-                        <td>📍 ${it.area || 'General'}</td>
-                        <td>👤 ${it.persona_asignada || 'Sin asignar'} ${it.cargo_asignado ? `<span style="color:#64748B; font-size:11px;">(${it.cargo_asignado})</span>` : ''}</td>
-                        <td><span class="badge-status ${badgeCls}">${it.estado || 'Bueno'}</span></td>
-                        <td style="text-align:center;"><div style="display:inline-flex; gap:4px;">${actionsHtml}</div></td>
-                    </tr>`;
+                    html += `
+                    <div class="card-item" style="border-top: 3px solid #0284C7;">
+                        <div class="card-item-header">
+                            <span class="badge-af">${it.id}</span>
+                            <div style="display:flex; gap:4px; align-items:center;">
+                                <span class="badge-status" style="background:#E0F2FE; color:#0284C7; font-size:10px; font-weight:800;">🩺 EQUIPO</span>
+                                <span class="badge-status ${critCls}">Crit: ${it.criticidad || 'Media'}</span>
+                                <span class="badge-status ${badgeCls}">${it.estado || 'Bueno'}</span>
+                            </div>
+                        </div>
+                        <div class="item-title">${it.nombre}</div>
+                        <div class="item-subtitle">
+                            <span>🏷️ ${it.marca || 'S/M'} ${it.modelo || ''}</span>
+                            <span>•</span>
+                            <span>📍 ${it.area || 'Sin Área'}</span>
+                        </div>
+                        ${it.persona_asignada ? `<div class="item-detail-row">👤 <strong>Responsable:</strong> ${it.persona_asignada} ${it.cargo_asignado ? `(${it.cargo_asignado})` : ''}</div>` : ''}
+                        <div class="item-actions">
+                            ${actionsHtml}
+                        </div>
+                    </div>`;
                 } else {
                     let actionsHtml = '';
                     if (puede('Muebleria', 'cambiar')) {
-                        actionsHtml += `<button type="button" class="btn-table-action btn-table-edit" onclick="editarMueble(${it.id})">✎ Editar</button>`;
+                        actionsHtml += `<button type="button" class="btn-card-edit" onclick="editarMueble(${it.id})">✎ Editar</button>`;
                     }
                     if (puede('Muebleria', 'eliminar')) {
-                        actionsHtml += `<button type="button" class="btn-table-action btn-table-del" onclick="eliminarRegistro('muebleria', ${it.id}, '${escaparJs(it.descripcion || it.tipo_activo)}')">🗑️</button>`;
+                        actionsHtml += `<button type="button" class="btn-card-del" onclick="eliminarRegistro('muebleria', ${it.id}, '${escaparJs(it.descripcion || it.tipo_activo)}')">🗑️ Eliminar</button>`;
                     }
 
-                    rows += `
-                    <tr>
-                        <td><strong style="color:#B45309; font-family:monospace; font-size:12px;">${it.codigo_sispam || it.id || 'MUEBLE'}</strong></td>
-                        <td><span class="badge-status" style="background:#FEF3C7; color:#B45309; font-size:10px; font-weight:800;">🛋️ ${it.tipo_activo || 'ACTIVO FIJO'}</span></td>
-                        <td><strong style="color:#0F172A;">${it.descripcion || it.tipo_activo}</strong></td>
-                        <td>${it.marca || 'S/M'} ${it.modelo || ''}</td>
-                        <td><code style="font-size:11px; background:#F1F5F9; padding:2px 5px; border-radius:4px;">${it.serie || 'S/C'}</code></td>
-                        <td>📍 ${it.ubicacion || 'General'}</td>
-                        <td>👤 ${it.persona_asignada || 'Sin asignar'}</td>
-                        <td><span class="badge-status status-bueno">${it.estado_conservacion || 'Bueno'}</span></td>
-                        <td style="text-align:center;"><div style="display:inline-flex; gap:4px;">${actionsHtml}</div></td>
-                    </tr>`;
+                    html += `
+                    <div class="card-item" style="border-top: 3px solid #D97706;">
+                        <div class="card-item-header">
+                            <span class="badge-af" style="color:#B45309; background:#FEF3C7; border-color:#FDE68A;">${it.codigo_sispam || it.id || 'MUEBLE'}</span>
+                            <div style="display:flex; gap:4px; align-items:center;">
+                                <span class="badge-status" style="background:#FEF3C7; color:#B45309; font-size:10px; font-weight:800;">🛋️ MUEBLE/TI</span>
+                                <span class="badge-status status-bueno">${it.estado_conservacion || 'Bueno'}</span>
+                            </div>
+                        </div>
+                        <div class="item-title">${it.descripcion || it.tipo_activo}</div>
+                        <div class="item-subtitle">
+                            <span>🏷️ ${it.marca || 'S/M'} ${it.modelo || ''}</span>
+                            <span>•</span>
+                            <span>Serie: ${it.serie || 'S/S'}</span>
+                        </div>
+                        <div class="item-detail-row">
+                            📍 <strong>Ubicación:</strong> ${it.ubicacion || 'General'}
+                            ${it.persona_asignada ? `<br>👤 <strong>Asignado:</strong> ${it.persona_asignada}` : ''}
+                        </div>
+                        ${actionsHtml ? `<div class="item-actions">${actionsHtml}</div>` : ''}
+                    </div>`;
                 }
             });
-
-            cont.innerHTML = `
-            <div class="table-responsive">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th style="min-width:130px;">Cód. AF / ID</th>
-                            <th style="min-width:110px;">Tipo</th>
-                            <th style="min-width:180px;">Equipo / Activo</th>
-                            <th style="min-width:130px;">Marca / Modelo</th>
-                            <th style="min-width:110px;">N° Serie</th>
-                            <th style="min-width:140px;">Piso / Área</th>
-                            <th style="min-width:150px;">Responsable Asignado</th>
-                            <th style="min-width:90px;">Estado</th>
-                            <th style="text-align:center; min-width:130px;">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${rows}
-                    </tbody>
-                </table>
-            </div>`;
+            cont.innerHTML = html;
         }
 
         function renderizarListaCatalogo(items) {
@@ -3300,89 +3268,42 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             const cont = document.getElementById('lista_muebles');
             if (!cont) return;
             if (!items || items.length === 0) {
-                cont.innerHTML = '<div class="empty-state"><span>🛋️</span>No hay activos registrados en este centro</div>';
+                cont.innerHTML = '<div class="empty-state"><span>🛋️</span>No hay activos de mueblería o TI</div>';
                 return;
             }
-
-            let rows = '';
-            items.forEach(it => {
-                const esEq = it._origen === 'EQUIPO';
+            let html = '';
+            items.forEach(m => {
                 let actionsHtml = '';
-                if (esEq) {
-                    actionsHtml += `<a href="/equipo/${encodeURIComponent(it.id)}" class="btn-table-action btn-table-view">📋 Ficha</a>`;
-                    if (puede('Inventario', 'cambiar')) {
-                        actionsHtml += `<button type="button" class="btn-table-action btn-table-edit" onclick="editarEquipo('${it.id}')">✎ Editar</button>`;
-                    }
-                    if (puede('Inventario', 'eliminar')) {
-                        actionsHtml += `<button type="button" class="btn-table-action btn-table-del" onclick="eliminarRegistro('equipos', '${it.id}', '${escaparJs(it.nombre || it.id)}')">🗑️</button>`;
-                    }
-                } else {
-                    if (puede('Muebleria', 'cambiar')) {
-                        actionsHtml += `<button type="button" class="btn-table-action btn-table-edit" onclick="editarMueble(${it.id})">✎ Editar</button>`;
-                    }
-                    if (puede('Muebleria', 'eliminar')) {
-                        actionsHtml += `<button type="button" class="btn-table-action btn-table-del" onclick="eliminarRegistro('muebleria', ${it.id}, '${escaparJs(it.descripcion || it.tipo_activo)}')">🗑️</button>`;
-                    }
+                if (puede('Muebleria', 'cambiar')) {
+                    actionsHtml += `<button type="button" class="btn-card-edit" onclick="editarMueble(${m.id})">✎ Editar</button>`;
+                }
+                if (puede('Muebleria', 'eliminar')) {
+                    actionsHtml += `<button type="button" class="btn-card-del" onclick="eliminarRegistro('muebleria', ${m.id}, '${escaparJs(m.descripcion || m.tipo_activo)}')">🗑️ Eliminar</button>`;
                 }
 
-                const badgeTipo = esEq 
-                    ? `<span class="badge-status" style="background:#E0F2FE; color:#0284C7; font-size:10px; font-weight:800;">🩺 EQUIPO MÉDICO</span>`
-                    : `<span class="badge-status" style="background:#FEF3C7; color:#B45309; font-size:10px; font-weight:800;">🛋️ ${it.tipo_activo || 'ACTIVO FIJO'}</span>`;
+                const st = (m.estado_conservacion || m.estado || 'Bueno').toLowerCase();
+                const badgeCls = st === 'bueno' ? 'status-bueno' : (st === 'regular' ? 'status-regular' : 'status-malo');
 
-                const st = (it.estado_conservacion || it.estado || 'Bueno').toLowerCase();
-                const badgeStCls = st === 'bueno' ? 'status-bueno' : (st === 'regular' ? 'status-regular' : 'status-malo');
-
-                rows += `
-                <tr>
-                    <td><strong style="color:${esEq ? '#0284C7' : '#B45309'}; font-family:monospace; font-size:12px;">${it.id}</strong></td>
-                    <td>${it.sector_actual || 'SALUD'}</td>
-                    <td style="font-size:11px; color:#475569;">${it.direccion_administrativa || it.red_salud_nombre || ''}</td>
-                    <td style="font-size:11px; font-weight:600;">${it.unidad_organizacional || it.centro_salud_nombre || ''}</td>
-                    <td>${badgeTipo}</td>
-                    <td><strong style="color:#0F172A;">${it.descripcion || it.nombre || it.tipo_activo}</strong></td>
-                    <td>${it.marca || 'S/M'}</td>
-                    <td>${it.modelo || 'S/M'}</td>
-                    <td><code style="font-size:11px; background:#F1F5F9; padding:2px 5px; border-radius:4px;">${it.serie || it.numero_serie || 'S/C'}</code></td>
-                    <td>👤 ${it.persona_asignada || 'Sin asignar'}</td>
-                    <td style="font-family:monospace; font-size:11px;">${it.ci_asignado || 'S/C'}</td>
-                    <td><code style="font-size:11px; background:#F1F5F9; padding:2px 5px; border-radius:4px;">${it.codigo_sispam || 'S/C'}</code></td>
-                    <td><code style="font-size:11px; background:#F1F5F9; padding:2px 5px; border-radius:4px;">${it.bertin || 'S/C'}</code></td>
-                    <td><code style="font-size:11px; background:#F1F5F9; padding:2px 5px; border-radius:4px;">${it.sapm || 'S/C'}</code></td>
-                    <td>📍 ${it.ubicacion || it.area || 'General'}</td>
-                    <td><span class="badge-status ${badgeStCls}">${it.estado_conservacion || it.estado || 'Bueno'}</span></td>
-                    <td style="text-align:center;"><div style="display:inline-flex; gap:4px;">${actionsHtml}</div></td>
-                </tr>`;
+                html += `
+                <div class="card-item">
+                    <div class="card-item-header">
+                        <span class="badge-af">${m.tipo_activo || 'ACTIVO'}</span>
+                        <span class="badge-status ${badgeCls}">${m.estado_conservacion || 'Bueno'}</span>
+                    </div>
+                    <div class="item-title">${m.descripcion || m.tipo_activo}</div>
+                    <div class="item-subtitle">
+                        <span>🏷️ ${m.marca || ''} ${m.modelo || ''}</span>
+                        <span>•</span>
+                        <span>Serie: ${m.serie || 'S/C'}</span>
+                    </div>
+                    <div class="item-detail-row">
+                        📍 <strong>Ubicación:</strong> ${m.ubicacion || 'General'}
+                        ${m.persona_asignada ? `<br>👤 <strong>Asignado a:</strong> ${m.persona_asignada}` : ''}
+                    </div>
+                    ${actionsHtml ? `<div class="item-actions">${actionsHtml}</div>` : ''}
+                </div>`;
             });
-
-            cont.innerHTML = `
-            <div class="table-responsive">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th style="min-width:60px;">ID</th>
-                            <th style="min-width:80px;">Sector</th>
-                            <th style="min-width:130px;">Red de Salud</th>
-                            <th style="min-width:150px;">Unidad / Centro</th>
-                            <th style="min-width:140px;">Tipo Activo</th>
-                            <th style="min-width:180px;">Descripción</th>
-                            <th style="min-width:100px;">Marca</th>
-                            <th style="min-width:95px;">Modelo</th>
-                            <th style="min-width:95px;">Serie</th>
-                            <th style="min-width:150px;">Persona Asignada</th>
-                            <th style="min-width:95px;">C.I. Asignado</th>
-                            <th style="min-width:95px;">Cód. SISPAM</th>
-                            <th style="min-width:85px;">BERTIN</th>
-                            <th style="min-width:85px;">SAPM</th>
-                            <th style="min-width:130px;">Ubicación</th>
-                            <th style="min-width:85px;">Estado</th>
-                            <th style="text-align:center; min-width:130px;">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${rows}
-                    </tbody>
-                </table>
-            </div>`;
+            cont.innerHTML = html;
         }
 
         function renderizarListaAreas(items) {
@@ -3665,80 +3586,23 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             renderizarListaCatalogo(filt);
         }
 
-        function setFiltroTipoMuebles(tipo) {
-            FILTRO_MUEBLES_TIPO = tipo;
-            ['todo', 'muebles', 'equipos'].forEach(t => {
-                const btn = document.getElementById(`pill_mue_${t}`);
-                if (btn) {
-                    if (t === tipo) btn.classList.add('active');
-                    else btn.classList.remove('active');
-                }
-            });
-            aplicarFiltroMuebles();
-        }
-
-        function aplicarFiltroMuebles() {
-            const numEq = (LISTA_EQUIPOS || []).length;
-            const numMu = (LISTA_MUEBLES || []).length;
-            const numTodo = numEq + numMu;
-
-            const statTot = document.getElementById('stat_mue_total');
-            const statMu = document.getElementById('stat_mue_muebles');
-            const statEq = document.getElementById('stat_mue_equipos');
-            if (statTot) statTot.textContent = numTodo;
-            if (statMu) statMu.textContent = numMu;
-            if (statEq) statEq.textContent = numEq;
-
-            const cTodo = document.getElementById('cnt_mue_todo');
-            const cMu = document.getElementById('cnt_mue_muebles');
-            const cEq = document.getElementById('cnt_mue_equipos');
-            if (cTodo) cTodo.textContent = numTodo;
-            if (cMu) cMu.textContent = numMu;
-            if (cEq) cEq.textContent = numEq;
-
-            const q = (document.getElementById('busq_muebles') ? document.getElementById('busq_muebles').value : '').toLowerCase().trim();
-            let items = [];
-
-            if (FILTRO_MUEBLES_TIPO === 'todo' || FILTRO_MUEBLES_TIPO === 'muebles') {
-                const mus = (LISTA_MUEBLES || []).map(m => ({ ...m, _origen: 'MUEBLE' }));
-                items = items.concat(mus);
-            }
-            if (FILTRO_MUEBLES_TIPO === 'todo' || FILTRO_MUEBLES_TIPO === 'equipos') {
-                const eqs = (LISTA_EQUIPOS || []).map(e => ({
-                    ...e,
-                    _origen: 'EQUIPO',
-                    descripcion: e.nombre,
-                    tipo_activo: 'EQUIPO MÉDICO',
-                    serie: e.numero_serie || 'S/C',
-                    ubicacion: e.area,
-                    estado_conservacion: e.estado
-                }));
-                items = items.concat(eqs);
-            }
-
-            if (q) {
-                items = items.filter(it => {
-                    const idStr = String(it.id || '').toLowerCase();
-                    const descStr = String(it.descripcion || it.nombre || it.tipo_activo || '').toLowerCase();
-                    const marStr = String(it.marca || '').toLowerCase();
-                    const modStr = String(it.modelo || '').toLowerCase();
-                    const serStr = String(it.serie || it.numero_serie || '').toLowerCase();
-                    const ubiStr = String(it.ubicacion || it.area || '').toLowerCase();
-                    const perStr = String(it.persona_asignada || '').toLowerCase();
-                    const sisStr = String(it.codigo_sispam || '').toLowerCase();
-                    const berStr = String(it.bertin || '').toLowerCase();
-                    const sapStr = String(it.sapm || '').toLowerCase();
-                    return idStr.includes(q) || descStr.includes(q) || marStr.includes(q) || modStr.includes(q) ||
-                           serStr.includes(q) || ubiStr.includes(q) || perStr.includes(q) || sisStr.includes(q) ||
-                           berStr.includes(q) || sapStr.includes(q);
-                });
-            }
-
-            renderizarListaMuebles(items);
-        }
-
         function filtrarListaMuebles() {
-            aplicarFiltroMuebles();
+            const q = (document.getElementById('busq_muebles') ? document.getElementById('busq_muebles').value : '').toLowerCase().trim();
+            const filt = (LISTA_MUEBLES || []).filter(m => {
+                const descStr = String(m.descripcion || m.tipo_activo || '').toLowerCase();
+                const marStr = String(m.marca || '').toLowerCase();
+                const modStr = String(m.modelo || '').toLowerCase();
+                const serStr = String(m.serie || '').toLowerCase();
+                const ubiStr = String(m.ubicacion || '').toLowerCase();
+                const perStr = String(m.persona_asignada || '').toLowerCase();
+                const sisStr = String(m.codigo_sispam || '').toLowerCase();
+                const berStr = String(m.bertin || '').toLowerCase();
+                const sapStr = String(m.sapm || '').toLowerCase();
+                return descStr.includes(q) || marStr.includes(q) || modStr.includes(q) ||
+                       serStr.includes(q) || ubiStr.includes(q) || perStr.includes(q) ||
+                       sisStr.includes(q) || berStr.includes(q) || sapStr.includes(q);
+            });
+            renderizarListaMuebles(filt);
         }
 
         function filtrarListaAreas() {
