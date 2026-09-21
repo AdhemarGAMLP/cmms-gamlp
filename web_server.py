@@ -4090,6 +4090,9 @@ def api_guardar_mueble():
         if not payload.get('tipo_activo') and not payload.get('descripcion'):
             return jsonify({"ok": False, "error": "Tipo de activo o descripción requerida"}), 400
         
+        if not payload.get('descripcion'):
+            payload['descripcion'] = payload.get('tipo_activo') or 'Activo Mueblería / TI'
+
         # Obtener nombre del técnico de la sesión de forma segura
         nom_tecnico = ''
         u_movil = session.get('usuario_movil')
@@ -4104,11 +4107,14 @@ def api_guardar_mueble():
         if not payload.get('tecnico_inventareador') and nom_tecnico:
             payload['tecnico_inventareador'] = nom_tecnico
 
-        ok, m_id = guardar_mueble_db(payload)
-        if ok and app_gui:
+        ok, res = guardar_mueble_db(payload)
+        if not ok:
+            return jsonify({"ok": False, "error": str(res)}), 400
+
+        if app_gui:
             try: app_gui.after(300, app_gui.cargar_datos_en_segundo_plano)
             except: pass
-        return jsonify({"ok": ok, "id": m_id})
+        return jsonify({"ok": True, "id": res})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
 

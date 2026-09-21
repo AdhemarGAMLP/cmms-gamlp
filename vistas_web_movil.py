@@ -2332,9 +2332,11 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                 <!-- FILA 2: UBICACIÓN FÍSICA Y SECTOR -->
                 <div class="row-2">
                     <div class="form-group">
-                        <label class="form-label" for="mue_area">Ubicación Física (Piso - Área) (*):</label>
-                        <select id="mue_area" class="form-control" onchange="alCambiarAreaMuebleModal()" required>
-                            <option value="">Cargando áreas...</option>
+                        <label class="form-label" for="mue_area">Ubicación Física (Piso - Área):</label>
+                        <select id="mue_area" class="form-control" onchange="alCambiarAreaMuebleModal()">
+                            <option value="">-- Seleccionar Ubicación (Piso - Área) --</option>
+                            <option value="General">General</option>
+                            <option value="Piso 1 - Consulta Externa">Piso 1 - Consulta Externa</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -2432,8 +2434,8 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                         <input type="text" id="mue_cargo" class="form-control" placeholder="Ej: Biomedico, Médico General">
                     </div>
                     <div class="form-group">
-                        <label class="form-label" for="mue_desc">Descripción del Bien (*):</label>
-                        <input type="text" id="mue_desc" class="form-control" placeholder="Ej: CPU Lenovo ThinkCentre Core i5" required>
+                        <label class="form-label" for="mue_desc">Descripción del Bien (Opcional / Auto-rellenable):</label>
+                        <input type="text" id="mue_desc" class="form-control" placeholder="Ej: CPU Lenovo ThinkCentre Core i5">
                     </div>
                 </div>
 
@@ -3348,31 +3350,44 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                 if (selEqArea) selEqArea.innerHTML = '<option value="">-- Seleccionar Ubicación (Piso - Área) --</option>';
                 if (selMueArea) selMueArea.innerHTML = '<option value="">-- Seleccionar Ubicación (Piso - Área) --</option>';
 
-                LISTA_AREAS.forEach(a => {
-                    const fmt = formatearAreaNombre(a);
-                    if (selEqArea) {
-                        const o1 = document.createElement('option');
-                        o1.value = fmt; o1.textContent = fmt;
-                        selEqArea.appendChild(o1);
-                    }
-                    if (selMueArea) {
-                        const o2 = document.createElement('option');
-                        o2.value = fmt; o2.textContent = fmt;
-                        selMueArea.appendChild(o2);
-                    }
-                });
+                if (Array.isArray(LISTA_AREAS) && LISTA_AREAS.length > 0) {
+                    LISTA_AREAS.forEach(a => {
+                        const fmt = formatearAreaNombre(a);
+                        if (selEqArea) {
+                            const o1 = document.createElement('option');
+                            o1.value = fmt; o1.textContent = fmt;
+                            selEqArea.appendChild(o1);
+                        }
+                        if (selMueArea) {
+                            const o2 = document.createElement('option');
+                            o2.value = fmt; o2.textContent = fmt;
+                            selMueArea.appendChild(o2);
+                        }
+                    });
+                } else {
+                    const defAreas = ['General', 'Piso 1 - Consulta Externa', 'Piso 1 - Emergencias', 'Piso 1 - Administración', 'Piso 1 - Farmacia', 'Piso 1 - Odontología'];
+                    defAreas.forEach(fmt => {
+                        if (selEqArea) {
+                            const o1 = document.createElement('option');
+                            o1.value = fmt; o1.textContent = fmt;
+                            selEqArea.appendChild(o1);
+                        }
+                        if (selMueArea) {
+                            const o2 = document.createElement('option');
+                            o2.value = fmt; o2.textContent = fmt;
+                            selMueArea.appendChild(o2);
+                        }
+                    });
+                }
 
                 // Auto-seleccionar primer área si existe para autollenar datos de doctor y custodio
-                if (LISTA_AREAS.length > 0) {
-                    const primerFmt = formatearAreaNombre(LISTA_AREAS[0]);
-                    if (selEqArea && (!selEqArea.value || selEqArea.selectedIndex <= 0)) {
-                        selEqArea.value = primerFmt;
-                        alCambiarAreaModal();
-                    }
-                    if (selMueArea && (!selMueArea.value || selMueArea.selectedIndex <= 0)) {
-                        selMueArea.value = primerFmt;
-                        alCambiarAreaMuebleModal();
-                    }
+                if (selEqArea && (!selEqArea.value || selEqArea.selectedIndex <= 0) && selEqArea.options.length > 1) {
+                    selEqArea.selectedIndex = 1;
+                    alCambiarAreaModal();
+                }
+                if (selMueArea && (!selMueArea.value || selMueArea.selectedIndex <= 0) && selMueArea.options.length > 1) {
+                    selMueArea.selectedIndex = 1;
+                    alCambiarAreaMuebleModal();
                 }
 
                 // Mantener sincronizado el selector de áreas del catálogo
@@ -5255,14 +5270,20 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
         async function guardarNuevoMueble(event) {
             event.preventDefault();
             const idVal = document.getElementById('mue_id').value;
-            const redSel = (document.getElementById('mue_red') ? document.getElementById('mue_red').value : '') || document.getElementById('top_red').value;
-            const cenSel = (document.getElementById('mue_centro') ? document.getElementById('mue_centro').value : '') || document.getElementById('top_centro').value;
+            const redSel = (document.getElementById('mue_red') ? document.getElementById('mue_red').value : '') || (document.getElementById('top_red') ? document.getElementById('top_red').value : '');
+            const cenSel = (document.getElementById('mue_centro') ? document.getElementById('mue_centro').value : '') || (document.getElementById('top_centro') ? document.getElementById('top_centro').value : '');
             const redes = SEDES_DATA.redes || [];
             const rObj = redes.find(r => r.nombre === redSel);
             const rId = rObj ? rObj.id : null;
             const centros = SEDES_DATA.centros || [];
             const cObj = centros.find(c => c.nombre === cenSel);
             const cId = cObj ? cObj.id : null;
+
+            const tipoAct = (document.getElementById('mue_tipo') ? document.getElementById('mue_tipo').value.trim() : '') || 'COMPUTADORA DE ESCRITORIO';
+            let descAct = (document.getElementById('mue_desc') ? document.getElementById('mue_desc').value.trim() : '');
+            if (!descAct) descAct = tipoAct;
+
+            const areaAct = (document.getElementById('mue_area') ? document.getElementById('mue_area').value : '') || 'General';
 
             const payload = {
                 id: idVal ? parseInt(idVal) : null,
@@ -5271,22 +5292,22 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                 unidad_organizacional: cenSel,
                 red_salud_id: rId,
                 centro_salud_id: cId,
-                sector_actual: document.getElementById('mue_sector').value || 'SALUD',
-                tipo_activo: document.getElementById('mue_tipo').value.trim() || 'COMPUTADORA DE ESCRITORIO',
-                descripcion: document.getElementById('mue_desc').value.trim(),
-                marca: document.getElementById('mue_marca').value.trim(),
-                modelo: document.getElementById('mue_modelo').value.trim(),
-                serie: document.getElementById('mue_serie').value.trim() || 'S/C',
-                codigo_sispam: document.getElementById('mue_sispam').value.trim() || 'S/C',
-                bertin: document.getElementById('mue_bertin') ? document.getElementById('mue_bertin').value.trim() || 'S/C' : 'S/C',
-                sapm: document.getElementById('mue_sapm') ? document.getElementById('mue_sapm').value.trim() || 'S/C' : 'S/C',
-                detalle_transaccion: document.getElementById('mue_transaccion') ? document.getElementById('mue_transaccion').value.trim() || 'Asignacion 2026' : 'Asignacion 2026',
-                fecha_asignacion: document.getElementById('mue_fecha_asig') ? document.getElementById('mue_fecha_asig').value : '',
-                ubicacion: document.getElementById('mue_area').value,
-                persona_asignada: document.getElementById('mue_persona').value.trim(),
-                cargo_asignado: document.getElementById('mue_cargo').value.trim(),
-                ci_asignado: document.getElementById('mue_ci').value.trim(),
-                estado_conservacion: document.getElementById('mue_estado').value,
+                sector_actual: (document.getElementById('mue_sector') ? document.getElementById('mue_sector').value : '') || 'SALUD',
+                tipo_activo: tipoAct,
+                descripcion: descAct,
+                marca: document.getElementById('mue_marca') ? document.getElementById('mue_marca').value.trim() : '',
+                modelo: document.getElementById('mue_modelo') ? document.getElementById('mue_modelo').value.trim() : '',
+                serie: (document.getElementById('mue_serie') ? document.getElementById('mue_serie').value.trim() : '') || 'S/C',
+                codigo_sispam: (document.getElementById('mue_sispam') ? document.getElementById('mue_sispam').value.trim() : '') || 'S/C',
+                bertin: (document.getElementById('mue_bertin') ? document.getElementById('mue_bertin').value.trim() : '') || 'S/C',
+                sapm: (document.getElementById('mue_sapm') ? document.getElementById('mue_sapm').value.trim() : '') || 'S/C',
+                detalle_transaccion: (document.getElementById('mue_transaccion') ? document.getElementById('mue_transaccion').value.trim() : '') || 'Asignacion 2026',
+                fecha_asignacion: (document.getElementById('mue_fecha_asig') ? document.getElementById('mue_fecha_asig').value : '') || new Date().toISOString().slice(0, 10),
+                ubicacion: areaAct,
+                persona_asignada: document.getElementById('mue_persona') ? document.getElementById('mue_persona').value.trim() : '',
+                cargo_asignado: document.getElementById('mue_cargo') ? document.getElementById('mue_cargo').value.trim() : '',
+                ci_asignado: document.getElementById('mue_ci') ? document.getElementById('mue_ci').value.trim() : '',
+                estado_conservacion: (document.getElementById('mue_estado') ? document.getElementById('mue_estado').value : '') || 'Bueno',
                 tecnico_inventareador: (document.getElementById('mue_tecnico') ? document.getElementById('mue_tecnico').value.trim() : '') || (USUARIO_ACTUAL.nombre_completo || USUARIO_ACTUAL.nombre_usuario || '').trim(),
                 observaciones_de_asignacion: document.getElementById('mue_obs') ? document.getElementById('mue_obs').value.trim() : '',
                 estado: "Activo"
@@ -5301,12 +5322,10 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                 if (data.ok) {
                     alert('✅ Activo de mueblería / TI guardado con éxito');
                     cerrarModal('modal_mueble');
-                    if (redSel && document.getElementById('top_red') && document.getElementById('top_red').value !== redSel) {
+                    if (redSel && document.getElementById('top_red')) {
                         document.getElementById('top_red').value = redSel;
-                        alCambiarRedGlobal();
-                        if (document.getElementById('top_centro')) document.getElementById('top_centro').value = cenSel;
-                        alCambiarCentroGlobal();
-                    } else if (cenSel && document.getElementById('top_centro') && document.getElementById('top_centro').value !== cenSel) {
+                        alCambiarRedGlobal(cenSel);
+                    } else if (cenSel && document.getElementById('top_centro')) {
                         document.getElementById('top_centro').value = cenSel;
                         alCambiarCentroGlobal();
                     } else {
@@ -5315,9 +5334,9 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                         cargarEstadisticasCentro(cenSel, redSel);
                     }
                 } else {
-                    alert('Error: ' + (data.error || 'No se pudo guardar'));
+                    alert('Error al guardar activo: ' + (data.error || data.id || 'Consulte al administrador'));
                 }
-            } catch (e) { alert('Fallo de conexión: ' + e.message); }
+            } catch (e) { alert('Fallo de conexión al servidor: ' + e.message); }
         }
 
         async function guardarNuevaArea(event) {

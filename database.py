@@ -954,19 +954,29 @@ def guardar_mueble_db(datos):
     """Inserta o actualiza un activo de Mueblería / Computación en la base de datos."""
     conn = obtener_conexion()
     if not conn:
-        return False, "Error al conectar con la base de datos"
+        guardar_mueble_offline_cola(datos)
+        return True, "Guardado en cola offline del dispositivo (sin conexión a servidor central)"
     try:
         cur = conn.cursor()
         m_id = datos.get("id") or datos.get("m_id")
+        try:
+            m_id = int(m_id) if m_id not in (None, "", "null", "0", 0) else None
+        except (ValueError, TypeError):
+            m_id = None
+
         sector_actual = str(datos.get("sector_actual") or "SALUD").strip()
-        direccion_administrativa = str(datos.get("direccion_administrativa") or "").strip()
-        unidad_organizacional = str(datos.get("unidad_organizacional") or "").strip()
+        direccion_administrativa = str(datos.get("direccion_administrativa") or datos.get("red_salud_nombre") or "").strip()
+        unidad_organizacional = str(datos.get("unidad_organizacional") or datos.get("centro_salud_nombre") or "").strip()
         fecha_asignacion = str(datos.get("fecha_asignacion") or "").strip()
+        if not fecha_asignacion:
+            from datetime import date
+            fecha_asignacion = date.today().isoformat()
+
         tecnico_inventareador = str(datos.get("tecnico_inventareador") or "").strip()
         persona_asignada = str(datos.get("persona_asignada") or "").strip()
         ci_asignado = str(datos.get("ci_asignado") or "").strip()
-        tipo_activo = str(datos.get("tipo_activo") or "COMPUTADORA").strip()
-        descripcion = str(datos.get("descripcion") or "").strip()
+        tipo_activo = str(datos.get("tipo_activo") or "COMPUTADORA DE ESCRITORIO").strip()
+        descripcion = str(datos.get("descripcion") or datos.get("tipo_activo") or "Activo Mueblería / TI").strip()
         marca = str(datos.get("marca") or "").strip()
         modelo = str(datos.get("modelo") or "").strip()
         serie = str(datos.get("serie") or "S/C").strip()
@@ -975,10 +985,38 @@ def guardar_mueble_db(datos):
         bertin = str(datos.get("bertin") or "S/C").strip()
         sapm = str(datos.get("sapm") or "S/C").strip()
         observaciones_de_asignacion = str(datos.get("observaciones_de_asignacion") or "").strip()
-        ubicacion = str(datos.get("ubicacion") or "").strip()
-        fecha_incorporacion = str(datos.get("fecha_incorporacion") or "").strip()
+        ubicacion = str(datos.get("ubicacion") or "General").strip()
+        fecha_incorporacion = str(datos.get("fecha_incorporacion") or fecha_asignacion or "").strip()
+        
         red_salud_id = datos.get("red_salud_id")
         centro_salud_id = datos.get("centro_salud_id")
+        try:
+            red_salud_id = int(red_salud_id) if red_salud_id not in (None, "", "null", 0) else None
+        except (ValueError, TypeError):
+            red_salud_id = None
+
+        try:
+            centro_salud_id = int(centro_salud_id) if centro_salud_id not in (None, "", "null", 0) else None
+        except (ValueError, TypeError):
+            centro_salud_id = None
+
+        # Si no vinieron los IDs numéricos pero sí los nombres de Red / Centro, buscarlos
+        if not red_salud_id and direccion_administrativa:
+            try:
+                cur.execute("SELECT id FROM redes_salud WHERE nombre = %s OR codigo = %s OR nombre ILIKE %s LIMIT 1;", 
+                            (direccion_administrativa, direccion_administrativa, f"%{direccion_administrativa}%"))
+                r_row = cur.fetchone()
+                if r_row: red_salud_id = r_row[0]
+            except Exception: pass
+
+        if not centro_salud_id and unidad_organizacional:
+            try:
+                cur.execute("SELECT id FROM centros_salud WHERE (nombre = %s OR nombre ILIKE %s) AND (red_salud_id = %s OR %s IS NULL) LIMIT 1;", 
+                            (unidad_organizacional, f"%{unidad_organizacional}%", red_salud_id, red_salud_id))
+                c_row = cur.fetchone()
+                if c_row: centro_salud_id = c_row[0]
+            except Exception: pass
+
         cargo_asignado = str(datos.get("cargo_asignado") or "").strip()
         estado = str(datos.get("estado") or "Activo").strip()
         estado_conservacion = str(datos.get("estado_conservacion") or datos.get("estado_bien") or "Bueno").strip()
@@ -1036,6 +1074,9 @@ def guardar_mueble_db(datos):
         if conn:
             conn.rollback()
             conn.close()
+        if "connect" in str(e).lower() or "timeout" in str(e).lower() or "network" in str(e).lower():
+            guardar_mueble_offline_cola(datos)
+            return True, "Guardado en cola offline por problema de red"
         return False, str(e)
 
 def eliminar_mueble_db(mueble_id, usuario="Sistema", eliminacion_fisica=False):
@@ -1863,8 +1904,9 @@ def obtener_muebles_db(centro_nombre=None, limite=300, perfil=None, red_nombre=N
                     OR ubicacion ILIKE %s
                     OR %s ILIKE ('%%' || ubicacion || '%%')
                     OR descripcion ILIKE %s
+                    OR (centro_salud_id IN (SELECT id FROM centros_salud WHERE nombre ILIKE %s OR %s ILIKE ('%%' || nombre || '%%')))
                 )""")
-                params.extend([f"%{cen_clean}%", cen_raw, f"%{cen_clean}%", cen_raw, f"%{cen_clean}%"])
+                params.extend([f"%{cen_clean}%", cen_raw, f"%{cen_clean}%", cen_raw, f"%{cen_clean}%", f"%{cen_clean}%", cen_raw])
             if red_nombre and not str(red_nombre).startswith("[") and str(red_nombre).strip() not in ("Todas las Redes", "-- Todas las Redes (GAMLP) --"):
                 red_raw = str(red_nombre).strip()
                 conds.append("""(
