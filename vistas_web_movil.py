@@ -2263,14 +2263,16 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             </div>
             <form onsubmit="guardarNuevoCatalogo(event)">
                 <input type="hidden" id="cat_id" value="">
-                <div class="form-group">
+                <div class="form-group predictive-wrapper">
                     <label class="form-label" for="cat_nombre">Nombre del Equipo (*):</label>
-                    <input type="text" id="cat_nombre" class="form-control" placeholder="Ej: Electrocardiógrafo, Centrífuga" required>
+                    <input type="text" id="cat_nombre" class="form-control" placeholder="Ej: Electrocardiógrafo, Centrífuga" required autocomplete="off" oninput="buscarSugerenciasNombreEquipo(this.value, 'cat_nombre_predictive', 'cat_nombre')" onfocus="buscarSugerenciasNombreEquipo(this.value, 'cat_nombre_predictive', 'cat_nombre')" onblur="cerrarSugerenciaRetraso(this)">
+                    <div id="cat_nombre_predictive" class="predictive-box"></div>
                 </div>
                 <div class="row-2">
-                    <div class="form-group">
+                    <div class="form-group predictive-wrapper">
                         <label class="form-label" for="cat_marca">Marca:</label>
-                        <input type="text" id="cat_marca" class="form-control" placeholder="Ej: Bionet, Mindray">
+                        <input type="text" id="cat_marca" class="form-control" placeholder="Ej: Bionet, Mindray" autocomplete="off" oninput="buscarSugerenciasMarca(this.value, 'cat_marca_predictive', 'cat_marca')" onfocus="buscarSugerenciasMarca(this.value, 'cat_marca_predictive', 'cat_marca')" onblur="cerrarSugerenciaRetraso(this)">
+                        <div id="cat_marca_predictive" class="predictive-box"></div>
                     </div>
                     <div class="form-group">
                         <label class="form-label" for="cat_modelo">Modelo:</label>
@@ -2279,12 +2281,21 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                 </div>
                 <div class="row-2">
                     <div class="form-group">
-                        <label class="form-label" for="cat_area">Área Sugerida:</label>
-                        <input type="text" id="cat_area" class="form-control" placeholder="Ej: Consultorio 1, Laboratorio">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                            <label class="form-label" for="cat_area" style="margin-bottom:0;">Área Sugerida (*):</label>
+                            <button type="button" id="btn_toggle_cat_area" onclick="toggleModoAreaCatalogo()" style="background:none; border:none; color:var(--accent); font-size:11.5px; font-weight:700; cursor:pointer; text-decoration:underline;">
+                                ✏️ Escribir manual
+                            </button>
+                        </div>
+                        <select id="cat_area" class="form-control" onchange="alCambiarAreaCatalogo()">
+                            <option value="">-- Seleccionar Área Creada --</option>
+                            <option value="__NUEVA__">➕ Escribir otra área personalizada...</option>
+                        </select>
+                        <input type="text" id="cat_area_manual" class="form-control" placeholder="Escribe el nombre del área..." style="display:none; margin-top:6px;">
                     </div>
                     <div class="form-group">
                         <label class="form-label" for="cat_piso">Piso:</label>
-                        <input type="text" id="cat_piso" class="form-control" placeholder="Ej: Planta Baja">
+                        <input type="text" id="cat_piso" class="form-control" placeholder="Piso (se llena solo al elegir área)">
                     </div>
                 </div>
                 <button type="submit" id="btn_guardar_cat" class="btn-modal-submit">💾 Guardar en Catálogo Central</button>
@@ -3177,8 +3188,8 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             cerrarCajasPredictivas();
         }
 
-        function buscarSugerenciasNombreEquipo(query) {
-            const box = document.getElementById('modal_eq_nombre_predictive');
+        function buscarSugerenciasNombreEquipo(query, boxId = 'modal_eq_nombre_predictive', inputId = 'modal_eq_nombre') {
+            const box = document.getElementById(boxId);
             if (!box) return;
             const q = (query || '').trim();
 
@@ -3202,7 +3213,7 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             let html = '';
             lista.forEach(item => {
                 html += `
-                <div class="predictive-item" onclick="seleccionarNombreEquipoSugerido('${item.nombre.replace(/'/g, "\\'")}')">
+                <div class="predictive-item" onclick="seleccionarNombreEquipoSugerido('${item.nombre.replace(/'/g, "\\'")}', '${inputId}')">
                     <div class="predictive-title">
                         <span>${item.nombre}</span>
                         <span class="predictive-badge">Equipo</span>
@@ -3213,14 +3224,26 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             box.style.display = 'block';
         }
 
-        function seleccionarNombreEquipoSugerido(nombre) {
-            document.getElementById('modal_eq_nombre').value = nombre;
-            const cat = (LISTA_CATALOGO || []).find(c => (c.nombre || '').toLowerCase() === nombre.toLowerCase());
-            if (cat) {
-                const eMarca = document.getElementById('modal_eq_marca');
-                const eModelo = document.getElementById('modal_eq_modelo');
-                if (eMarca && !eMarca.value && cat.marca) eMarca.value = cat.marca;
-                if (eModelo && !eModelo.value && cat.modelo) eModelo.value = cat.modelo;
+        function seleccionarNombreEquipoSugerido(nombre, inputId = 'modal_eq_nombre') {
+            const inp = document.getElementById(inputId);
+            if (inp) inp.value = nombre;
+            if (inputId === 'modal_eq_nombre') {
+                const cat = (LISTA_CATALOGO || []).find(c => (c.nombre || '').toLowerCase() === nombre.toLowerCase());
+                if (cat) {
+                    const eMarca = document.getElementById('modal_eq_marca');
+                    const eModelo = document.getElementById('modal_eq_modelo');
+                    if (eMarca && !eMarca.value && cat.marca) eMarca.value = cat.marca;
+                    if (eModelo && !eModelo.value && cat.modelo) eModelo.value = cat.modelo;
+                }
+            } else if (inputId === 'cat_nombre') {
+                const cat = (LISTA_CATALOGO || []).find(c => (c.nombre || '').toLowerCase() === nombre.toLowerCase());
+                if (cat) {
+                    const eMarca = document.getElementById('cat_marca');
+                    const eModelo = document.getElementById('cat_modelo');
+                    if (eMarca && !eMarca.value && cat.marca) eMarca.value = cat.marca;
+                    if (eModelo && !eModelo.value && cat.modelo) eModelo.value = cat.modelo;
+                    if (cat.area) poblarSelectorAreasCatalogo(cat.area, cat.piso);
+                }
             }
             cerrarCajasPredictivas();
         }
@@ -3351,7 +3374,126 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                         alCambiarAreaMuebleModal();
                     }
                 }
+
+                // Mantener sincronizado el selector de áreas del catálogo
+                await poblarSelectorAreasCatalogo();
             } catch (e) { console.error(e); }
+        }
+
+        async function poblarSelectorAreasCatalogo(areaPrevia = '', pisoPrevio = '') {
+            const selCatArea = document.getElementById('cat_area');
+            if (!selCatArea) return;
+
+            let areasDisponibles = Array.isArray(LISTA_AREAS) && LISTA_AREAS.length > 0 ? [...LISTA_AREAS] : [];
+            if (areasDisponibles.length === 0) {
+                try {
+                    const cenSel = document.getElementById('top_centro') ? document.getElementById('top_centro').value : '';
+                    const redSel = document.getElementById('top_red') ? document.getElementById('top_red').value : '';
+                    let url = `/api/areas?centro=${encodeURIComponent(cenSel || '')}`;
+                    if (redSel) url += `&red=${encodeURIComponent(redSel)}`;
+                    let res = await fetch(url);
+                    let datos = await res.json();
+                    if (Array.isArray(datos) && datos.length > 0) {
+                        areasDisponibles = datos;
+                        LISTA_AREAS = datos;
+                    } else {
+                        const resGlobal = await fetch('/api/areas');
+                        const datosGlobal = await resGlobal.json();
+                        if (Array.isArray(datosGlobal)) areasDisponibles = datosGlobal;
+                    }
+                } catch (e) {
+                    console.error('Error cargando áreas para catálogo:', e);
+                }
+            }
+
+            selCatArea.innerHTML = `
+                <option value="">-- Seleccionar Área Creada --</option>
+                <option value="__NUEVA__">➕ Escribir otra área personalizada...</option>
+            `;
+
+            const mapaAreas = new Map();
+            areasDisponibles.forEach(a => {
+                const nom = (a.nombre || '').trim();
+                if (nom && !mapaAreas.has(nom.toLowerCase())) {
+                    mapaAreas.set(nom.toLowerCase(), a);
+                }
+            });
+
+            let encontrada = false;
+            mapaAreas.forEach((a) => {
+                const opt = document.createElement('option');
+                opt.value = a.nombre;
+                opt.dataset.piso = a.piso || '';
+                const txtPiso = a.piso ? `(${a.piso})` : '';
+                const txtCentro = a.centro_salud_nombre ? `• ${a.centro_salud_nombre}` : '';
+                const strCompleta = `${a.nombre} ${txtPiso} ${txtCentro}`.trim();
+                opt.textContent = strCompleta.split(' ').filter(Boolean).join(' ');
+                if (areaPrevia && (a.nombre.toLowerCase() === areaPrevia.toLowerCase() || opt.value.toLowerCase() === areaPrevia.toLowerCase())) {
+                    opt.selected = true;
+                    encontrada = true;
+                }
+                selCatArea.appendChild(opt);
+            });
+
+            if (areaPrevia && !encontrada && areaPrevia !== '__NUEVA__') {
+                const optCustom = document.createElement('option');
+                optCustom.value = areaPrevia;
+                optCustom.dataset.piso = pisoPrevio || '';
+                optCustom.textContent = `${areaPrevia} ${pisoPrevio ? `(${pisoPrevio})` : ''}`.trim();
+                optCustom.selected = true;
+                selCatArea.appendChild(optCustom);
+            }
+
+            if (pisoPrevio && document.getElementById('cat_piso')) {
+                document.getElementById('cat_piso').value = pisoPrevio;
+            }
+        }
+
+        function alCambiarAreaCatalogo() {
+            const sel = document.getElementById('cat_area');
+            const inpManual = document.getElementById('cat_area_manual');
+            const inpPiso = document.getElementById('cat_piso');
+            const btnToggle = document.getElementById('btn_toggle_cat_area');
+            if (!sel) return;
+
+            if (sel.value === '__NUEVA__') {
+                sel.style.display = 'none';
+                if (inpManual) {
+                    inpManual.style.display = 'block';
+                    inpManual.focus();
+                }
+                if (btnToggle) btnToggle.textContent = '📋 Elegir de lista';
+                if (inpPiso) inpPiso.value = '';
+                return;
+            }
+
+            const optSel = sel.options[sel.selectedIndex];
+            if (optSel && optSel.dataset && optSel.dataset.piso) {
+                if (inpPiso) inpPiso.value = optSel.dataset.piso;
+            } else if (!sel.value) {
+                if (inpPiso) inpPiso.value = '';
+            }
+        }
+
+        function toggleModoAreaCatalogo() {
+            const sel = document.getElementById('cat_area');
+            const inpManual = document.getElementById('cat_area_manual');
+            const btnToggle = document.getElementById('btn_toggle_cat_area');
+            if (!sel || !inpManual) return;
+
+            if (inpManual.style.display === 'none') {
+                sel.style.display = 'none';
+                inpManual.style.display = 'block';
+                inpManual.value = sel.value && sel.value !== '__NUEVA__' ? sel.value : '';
+                inpManual.focus();
+                if (btnToggle) btnToggle.textContent = '📋 Elegir de lista';
+            } else {
+                inpManual.style.display = 'none';
+                sel.style.display = 'block';
+                if (btnToggle) btnToggle.textContent = '✏️ Escribir manual';
+                if (sel.value === '__NUEVA__') sel.value = '';
+                alCambiarAreaCatalogo();
+            }
         }
 
         async function cargarCatalogoGlobal() {
@@ -4445,19 +4587,27 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             abrirModal('modal_equipo');
         }
 
-        function abrirModalCatalogo() {
+        async function abrirModalCatalogo() {
             document.getElementById('modal_cat_title').textContent = '🩺 Añadir Modelo al Catálogo';
             document.getElementById('cat_id').value = '';
             document.getElementById('cat_nombre').value = '';
             document.getElementById('cat_marca').value = '';
             document.getElementById('cat_modelo').value = '';
-            document.getElementById('cat_area').value = '';
             document.getElementById('cat_piso').value = '';
             document.getElementById('btn_guardar_cat').textContent = '💾 Guardar en Catálogo Central';
+
+            const inpManual = document.getElementById('cat_area_manual');
+            const selArea = document.getElementById('cat_area');
+            const btnToggle = document.getElementById('btn_toggle_cat_area');
+            if (inpManual) { inpManual.style.display = 'none'; inpManual.value = ''; }
+            if (selArea) selArea.style.display = 'block';
+            if (btnToggle) btnToggle.textContent = '✏️ Escribir manual';
+
+            await poblarSelectorAreasCatalogo();
             abrirModal('modal_catalogo');
         }
 
-        function editarCatalogo(id) {
+        async function editarCatalogo(id) {
             const c = LISTA_CATALOGO.find(item => String(item.id) === String(id));
             if (!c) return;
             document.getElementById('modal_cat_title').textContent = `✎ Modificar Modelo [${c.nombre}]`;
@@ -4465,9 +4615,16 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             document.getElementById('cat_nombre').value = c.nombre || '';
             document.getElementById('cat_marca').value = c.marca || '';
             document.getElementById('cat_modelo').value = c.modelo || '';
-            document.getElementById('cat_area').value = c.area || '';
-            document.getElementById('cat_piso').value = c.piso || '';
             document.getElementById('btn_guardar_cat').textContent = '💾 Actualizar Modelo';
+
+            const inpManual = document.getElementById('cat_area_manual');
+            const selArea = document.getElementById('cat_area');
+            const btnToggle = document.getElementById('btn_toggle_cat_area');
+            if (inpManual) { inpManual.style.display = 'none'; inpManual.value = ''; }
+            if (selArea) selArea.style.display = 'block';
+            if (btnToggle) btnToggle.textContent = '✏️ Escribir manual';
+
+            await poblarSelectorAreasCatalogo(c.area || '', c.piso || '');
             abrirModal('modal_catalogo');
         }
 
@@ -5058,13 +5215,25 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
         async function guardarNuevoCatalogo(event) {
             event.preventDefault();
             const idVal = document.getElementById('cat_id').value;
+
+            let areaVal = '';
+            const selArea = document.getElementById('cat_area');
+            const inpManual = document.getElementById('cat_area_manual');
+            if (inpManual && inpManual.style.display !== 'none' && inpManual.value.trim()) {
+                areaVal = inpManual.value.trim();
+            } else if (selArea && selArea.value && selArea.value !== '__NUEVA__') {
+                areaVal = selArea.value.trim();
+            } else if (inpManual && inpManual.value.trim()) {
+                areaVal = inpManual.value.trim();
+            }
+
             const payload = {
                 id: idVal ? parseInt(idVal) : null,
-                nombre: document.getElementById('cat_nombre').value,
-                marca: document.getElementById('cat_marca').value,
-                modelo: document.getElementById('cat_modelo').value,
-                area: document.getElementById('cat_area').value,
-                piso: document.getElementById('cat_piso').value
+                nombre: (document.getElementById('cat_nombre').value || '').trim(),
+                marca: (document.getElementById('cat_marca').value || '').trim(),
+                modelo: (document.getElementById('cat_modelo').value || '').trim(),
+                area: areaVal,
+                piso: (document.getElementById('cat_piso').value || '').trim()
             };
             try {
                 const res = await fetch('/api/guardar_catalogo', {
