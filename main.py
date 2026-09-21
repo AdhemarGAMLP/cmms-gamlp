@@ -84,6 +84,9 @@ VERSION_APP = "v1.1"
 EXENTOS_DUPLICADOS = {"", "S/C", "0", "DONACION", "SIN CODIGO", "SIN SERIE", "NINGUNO", "N/A", "NO APLICA", "S/N", "SN", "-", "BERTIN", "SISPAM", "SAPM"}
 
 
+import re
+import difflib
+
 # ========================================================
 # SELECTOR TERRITORIAL Y DE SEDE (PREVIO AL ACCESO)
 # ========================================================
@@ -93,9 +96,11 @@ class VentanaSelectorSede(ctk.CTkToplevel):
         self.parent = parent
         self.usuario = usuario
         self.on_confirmar_callback = on_confirmar_callback
+        self._timer_debounce = None
+        self.f_sugerencias_visible = False
         
         self.title("SGEM GAMLP - Selección de Sede Territorial")
-        self.geometry("580x680")
+        self.geometry("520x600")
         self.configure(fg_color=C_BG)
         self.resizable(False, False)
         self.transient(parent)
@@ -103,8 +108,8 @@ class VentanaSelectorSede(ctk.CTkToplevel):
 
         # Centrar ventana
         self.update_idletasks()
-        w = 580
-        h = 680
+        w = 520
+        h = 600
         x = (self.winfo_screenwidth() // 2) - (w // 2)
         y = (self.winfo_screenheight() // 2) - (h // 2)
         self.geometry(f"{w}x{h}+{x}+{y}")
@@ -117,64 +122,134 @@ class VentanaSelectorSede(ctk.CTkToplevel):
 
     def construir_ui(self):
         f_top = ctk.CTkFrame(self, fg_color="transparent")
-        f_top.pack(pady=(22, 10), padx=30, fill="x")
+        f_top.pack(pady=(16, 6), padx=25, fill="x")
         
-        ctk.CTkLabel(f_top, text="Selector de Centro y Red de Salud", font=ctk.CTkFont(size=20, weight="bold"), text_color=C_BLUE).pack()
-        ctk.CTkLabel(f_top, text="Selecciona la ubicación territorial para filtrar el inventario\no accede de forma general a todo el municipio:", font=ctk.CTkFont(size=11), text_color=C_SUBTEXT).pack(pady=(4, 0))
+        ctk.CTkLabel(f_top, text="Selector de Centro y Red de Salud", font=ctk.CTkFont(size=18, weight="bold"), text_color=C_BLUE).pack()
+        ctk.CTkLabel(f_top, text="Filtra por ubicación territorial o escribe el centro de salud:", font=ctk.CTkFont(size=11), text_color=C_SUBTEXT).pack(pady=(2, 0))
 
         # Tarjeta de Controles en Cascada
         card = ctk.CTkFrame(self, fg_color=C_CARD, corner_radius=CORNER_CARD, border_width=1, border_color=C_BORDER)
-        card.pack(padx=30, pady=10, fill="both", expand=True)
+        card.pack(padx=25, pady=(2, 8), fill="both", expand=True)
 
-        # 1. DEPARTAMENTO
-        ctk.CTkLabel(card, text="1. Departamento:", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", padx=25, pady=(15, 2))
+        # 1 y 2. DEPARTAMENTO Y MUNICIPIO (en fila doble compacta)
+        f_depto_mun = ctk.CTkFrame(card, fg_color="transparent")
+        f_depto_mun.pack(fill="x", padx=20, pady=(12, 6))
+
+        # Columna 1: Depto
+        f_col_depto = ctk.CTkFrame(f_depto_mun, fg_color="transparent")
+        f_col_depto.pack(side="left", fill="both", expand=True, padx=(0, 6))
+        ctk.CTkLabel(f_col_depto, text="1. Departamento:", font=ctk.CTkFont(size=11, weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(0, 2))
         deptos_nombres = [d["nombre"] for d in self.sedes_data.get("departamentos", [])]
         if not deptos_nombres:
             deptos_nombres = ["La Paz"]
-        self.combo_depto = ctk.CTkComboBox(card, values=deptos_nombres, command=self.on_depto_cambiado, height=38, corner_radius=CORNER_INPUT, border_color=C_BORDER, fg_color=C_BG)
-        self.combo_depto.pack(padx=25, fill="x", pady=(0, 10))
+        self.combo_depto = ctk.CTkComboBox(f_col_depto, values=deptos_nombres, command=self.on_depto_cambiado, height=34, corner_radius=CORNER_INPUT, border_color=C_BORDER, fg_color=C_BG)
+        self.combo_depto.pack(fill="x")
         if "La Paz" in deptos_nombres:
             self.combo_depto.set("La Paz")
 
-        # 2. MUNICIPIO
-        ctk.CTkLabel(card, text="2. Municipio:", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", padx=25, pady=(0, 2))
-        self.combo_mun = ctk.CTkComboBox(card, values=["GAMLP"], command=self.on_mun_cambiado, height=38, corner_radius=CORNER_INPUT, border_color=C_BORDER, fg_color=C_BG)
-        self.combo_mun.pack(padx=25, fill="x", pady=(0, 10))
+        # Columna 2: Mun
+        f_col_mun = ctk.CTkFrame(f_depto_mun, fg_color="transparent")
+        f_col_mun.pack(side="left", fill="both", expand=True, padx=(6, 0))
+        ctk.CTkLabel(f_col_mun, text="2. Municipio:", font=ctk.CTkFont(size=11, weight="bold"), text_color=C_TEXT).pack(anchor="w", pady=(0, 2))
+        self.combo_mun = ctk.CTkComboBox(f_col_mun, values=["GAMLP"], command=self.on_mun_cambiado, height=34, corner_radius=CORNER_INPUT, border_color=C_BORDER, fg_color=C_BG)
+        self.combo_mun.pack(fill="x")
 
         # 3. RED DE SALUD
-        ctk.CTkLabel(card, text="3. Red de Salud:", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", padx=25, pady=(0, 2))
-        self.combo_red = ctk.CTkComboBox(card, values=["Todas las Redes (Acceso General GAMLP)"], command=self.on_red_cambiada, height=38, corner_radius=CORNER_INPUT, border_color=C_BORDER, fg_color=C_BG)
-        self.combo_red.pack(padx=25, fill="x", pady=(0, 10))
+        ctk.CTkLabel(card, text="3. Red de Salud:", font=ctk.CTkFont(size=11, weight="bold"), text_color=C_TEXT).pack(anchor="w", padx=20, pady=(0, 2))
+        self.combo_red = ctk.CTkComboBox(card, values=["Todas las Redes (Acceso General GAMLP)"], command=self.on_red_cambiada, height=34, corner_radius=CORNER_INPUT, border_color=C_BORDER, fg_color=C_BG)
+        self.combo_red.pack(padx=20, fill="x", pady=(0, 8))
 
-        # 4. CENTRO DE SALUD
-        ctk.CTkLabel(card, text="4. Centro de Salud / Hospital:", font=ctk.CTkFont(size=12, weight="bold"), text_color=C_TEXT).pack(anchor="w", padx=25, pady=(0, 2))
-        self.combo_centro = ctk.CTkComboBox(card, values=["Todos los Centros de GAMLP"], command=lambda e: self.actualizar_resumen(), height=38, corner_radius=CORNER_INPUT, border_color=C_BORDER, fg_color=C_BG)
-        self.combo_centro.pack(padx=25, fill="x", pady=(0, 14))
+        # 4. CENTRO DE SALUD / HOSPITAL CON BÚSQUEDA Y RECOMENDACIÓN INTELIGENTE
+        f_centro_lbl = ctk.CTkFrame(card, fg_color="transparent")
+        f_centro_lbl.pack(fill="x", padx=20, pady=(0, 2))
+        ctk.CTkLabel(f_centro_lbl, text="4. Centro de Salud / Hospital:", font=ctk.CTkFont(size=11, weight="bold"), text_color=C_TEXT).pack(side="left")
+        self.lbl_sug_hint = ctk.CTkLabel(f_centro_lbl, text="(Escribe para buscar o pulsa ▼)", font=ctk.CTkFont(size=10, slant="italic"), text_color=C_SUBTEXT)
+        self.lbl_sug_hint.pack(side="right")
+
+        f_search_bar = ctk.CTkFrame(card, fg_color="transparent")
+        f_search_bar.pack(fill="x", padx=20, pady=(0, 6))
+
+        self.entry_centro = ctk.CTkEntry(
+            f_search_bar,
+            placeholder_text="Escribe centro (ej: Bajo San Pedro, Cotahuma...)",
+            height=36,
+            corner_radius=CORNER_INPUT,
+            border_color=C_BORDER,
+            fg_color=C_BG
+        )
+        self.entry_centro.pack(side="left", fill="x", expand=True, padx=(0, 4))
+        self.entry_centro.insert(0, "Todos los Centros de GAMLP")
+
+        self.btn_toggle_sug = ctk.CTkButton(
+            f_search_bar,
+            text="▼",
+            width=34,
+            height=36,
+            corner_radius=CORNER_INPUT,
+            fg_color=C_CARD_HOVER,
+            text_color=C_TEXT,
+            hover_color="#E2E8F0",
+            border_width=1,
+            border_color=C_BORDER,
+            command=self.toggle_sugerencias
+        )
+        self.btn_toggle_sug.pack(side="left", padx=(0, 4))
+
+        self.btn_clear_centro = ctk.CTkButton(
+            f_search_bar,
+            text="✕",
+            width=30,
+            height=36,
+            corner_radius=CORNER_INPUT,
+            fg_color=C_CARD_HOVER,
+            text_color=C_SUBTEXT,
+            hover_color="#E2E8F0",
+            border_width=1,
+            border_color=C_BORDER,
+            command=self.limpiar_centro
+        )
+        self.btn_clear_centro.pack(side="left")
+
+        # Contenedor de Sugerencias / Recomendaciones Predictivas (Compacto y elegante)
+        self.f_sugerencias = ctk.CTkScrollableFrame(card, height=130, fg_color="#F8FAFC", corner_radius=8, border_width=1, border_color=C_BORDER)
+
+        # Eventos para búsqueda predictiva en vivo
+        self.entry_centro.bind("<KeyRelease>", self.on_escribir_centro)
+        self.entry_centro.bind("<FocusIn>", self.on_focus_in_centro)
+        self.entry_centro.bind("<Return>", self.on_enter_centro)
+        self.entry_centro.bind("<Escape>", lambda e: self.ocultar_sugerencias())
 
         # Badge Informativo de Selección (crece dinámicamente con texto en azul)
         self.f_resumen = ctk.CTkFrame(card, fg_color=C_BLUE_LIGHT, corner_radius=CORNER_INPUT, border_width=1, border_color=C_BORDER)
-        self.f_resumen.pack(padx=25, fill="x", pady=(5, 15))
+        self.f_resumen.pack(padx=20, fill="x", pady=(4, 10))
         self.lbl_resumen = ctk.CTkLabel(
             self.f_resumen, 
             text="GAMLP • Acceso General (Todas las Redes)", 
             font=ctk.CTkFont(size=12, weight="bold"), 
             text_color=C_BLUE,
-            wraplength=470,
+            wraplength=440,
             justify="center"
         )
-        self.lbl_resumen.pack(pady=10, padx=14, fill="x")
+        self.lbl_resumen.pack(pady=8, padx=12, fill="x")
 
         # Botón de Acceso
-        btn_ingresar = ctk.CTkButton(self, text="Ingresar al Sistema ➔", font=ctk.CTkFont(size=14, weight="bold"), height=42, corner_radius=CORNER_BTN, fg_color=C_BLUE, hover_color=C_BLUE_HOVER, command=self.confirmar_seleccion)
-        btn_ingresar.pack(padx=30, pady=(5, 20), fill="x")
+        btn_ingresar = ctk.CTkButton(
+            self, 
+            text="Ingresar al Sistema ➔", 
+            font=ctk.CTkFont(size=13, weight="bold"), 
+            height=40, 
+            corner_radius=CORNER_BTN, 
+            fg_color=C_BLUE, 
+            hover_color=C_BLUE_HOVER, 
+            command=self.confirmar_seleccion
+        )
+        btn_ingresar.pack(padx=25, pady=(0, 14), fill="x")
 
         # Inicializar cascada con La Paz
         self.on_depto_cambiado(self.combo_depto.get())
 
     def on_depto_cambiado(self, depto_sel):
         depto_obj = next((d for d in self.sedes_data.get("departamentos", []) if d["nombre"] == depto_sel), None)
-        depto_id = depto_obj["id"] if depto_obj else None
-
         if depto_sel == "La Paz":
             muns = ["GAMLP"]
         else:
@@ -202,38 +277,218 @@ class VentanaSelectorSede(ctk.CTkToplevel):
 
     def on_red_cambiada(self, red_sel):
         if red_sel.startswith(("Todas", "[ Todas")):
-            todos_los_centros = sorted(list(set(c["nombre"] for c in self.sedes_data.get("centros", []))))
-            centros_vals = ["Todos los Centros de GAMLP"] + todos_los_centros
-            self.combo_centro.configure(values=centros_vals)
-            self.combo_centro.set("Todos los Centros de GAMLP")
+            self.entry_centro.delete(0, "end")
+            self.entry_centro.insert(0, "Todos los Centros de GAMLP")
         else:
-            red_obj = next((r for r in self.sedes_data.get("redes", []) if r["nombre"] == red_sel), None)
-            red_id = red_obj["id"] if red_obj else None
-            centros = [c["nombre"] for c in self.sedes_data.get("centros", []) if c.get("red_salud_id") == red_id]
-            if not centros:
-                centros = ["CENTRO DE SALUD CENTRAL"]
-            centros_con_todos = ["Todos los Centros de la Red"] + sorted(centros)
-            self.combo_centro.configure(values=centros_con_todos)
-            self.combo_centro.set(centros_con_todos[0])
+            self.entry_centro.delete(0, "end")
+            self.entry_centro.insert(0, "Todos los Centros de la Red")
             
+        self.ocultar_sugerencias()
+        self.actualizar_resumen()
+
+    def buscar_centros_recomendados(self, query):
+        centros = self.sedes_data.get("centros", [])
+        q = query.strip().lower()
+        
+        red_sel = self.combo_red.get()
+        es_todas_redes = red_sel.startswith(("Todas", "[ Todas"))
+        
+        # Si la consulta está vacía o es comodín de "Todos los Centros"
+        if not q or q.startswith(("todos", "[ todos")):
+            if es_todas_redes:
+                opciones = [{"nombre": "Todos los Centros de GAMLP", "red_salud_id": None}]
+                opciones += sorted(centros, key=lambda x: x["nombre"])[:20]
+            else:
+                red_obj = next((r for r in self.sedes_data.get("redes", []) if r["nombre"] == red_sel), None)
+                red_id = red_obj["id"] if red_obj else None
+                opciones = [{"nombre": "Todos los Centros de la Red", "red_salud_id": red_id}]
+                centros_red = [c for c in centros if c.get("red_salud_id") == red_id]
+                opciones += sorted(centros_red, key=lambda x: x["nombre"])
+            return opciones
+
+        # Normalizador alfanumérico para soportar "cmi" -> "c.m.i", tildes, etc.
+        def _norm(txt):
+            return re.sub(r'[^a-z0-9 ]', '', str(txt).lower())
+
+        qn = _norm(q)
+        palabras = qn.split()
+
+        # 1. Coincidencias exactas de subcadena
+        exactos = [c for c in centros if qn in _norm(c["nombre"])]
+        
+        # 2. Centros que contienen todas las palabras escritas
+        con_todas = [c for c in centros if all(p in _norm(c["nombre"]) for p in palabras) and c not in exactos]
+        
+        # 3. Centros que contienen al menos una palabra clave
+        con_alguna = []
+        if len(palabras) > 1:
+            con_alguna = [c for c in centros if any(p in _norm(c["nombre"]) for p in palabras) and c not in exactos and c not in con_todas]
+
+        resultados = exactos + con_todas + con_alguna
+
+        # 4. Difflib para detección predictiva de errores tipográficos o similitud fonética
+        if len(resultados) < 6:
+            nombres_rest = [c["nombre"] for c in centros if c not in resultados]
+            similares = difflib.get_close_matches(qn, [_norm(n) for n in nombres_rest], n=6 - len(resultados), cutoff=0.35)
+            for s in similares:
+                match = next((c for c in centros if _norm(c["nombre"]) == s and c not in resultados), None)
+                if match:
+                    resultados.append(match)
+
+        return resultados[:8]
+
+    def mostrar_sugerencias(self, opciones):
+        for w in self.f_sugerencias.winfo_children():
+            w.destroy()
+
+        if not opciones:
+            ctk.CTkLabel(
+                self.f_sugerencias, 
+                text="🔍 No se encontraron centros parecidos", 
+                font=ctk.CTkFont(size=11, slant="italic"), 
+                text_color=C_SUBTEXT
+            ).pack(pady=10)
+        else:
+            ctk.CTkLabel(
+                self.f_sugerencias, 
+                text=f"💡 {len(opciones)} recomendación(es) encontrada(s) — Clic para elegir:", 
+                font=ctk.CTkFont(size=10, weight="bold"), 
+                text_color=C_SUBTEXT
+            ).pack(anchor="w", padx=6, pady=(3, 3))
+
+            red_map = {r["id"]: r["nombre"] for r in self.sedes_data.get("redes", [])}
+
+            for opc in opciones:
+                nombre = opc["nombre"]
+                red_id = opc.get("red_salud_id")
+                red_nom = red_map.get(red_id, "")
+                
+                if red_nom:
+                    red_tag = red_nom.split("(")[0].strip()
+                    btn_text = f"🏥 {nombre}   •   {red_tag}"
+                else:
+                    btn_text = f"🌐 {nombre}"
+
+                btn_item = ctk.CTkButton(
+                    self.f_sugerencias,
+                    text=btn_text,
+                    anchor="w",
+                    fg_color="#FFFFFF",
+                    hover_color="#EFF6FF",
+                    text_color="#0F172A",
+                    font=ctk.CTkFont(size=11, weight="bold" if "Todos" in nombre else "normal"),
+                    height=28,
+                    corner_radius=6,
+                    border_width=1,
+                    border_color="#E2E8F0",
+                    command=lambda n=nombre, r=red_nom: self.seleccionar_sugerencia(n, r)
+                )
+                btn_item.pack(fill="x", padx=4, pady=2)
+
+        if not self.f_sugerencias_visible:
+            self.f_sugerencias.pack(padx=20, fill="x", pady=(0, 6), before=self.f_resumen)
+            self.f_sugerencias_visible = True
+            self.btn_toggle_sug.configure(text="▲")
+
+    def ocultar_sugerencias(self):
+        if self.f_sugerencias_visible:
+            self.f_sugerencias.pack_forget()
+            self.f_sugerencias_visible = False
+            self.btn_toggle_sug.configure(text="▼")
+
+    def toggle_sugerencias(self):
+        if self.f_sugerencias_visible:
+            self.ocultar_sugerencias()
+        else:
+            q = self.entry_centro.get().strip()
+            if q.startswith(("Todos los Centros", "[ Todos")):
+                q = ""
+            opciones = self.buscar_centros_recomendados(q)
+            self.mostrar_sugerencias(opciones)
+
+    def seleccionar_sugerencia(self, nom, red_nom=""):
+        self.entry_centro.delete(0, "end")
+        self.entry_centro.insert(0, nom)
+        self.ocultar_sugerencias()
+
+        if red_nom:
+            redes_disponibles = self.combo_red.cget("values")
+            if red_nom in redes_disponibles:
+                self.combo_red.set(red_nom)
+            else:
+                for r in redes_disponibles:
+                    if red_nom.lower() in r.lower():
+                        self.combo_red.set(r)
+                        break
+
+        self.actualizar_resumen()
+
+    def on_escribir_centro(self, event):
+        if event.keysym in ("Up", "Down", "Return", "Escape", "Tab"):
+            return
+
+        if self._timer_debounce:
+            try:
+                self.after_cancel(self._timer_debounce)
+            except Exception:
+                pass
+
+        def _ejecutar_busqueda():
+            q = self.entry_centro.get().strip()
+            if not q:
+                opciones = self.buscar_centros_recomendados("")
+            else:
+                opciones = self.buscar_centros_recomendados(q)
+            self.mostrar_sugerencias(opciones)
+            self.actualizar_resumen()
+
+        self._timer_debounce = self.after(80, _ejecutar_busqueda)
+
+    def on_focus_in_centro(self, event):
+        txt = self.entry_centro.get().strip()
+        if txt.startswith(("Todos los Centros", "[ Todos")):
+            self.entry_centro.select_range(0, "end")
+
+    def on_enter_centro(self, event):
+        if self.f_sugerencias_visible:
+            q = self.entry_centro.get().strip()
+            opciones = self.buscar_centros_recomendados(q)
+            if opciones:
+                primero = opciones[0]
+                red_map = {r["id"]: r["nombre"] for r in self.sedes_data.get("redes", [])}
+                r_nom = red_map.get(primero.get("red_salud_id"), "")
+                self.seleccionar_sugerencia(primero["nombre"], r_nom)
+                return
+        self.confirmar_seleccion()
+
+    def limpiar_centro(self):
+        red_sel = self.combo_red.get()
+        if red_sel.startswith(("Todas", "[ Todas")):
+            def_val = "Todos los Centros de GAMLP"
+        else:
+            def_val = "Todos los Centros de la Red"
+        self.entry_centro.delete(0, "end")
+        self.entry_centro.insert(0, def_val)
+        self.ocultar_sugerencias()
+        self.entry_centro.focus_set()
+        self.entry_centro.select_range(0, "end")
         self.actualizar_resumen()
 
     def actualizar_resumen(self):
         dep = self.combo_depto.get()
         mun = self.combo_mun.get()
         red = self.combo_red.get()
-        cen = self.combo_centro.get()
+        cen = self.entry_centro.get().strip()
 
         es_todas_redes = red.startswith(("Todas", "[ Todas"))
-        es_todos_centros = cen.startswith(("Todos", "[ Todos"))
+        es_todos_centros = not cen or cen.startswith(("Todos", "[ Todos"))
 
         if es_todas_redes and es_todos_centros:
             res = "GAMLP • Acceso General (Todas las Redes)"
         elif es_todos_centros:
             res = f"{red}\n(Todos los Centros de Salud)"
         else:
-            # Si se seleccionó un centro específico en modo Todas las Redes, identificar su red
-            cen_obj = next((c for c in self.sedes_data.get("centros", []) if c["nombre"] == cen), None)
+            cen_obj = next((c for c in self.sedes_data.get("centros", []) if c["nombre"].strip().lower() == cen.lower()), None)
             if cen_obj and es_todas_redes:
                 red_padre = next((r for r in self.sedes_data.get("redes", []) if r["id"] == cen_obj.get("red_salud_id")), None)
                 red_txt = red_padre["nombre"] if red_padre else "GAMLP"
@@ -247,14 +502,22 @@ class VentanaSelectorSede(ctk.CTkToplevel):
         dep = self.combo_depto.get()
         mun = self.combo_mun.get()
         red = self.combo_red.get()
-        cen = self.combo_centro.get()
+        cen = self.entry_centro.get().strip()
 
         es_todas_redes = red.startswith(("Todas", "[ Todas"))
-        es_todos_centros = cen.startswith(("Todos", "[ Todos"))
+        es_todos_centros = not cen or cen.startswith(("Todos", "[ Todos"))
 
-        cen_obj = next((c for c in self.sedes_data.get("centros", []) if c["nombre"] == cen), None)
+        cen_obj = next((c for c in self.sedes_data.get("centros", []) if c["nombre"].strip().lower() == cen.lower()), None)
         
-        # Si eligió un centro específico pero la red estaba en Todas las Redes, resolver su red real
+        # Si no hubo coincidencia exacta pero escribió texto, buscar el más parecido
+        if not cen_obj and not es_todos_centros:
+            similares = self.buscar_centros_recomendados(cen)
+            if similares and not similares[0]["nombre"].startswith(("Todos", "[ Todos")):
+                cen_obj = similares[0]
+                cen = cen_obj["nombre"]
+                self.entry_centro.delete(0, "end")
+                self.entry_centro.insert(0, cen)
+
         if cen_obj and es_todas_redes:
             red_obj = next((r for r in self.sedes_data.get("redes", []) if r["id"] == cen_obj.get("red_salud_id")), None)
             red_nombre = red_obj["nombre"] if red_obj else red
