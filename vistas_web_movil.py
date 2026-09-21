@@ -1464,12 +1464,16 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
 
                 <div class="row-2">
                     <div class="form-group">
-                        <label class="form-label">Dirección Administrativa (Red de Salud):</label>
-                        <input type="text" id="modal_eq_red_display" class="form-control" readonly style="background:#F1F5F9; font-weight:700; color:#003B64;">
+                        <label class="form-label" for="modal_eq_red">Dirección Administrativa (Red de Salud) (*):</label>
+                        <select id="modal_eq_red" class="form-control" onchange="alCambiarRedModalEquipo()" style="font-weight:700; color:#003B64;" required>
+                            <option value="">-- Seleccionar Red de Salud --</option>
+                        </select>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Unidad Organizacional (Centro de Salud):</label>
-                        <input type="text" id="modal_eq_centro_display" class="form-control" readonly style="background:#F1F5F9; font-weight:700; color:#003B64;">
+                        <label class="form-label" for="modal_eq_centro">Unidad Organizacional (Centro de Salud) (*):</label>
+                        <select id="modal_eq_centro" class="form-control" onchange="alCambiarCentroModalEquipo()" style="font-weight:700; color:#003B64;" required>
+                            <option value="">-- Seleccionar Centro de Salud --</option>
+                        </select>
                     </div>
                 </div>
 
@@ -1876,12 +1880,16 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                 <!-- FILA 1: RED Y CENTRO DE SALUD -->
                 <div class="row-2">
                     <div class="form-group">
-                        <label class="form-label">Dirección Administrativa (Red de Salud):</label>
-                        <input type="text" id="mue_red_display" class="form-control" readonly style="background:#F1F5F9; font-weight:700; color:#003B64;">
+                        <label class="form-label" for="mue_red">Dirección Administrativa (Red de Salud) (*):</label>
+                        <select id="mue_red" class="form-control" onchange="alCambiarRedModalMueble()" style="font-weight:700; color:#003B64;" required>
+                            <option value="">-- Seleccionar Red de Salud --</option>
+                        </select>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Unidad Organizacional (Centro de Salud):</label>
-                        <input type="text" id="mue_centro_display" class="form-control" readonly style="background:#F1F5F9; font-weight:700; color:#003B64;">
+                        <label class="form-label" for="mue_centro">Unidad Organizacional (Centro de Salud) (*):</label>
+                        <select id="mue_centro" class="form-control" onchange="alCambiarCentroModalMueble()" style="font-weight:700; color:#003B64;" required>
+                            <option value="">-- Seleccionar Centro de Salud --</option>
+                        </select>
                     </div>
                 </div>
 
@@ -2013,6 +2021,20 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             </div>
             <form onsubmit="guardarNuevaArea(event)">
                 <input type="hidden" id="area_id" value="">
+                <div class="row-2">
+                    <div class="form-group">
+                        <label class="form-label" for="area_red">Red de Salud (*):</label>
+                        <select id="area_red" class="form-control" onchange="alCambiarRedModalArea()" required>
+                            <option value="">-- Seleccionar Red --</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="area_centro">Centro de Salud (*):</label>
+                        <select id="area_centro" class="form-control" required>
+                            <option value="">-- Seleccionar Centro --</option>
+                        </select>
+                    </div>
+                </div>
                 <div class="form-group">
                     <label class="form-label" for="area_nom">Nombre del Área (*):</label>
                     <input type="text" id="area_nom" class="form-control" placeholder="Ej: Laboratorio Clínico, Vacunatorio 1" required>
@@ -2053,6 +2075,20 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             </div>
             <form onsubmit="guardarNuevoRepuesto(event)">
                 <input type="hidden" id="rep_id" value="">
+                <div class="row-2" style="background:#f8fafc; padding:8px; border-radius:8px; border:1px dashed #cbd5e1; margin-bottom:12px;">
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label class="form-label" for="rep_red" style="font-size:0.75rem; color:#475569;">Red de Salud (*):</label>
+                        <select id="rep_red" class="form-control" style="font-size:0.8rem; height:34px; padding:2px 8px;" onchange="alCambiarRedModalRepuesto()" required>
+                            <option value="">-- Seleccionar Red --</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label class="form-label" for="rep_centro" style="font-size:0.75rem; color:#475569;">Centro de Salud (*):</label>
+                        <select id="rep_centro" class="form-control" style="font-size:0.8rem; height:34px; padding:2px 8px;" required>
+                            <option value="">-- Seleccionar Centro --</option>
+                        </select>
+                    </div>
+                </div>
                 <div class="form-group">
                     <label class="form-label" for="rep_nombre">Nombre del Repuesto / Accesorio (*):</label>
                     <input type="text" id="rep_nombre" class="form-control" placeholder="Ej: Sensor SpO2 Adulto, Batería Li-ion" required>
@@ -2295,6 +2331,116 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             cargarHistorialCentro(cenSel, redSel);
             cargarEstadisticasCentro(cenSel, redSel);
             renderizarSedesDirectorio();
+        }
+
+        // =====================================================================
+        // SINCRONIZACIÓN Y SELECCIÓN DE RED Y CENTRO DENTRO DE LOS MODALES
+        // =====================================================================
+
+        function inicializarSelectoresSedesModal(redSelectId, centroSelectId, redDefault = '', centroDefault = '') {
+            const selRed = document.getElementById(redSelectId);
+            const selCen = document.getElementById(centroSelectId);
+            if (!selRed || !selCen) return;
+
+            const redes = SEDES_DATA.redes || [];
+            selRed.innerHTML = '<option value="">-- Seleccionar Red de Salud --</option>';
+            redes.forEach(r => {
+                const opt = document.createElement('option');
+                opt.value = r.nombre;
+                opt.textContent = r.nombre;
+                selRed.appendChild(opt);
+            });
+
+            let rActiva = redDefault;
+            if (!rActiva || !redes.some(r => r.nombre === rActiva)) {
+                rActiva = redes.length > 0 ? redes[0].nombre : '';
+            }
+            selRed.value = rActiva;
+
+            poblarCentrosEnSelect(centroSelectId, rActiva, centroDefault);
+        }
+
+        function poblarCentrosEnSelect(centroSelectId, redNombre, centroDefault = '') {
+            const selCen = document.getElementById(centroSelectId);
+            if (!selCen) return;
+
+            const redes = SEDES_DATA.redes || [];
+            const rObj = redes.find(r => r.nombre === redNombre);
+            const rId = rObj ? rObj.id : null;
+            const centros = (SEDES_DATA.centros || []).filter(c => !rId || c.red_salud_id === rId);
+
+            selCen.innerHTML = '<option value="">-- Seleccionar Centro de Salud --</option>';
+            centros.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.nombre;
+                opt.textContent = c.nombre;
+                selCen.appendChild(opt);
+            });
+
+            if (centroDefault && centros.some(c => c.nombre === centroDefault)) {
+                selCen.value = centroDefault;
+            } else if (centros.length > 0) {
+                selCen.value = centros[0].nombre;
+            }
+        }
+
+        function alCambiarRedModalEquipo() {
+            const redSel = document.getElementById('modal_eq_red').value;
+            poblarCentrosEnSelect('modal_eq_centro', redSel);
+            alCambiarCentroModalEquipo();
+        }
+
+        async function alCambiarCentroModalEquipo() {
+            const redSel = document.getElementById('modal_eq_red') ? document.getElementById('modal_eq_red').value : '';
+            const cenSel = document.getElementById('modal_eq_centro') ? document.getElementById('modal_eq_centro').value : '';
+
+            // 1. Actualizar código AF correlativo si es nuevo registro
+            const esEdicion = document.getElementById('modal_eq_es_edicion') && document.getElementById('modal_eq_es_edicion').value === '1';
+            if (!esEdicion) {
+                if (redSel && cenSel) {
+                    document.getElementById('display_af_modal').textContent = 'CALCULANDO...';
+                    try {
+                        const res = await fetch(`/api/siguiente_af?red=${encodeURIComponent(redSel)}&centro=${encodeURIComponent(cenSel)}`);
+                        const data = await res.json();
+                        if (data.codigo_af) {
+                            document.getElementById('display_af_modal').textContent = data.codigo_af;
+                            document.getElementById('modal_eq_id_af').value = data.codigo_af;
+                        }
+                    } catch(e) {}
+                } else {
+                    document.getElementById('display_af_modal').textContent = 'SELECCIONE RED Y CENTRO';
+                    document.getElementById('modal_eq_id_af').value = '';
+                }
+            }
+
+            // 2. Cargar áreas del centro seleccionado
+            await cargarAreasGlobal(cenSel, redSel);
+
+            // 3. Autollenar datos de custodio/doctor
+            alCambiarAreaModal();
+        }
+
+        function alCambiarRedModalMueble() {
+            const redSel = document.getElementById('mue_red').value;
+            poblarCentrosEnSelect('mue_centro', redSel);
+            alCambiarCentroModalMueble();
+        }
+
+        async function alCambiarCentroModalMueble() {
+            const redSel = document.getElementById('mue_red') ? document.getElementById('mue_red').value : '';
+            const cenSel = document.getElementById('mue_centro') ? document.getElementById('mue_centro').value : '';
+            await cargarAreasGlobal(cenSel, redSel);
+            alCambiarAreaMuebleModal();
+        }
+
+        function alCambiarRedModalArea() {
+            const redSel = document.getElementById('area_red').value;
+            poblarCentrosEnSelect('area_centro', redSel);
+        }
+
+        function alCambiarRedModalRepuesto() {
+            const redSel = document.getElementById('rep_red').value;
+            poblarCentrosEnSelect('rep_centro', redSel);
         }
 
         // 2. Control de Pestañas
@@ -3558,8 +3704,7 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             document.getElementById('modal_eq_es_edicion').value = "0";
 
             // Sede context y modelo
-            if (document.getElementById('modal_eq_red_display')) document.getElementById('modal_eq_red_display').value = red || 'RED GAMLP';
-            if (document.getElementById('modal_eq_centro_display')) document.getElementById('modal_eq_centro_display').value = centro || 'GENERAL';
+            inicializarSelectoresSedesModal('modal_eq_red', 'modal_eq_centro', red, centro);
             if (document.getElementById('modal_eq_catalogo_input')) document.getElementById('modal_eq_catalogo_input').value = '';
             if (document.getElementById('modal_eq_catalogo')) document.getElementById('modal_eq_catalogo').value = '';
 
@@ -3645,17 +3790,11 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
 
             abrirModal('modal_equipo');
 
-            try {
-                const res = await fetch(`/api/siguiente_af?red=${encodeURIComponent(red)}&centro=${encodeURIComponent(centro)}`);
-                const data = await res.json();
-                if (data.codigo_af) {
-                    document.getElementById('display_af_modal').textContent = data.codigo_af;
-                    document.getElementById('modal_eq_id_af').value = data.codigo_af;
-                }
-            } catch (e) {}
+            // Calcular código AF y cargar áreas del centro seleccionado
+            await alCambiarCentroModalEquipo();
         }
 
-        function editarEquipo(id) {
+        async function editarEquipo(id) {
             inicializarCriteriosUI();
             const eq = LISTA_EQUIPOS.find(e => String(e.id) === String(id));
             if (!eq) return;
@@ -3668,8 +3807,8 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             // Sección 1: Identificación y Ubicación
             const red = document.getElementById('top_red').value;
             const centro = document.getElementById('top_centro').value;
-            if (document.getElementById('modal_eq_red_display')) document.getElementById('modal_eq_red_display').value = eq.red_salud_nombre || red || 'RED GAMLP';
-            if (document.getElementById('modal_eq_centro_display')) document.getElementById('modal_eq_centro_display').value = eq.centro_salud_nombre || centro || 'GENERAL';
+            inicializarSelectoresSedesModal('modal_eq_red', 'modal_eq_centro', eq.red_salud_nombre || red, eq.centro_salud_nombre || centro);
+            await cargarAreasGlobal(eq.centro_salud_nombre || centro, eq.red_salud_nombre || red);
             if (document.getElementById('modal_eq_catalogo_input')) document.getElementById('modal_eq_catalogo_input').value = '';
             if (document.getElementById('modal_eq_catalogo')) document.getElementById('modal_eq_catalogo').value = '';
 
@@ -3833,8 +3972,7 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
 
             const red = document.getElementById('top_red').value;
             const centro = document.getElementById('top_centro').value;
-            if (document.getElementById('mue_red_display')) document.getElementById('mue_red_display').value = red || 'RED GAMLP';
-            if (document.getElementById('mue_centro_display')) document.getElementById('mue_centro_display').value = centro || 'GENERAL';
+            inicializarSelectoresSedesModal('mue_red', 'mue_centro', red, centro);
 
             document.getElementById('mue_tipo').value = '';
             document.getElementById('mue_desc').value = '';
@@ -3853,13 +3991,13 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             document.getElementById('mue_obs').value = '';
             document.getElementById('btn_guardar_mue').textContent = '💾 Guardar Activo Fijo';
 
-            // Auto-llenar datos del área seleccionada
-            alCambiarAreaMuebleModal();
-
             abrirModal('modal_mueble');
+
+            // Auto-llenar datos del área seleccionada
+            alCambiarCentroModalMueble();
         }
 
-        function editarMueble(id) {
+        async function editarMueble(id) {
             const m = LISTA_MUEBLES.find(item => String(item.id) === String(id));
             if (!m) return;
             document.getElementById('modal_mue_title').textContent = `✎ Modificar Activo [${m.descripcion || m.tipo_activo}]`;
@@ -3867,8 +4005,8 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
 
             const red = document.getElementById('top_red').value;
             const centro = document.getElementById('top_centro').value;
-            if (document.getElementById('mue_red_display')) document.getElementById('mue_red_display').value = m.direccion_administrativa || red || 'RED GAMLP';
-            if (document.getElementById('mue_centro_display')) document.getElementById('mue_centro_display').value = m.unidad_organizacional || centro || 'GENERAL';
+            inicializarSelectoresSedesModal('mue_red', 'mue_centro', m.direccion_administrativa || red, m.unidad_organizacional || centro);
+            await cargarAreasGlobal(m.unidad_organizacional || centro, m.direccion_administrativa || red);
 
             document.getElementById('mue_tipo').value = m.tipo_activo || '';
             document.getElementById('mue_sector').value = m.sector_actual || 'SALUD';
@@ -3902,6 +4040,9 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
         function abrirModalArea() {
             document.getElementById('modal_area_title').textContent = '📍 Añadir Nueva Área al Centro';
             document.getElementById('area_id').value = '';
+            const red = document.getElementById('top_red').value;
+            const centro = document.getElementById('top_centro').value;
+            inicializarSelectoresSedesModal('area_red', 'area_centro', red, centro);
             document.getElementById('area_nom').value = '';
             document.getElementById('area_piso').value = '';
             document.getElementById('area_encargado').value = '';
@@ -3917,6 +4058,9 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             if (!a) return;
             document.getElementById('modal_area_title').textContent = `✎ Modificar Área [${a.nombre}]`;
             document.getElementById('area_id').value = a.id;
+            const red = document.getElementById('top_red').value;
+            const centro = document.getElementById('top_centro').value;
+            inicializarSelectoresSedesModal('area_red', 'area_centro', a.red_salud_nombre || red, a.centro_salud_nombre || centro);
             document.getElementById('area_nom').value = a.nombre || '';
             document.getElementById('area_piso').value = a.piso || '';
             document.getElementById('area_encargado').value = a.encargado || '';
@@ -3930,6 +4074,9 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
         function abrirModalRepuesto() {
             document.getElementById('modal_rep_title').textContent = '🔧 Registrar Repuesto en Stock';
             document.getElementById('rep_id').value = '';
+            const red = document.getElementById('top_red').value;
+            const centro = document.getElementById('top_centro').value;
+            inicializarSelectoresSedesModal('rep_red', 'rep_centro', red, centro);
             document.getElementById('rep_nombre').value = '';
             document.getElementById('rep_marca').value = '';
             document.getElementById('rep_modelo').value = '';
@@ -3946,6 +4093,9 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             if (!r) return;
             document.getElementById('modal_rep_title').textContent = `✎ Modificar Repuesto [${r.nombre_repuesto}]`;
             document.getElementById('rep_id').value = r.id;
+            const red = document.getElementById('top_red').value;
+            const centro = document.getElementById('top_centro').value;
+            inicializarSelectoresSedesModal('rep_red', 'rep_centro', r.red_salud_nombre || red, r.centro_salud_nombre || centro);
             document.getElementById('rep_nombre').value = r.nombre_repuesto || '';
             document.getElementById('rep_marca').value = r.marca || '';
             document.getElementById('rep_modelo').value = r.modelo || r.modelo_parte || '';
@@ -4291,11 +4441,14 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             const garRad = document.querySelector('input[name="tiene_garantia"]:checked');
             const garVal = garRad ? garRad.value : 'Sin Garantía';
 
+            const redVal = (document.getElementById('modal_eq_red') ? document.getElementById('modal_eq_red').value : '') || document.getElementById('top_red').value;
+            const cenVal = (document.getElementById('modal_eq_centro') ? document.getElementById('modal_eq_centro').value : '') || document.getElementById('top_centro').value;
+
             const payload = {
                 id: document.getElementById('modal_eq_id_af').value,
                 _es_edicion: document.getElementById('modal_eq_es_edicion').value === '1',
-                red_salud_nombre: document.getElementById('top_red').value,
-                centro_salud_nombre: document.getElementById('top_centro').value,
+                red_salud_nombre: redVal,
+                centro_salud_nombre: cenVal,
                 sector_actual: document.getElementById('modal_eq_sector').value || "SALUD",
                 servicio: document.getElementById('modal_eq_servicio').value || "",
                 area: document.getElementById('modal_eq_area').value,
@@ -4367,8 +4520,18 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                 if (data.ok) {
                     alert(`✅ ¡Equipo guardado con éxito!\nCódigo AF: ${data.id}`);
                     cerrarModal('modal_equipo');
-                    cargarInventarioCentro(payload.centro_salud_nombre);
-                    cargarEstadisticasCentro(payload.centro_salud_nombre);
+                    if (redVal && document.getElementById('top_red') && document.getElementById('top_red').value !== redVal) {
+                        document.getElementById('top_red').value = redVal;
+                        alCambiarRedGlobal();
+                        if (document.getElementById('top_centro')) document.getElementById('top_centro').value = cenVal;
+                        alCambiarCentroGlobal();
+                    } else if (cenVal && document.getElementById('top_centro') && document.getElementById('top_centro').value !== cenVal) {
+                        document.getElementById('top_centro').value = cenVal;
+                        alCambiarCentroGlobal();
+                    } else {
+                        cargarInventarioCentro(cenVal, redVal);
+                        cargarEstadisticasCentro(cenVal, redVal);
+                    }
                 } else {
                     alert('Error: ' + (data.error || 'No se pudo guardar'));
                 }
@@ -4411,8 +4574,8 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
         async function guardarNuevoMueble(event) {
             event.preventDefault();
             const idVal = document.getElementById('mue_id').value;
-            const redSel = document.getElementById('top_red').value;
-            const cenSel = document.getElementById('top_centro').value;
+            const redSel = (document.getElementById('mue_red') ? document.getElementById('mue_red').value : '') || document.getElementById('top_red').value;
+            const cenSel = (document.getElementById('mue_centro') ? document.getElementById('mue_centro').value : '') || document.getElementById('top_centro').value;
             const redes = SEDES_DATA.redes || [];
             const rObj = redes.find(r => r.nombre === redSel);
             const rId = rObj ? rObj.id : null;
@@ -4456,8 +4619,18 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                 if (data.ok) {
                     alert('✅ Activo de mueblería / TI guardado con éxito');
                     cerrarModal('modal_mueble');
-                    cargarMueblesCentro(cenSel, redSel);
-                    cargarEstadisticasCentro(cenSel, redSel);
+                    if (redSel && document.getElementById('top_red') && document.getElementById('top_red').value !== redSel) {
+                        document.getElementById('top_red').value = redSel;
+                        alCambiarRedGlobal();
+                        if (document.getElementById('top_centro')) document.getElementById('top_centro').value = cenSel;
+                        alCambiarCentroGlobal();
+                    } else if (cenSel && document.getElementById('top_centro') && document.getElementById('top_centro').value !== cenSel) {
+                        document.getElementById('top_centro').value = cenSel;
+                        alCambiarCentroGlobal();
+                    } else {
+                        cargarMueblesCentro(cenSel, redSel);
+                        cargarEstadisticasCentro(cenSel, redSel);
+                    }
                 } else {
                     alert('Error: ' + (data.error || 'No se pudo guardar'));
                 }
@@ -4467,10 +4640,12 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
         async function guardarNuevaArea(event) {
             event.preventDefault();
             const idVal = document.getElementById('area_id').value;
+            const redVal = (document.getElementById('area_red') ? document.getElementById('area_red').value : '') || document.getElementById('top_red').value;
+            const cenVal = (document.getElementById('area_centro') ? document.getElementById('area_centro').value : '') || document.getElementById('top_centro').value;
             const payload = {
                 id: idVal ? parseInt(idVal) : null,
-                red_salud_nombre: document.getElementById('top_red').value,
-                centro_salud_nombre: document.getElementById('top_centro').value,
+                red_salud_nombre: redVal,
+                centro_salud_nombre: cenVal,
                 nombre: document.getElementById('area_nom').value,
                 piso: document.getElementById('area_piso').value,
                 encargado: document.getElementById('area_encargado').value,
@@ -4488,7 +4663,17 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                 if (data.ok) {
                     alert('✅ Área guardada exitosamente');
                     cerrarModal('modal_area');
-                    cargarAreasGlobal(payload.centro_salud_nombre);
+                    if (redVal && document.getElementById('top_red') && document.getElementById('top_red').value !== redVal) {
+                        document.getElementById('top_red').value = redVal;
+                        alCambiarRedGlobal();
+                        if (document.getElementById('top_centro')) document.getElementById('top_centro').value = cenVal;
+                        alCambiarCentroGlobal();
+                    } else if (cenVal && document.getElementById('top_centro') && document.getElementById('top_centro').value !== cenVal) {
+                        document.getElementById('top_centro').value = cenVal;
+                        alCambiarCentroGlobal();
+                    } else {
+                        cargarAreasGlobal(cenVal, redVal);
+                    }
                 } else {
                     alert('Error: ' + data.error);
                 }
@@ -4498,10 +4683,12 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
         async function guardarNuevoRepuesto(event) {
             event.preventDefault();
             const idVal = document.getElementById('rep_id').value;
+            const redVal = (document.getElementById('rep_red') ? document.getElementById('rep_red').value : '') || document.getElementById('top_red').value;
+            const cenVal = (document.getElementById('rep_centro') ? document.getElementById('rep_centro').value : '') || document.getElementById('top_centro').value;
             const payload = {
                 id: idVal ? parseInt(idVal) : null,
-                red_salud_nombre: document.getElementById('top_red').value,
-                centro_salud_nombre: document.getElementById('top_centro').value,
+                red_salud_nombre: redVal,
+                centro_salud_nombre: cenVal,
                 nombre_repuesto: document.getElementById('rep_nombre').value,
                 marca: document.getElementById('rep_marca').value,
                 modelo: document.getElementById('rep_modelo').value,
@@ -4522,8 +4709,18 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                 if (data.ok) {
                     alert('✅ Repuesto guardado en stock');
                     cerrarModal('modal_repuesto');
-                    cargarRepuestosCentro(payload.centro_salud_nombre);
-                    cargarEstadisticasCentro(payload.centro_salud_nombre);
+                    if (redVal && document.getElementById('top_red') && document.getElementById('top_red').value !== redVal) {
+                        document.getElementById('top_red').value = redVal;
+                        alCambiarRedGlobal();
+                        if (document.getElementById('top_centro')) document.getElementById('top_centro').value = cenVal;
+                        alCambiarCentroGlobal();
+                    } else if (cenVal && document.getElementById('top_centro') && document.getElementById('top_centro').value !== cenVal) {
+                        document.getElementById('top_centro').value = cenVal;
+                        alCambiarCentroGlobal();
+                    } else {
+                        cargarRepuestosCentro(cenVal, redVal);
+                        cargarEstadisticasCentro(cenVal, redVal);
+                    }
                 } else {
                     alert('Error: ' + data.error);
                 }
