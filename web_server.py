@@ -402,33 +402,39 @@ HTML_INVENTARIO = """
         }
         .asset-filters-bar {
             display: flex;
-            gap: 10px;
-            margin-bottom: 16px;
+            gap: 8px;
+            margin-bottom: 20px;
             flex-wrap: wrap;
+            background: #FFFFFF;
+            padding: 6px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.03);
         }
         .asset-pill-btn {
-            background: #FFFFFF;
-            border: 1.5px solid #E2E8F0;
-            color: #334155;
-            padding: 7px 16px;
-            border-radius: 20px;
-            font-size: 13px;
+            background: transparent;
+            border: 1.5px solid transparent;
+            color: #64748B;
+            padding: 8px 18px;
+            border-radius: 8px;
+            font-size: 13.5px;
             font-weight: 700;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.2s ease-in-out;
             display: inline-flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
         }
         .asset-pill-btn:hover {
-            border-color: #0F172A;
+            background: #F8FAFC;
             color: #0F172A;
+            border-color: #E2E8F0;
         }
         .asset-pill-btn.active {
-            background: #0F172A;
-            border-color: #0F172A;
+            background: #007AFF;
+            border-color: #007AFF;
             color: #FFFFFF;
-            box-shadow: 0 2px 6px rgba(15, 23, 42, 0.25);
+            box-shadow: 0 2px 8px rgba(0, 122, 255, 0.3);
         }
         .nav-tabs {
             display: flex;
@@ -511,16 +517,16 @@ HTML_INVENTARIO = """
             </div>
         </div>
 
-        <!-- Píldoras de Filtro Rápido (Ver Todo, Equipos, Muebles) -->
+        <!-- Pestañas de Selección de Vista (Ambos, Equipos Médicos, Activos Fijos) -->
         <div class="asset-filters-bar">
             <button type="button" class="asset-pill-btn active" data-tipo="TODO" onclick="filtrarTipoActivo('TODO')">
-                🌐 Ver Todo (<span id="cnt-pills-todo">{{ cnt_todo }}</span>)
+                🌐 Ver Ambos / Todo (<span id="cnt-pills-todo">{{ cnt_todo }}</span>)
             </button>
             <button type="button" class="asset-pill-btn" data-tipo="EQUIPO" onclick="filtrarTipoActivo('EQUIPO')">
                 🩺 Solo Equipos Médicos (<span id="cnt-pills-equipos">{{ cnt_equipos }}</span>)
             </button>
             <button type="button" class="asset-pill-btn" data-tipo="MUEBLE" onclick="filtrarTipoActivo('MUEBLE')">
-                🛋️ Solo Muebles y TI (<span id="cnt-pills-muebles">{{ cnt_muebles }}</span>)
+                🛋️ Solo Activos Fijos (<span id="cnt-pills-muebles">{{ cnt_muebles }}</span>)
             </button>
         </div>
 
@@ -550,7 +556,7 @@ HTML_INVENTARIO = """
             <div class="area-section" data-area-name="{{ area_nom }}">
                 <div class="area-header">
                     <div class="area-title">
-                        <span>🏥 Área: {{ area_nom }}</span>
+                        <span>🚪 Área: {{ area_nom }}</span>
                     </div>
                     <span class="area-badge-count count-label">0 activos</span>
                 </div>
@@ -709,6 +715,9 @@ HTML_INVENTARIO = """
             let operativosVisibles = 0;
             let garantiaVisibles = 0;
             let bajasVisibles = 0;
+            let countPillTodo = 0;
+            let countPillEq = 0;
+            let countPillMu = 0;
 
             areaSections.forEach(section => {
                 const areaNombre = section.getAttribute('data-area-name').toLowerCase().trim();
@@ -724,11 +733,18 @@ HTML_INVENTARIO = """
                     const tGarantia = t.getAttribute('data-garantia') || '';
                     const tTexto = (t.getAttribute('data-texto') || '').toLowerCase();
 
-                    const matchTipo = (TIPO_ACTIVO_FILTRO === 'TODO') || (tTipo === TIPO_ACTIVO_FILTRO);
                     const matchRed = !redSel || tRed.includes(redSel);
                     const matchCentro = !centroSel || tCentro.includes(centroSel);
                     const matchArea = !areaSel || tArea.includes(areaSel);
                     const matchBusqueda = !busqueda || tTexto.includes(busqueda);
+
+                    if (matchRed && matchCentro && matchArea && matchBusqueda) {
+                        countPillTodo++;
+                        if (tTipo === 'EQUIPO') countPillEq++;
+                        if (tTipo === 'MUEBLE') countPillMu++;
+                    }
+
+                    const matchTipo = (TIPO_ACTIVO_FILTRO === 'TODO') || (tTipo === TIPO_ACTIVO_FILTRO);
 
                     if (matchTipo && matchRed && matchCentro && matchArea && matchBusqueda) {
                         t.style.display = 'block';
@@ -749,7 +765,13 @@ HTML_INVENTARIO = """
 
                 const countLabel = section.querySelector('.count-label');
                 if (countLabel) {
-                    countLabel.textContent = `${tarjetasVisiblesEnArea} activo${tarjetasVisiblesEnArea === 1 ? '' : 's'}`;
+                    let txt = `${tarjetasVisiblesEnArea} activo${tarjetasVisiblesEnArea === 1 ? '' : 's'}`;
+                    if (TIPO_ACTIVO_FILTRO === 'EQUIPO') {
+                        txt = `${tarjetasVisiblesEnArea} equipo${tarjetasVisiblesEnArea === 1 ? '' : 's'} médico${tarjetasVisiblesEnArea === 1 ? '' : 's'}`;
+                    } else if (TIPO_ACTIVO_FILTRO === 'MUEBLE') {
+                        txt = `${tarjetasVisiblesEnArea} activo${tarjetasVisiblesEnArea === 1 ? '' : 's'} fijo${tarjetasVisiblesEnArea === 1 ? '' : 's'}`;
+                    }
+                    countLabel.textContent = txt;
                 }
 
                 if (tarjetasVisiblesEnArea > 0) {
@@ -758,6 +780,13 @@ HTML_INVENTARIO = """
                     section.style.display = 'none';
                 }
             });
+
+            const elPillTodo = document.getElementById('cnt-pills-todo');
+            const elPillEq = document.getElementById('cnt-pills-equipos');
+            const elPillMu = document.getElementById('cnt-pills-muebles');
+            if (elPillTodo) elPillTodo.textContent = countPillTodo;
+            if (elPillEq) elPillEq.textContent = countPillEq;
+            if (elPillMu) elPillMu.textContent = countPillMu;
 
             // Actualizar contadores
             document.getElementById('stat-total').textContent = totalVisibles;
@@ -846,8 +875,27 @@ def obtener_activos_unificados_db(red_filtro=None, centro_filtro=None):
                     eq['f_prox'] = proximos[0].strftime("%d/%m/%Y")
             todos_equipos.append(eq)
 
+        # Identificadores de equipos médicos para evitar duplicados en muebles
+        EXENTOS_DUPLICADOS = {"", "S/C", "0", "DONACION", "SIN CODIGO", "SIN SERIE", "NINGUNO", "N/A", "NO APLICA", "S/N", "SN", "-"}
+        series_eq = {str(eq.get('numero_serie') or '').strip().upper() for eq in equipos_raw if str(eq.get('numero_serie') or '').strip().upper() not in EXENTOS_DUPLICADOS}
+        sispam_eq = {str(eq.get('codigo_sispam') or '').strip().upper() for eq in equipos_raw if str(eq.get('codigo_sispam') or '').strip().upper() not in EXENTOS_DUPLICADOS}
+        bertin_eq = {str(eq.get('bertin') or '').strip().upper() for eq in equipos_raw if str(eq.get('bertin') or '').strip().upper() not in EXENTOS_DUPLICADOS}
+        sapm_eq = {str(eq.get('sapm') or '').strip().upper() for eq in equipos_raw if str(eq.get('sapm') or '').strip().upper() not in EXENTOS_DUPLICADOS}
+
         todos_muebles = []
         for m in muebles_raw:
+            m_serie = str(m.get('serie') or '').strip().upper()
+            m_sispam = str(m.get('codigo_sispam') or '').strip().upper()
+            m_bertin = str(m.get('bertin') or '').strip().upper()
+            m_sapm = str(m.get('sapm') or '').strip().upper()
+
+            # Evitar mostrar muebles que en realidad son clones duplicados de un equipo médico
+            if (m_serie and m_serie in series_eq) or \
+               (m_sispam and m_sispam in sispam_eq) or \
+               (m_bertin and m_bertin in bertin_eq) or \
+               (m_sapm and m_sapm in sapm_eq):
+                continue
+
             # Resolver Centro de Salud
             cen_nom = m.get('centro_nombre_fk') or m.get('unidad_organizacional') or ''
             if not cen_nom:
@@ -869,14 +917,9 @@ def obtener_activos_unificados_db(red_filtro=None, centro_filtro=None):
             if not red_nom:
                 red_nom = 'Red GAMLP'
 
-            # Resolver Área
+            # Resolver Área: Mantener el nombre completo tal como está registrado (incluyendo piso ej: Piso 2 - Ejemplo Multifuncional)
             ub = (m.get('ubicacion') or 'General').strip()
-            area_nom = ub
-            if ' - ' in ub:
-                partes = ub.split(' - ', 1)
-                area_nom = partes[1].strip()
-            if not area_nom:
-                area_nom = 'General'
+            area_nom = ub if ub else 'General'
 
             # Icono según descripción o tipo
             desc_lower = (str(m.get('descripcion') or '') + ' ' + str(m.get('tipo_activo') or '')).lower()
@@ -921,6 +964,29 @@ def obtener_activos_unificados_db(red_filtro=None, centro_filtro=None):
                 '_icono': icono
             }
             todos_muebles.append(item_mueble)
+
+        # Unificar nombres de áreas para que coincidan exactamente (con su piso) en el mismo centro
+        todas_las_areas = set()
+        for eq in todos_equipos:
+            if eq.get('area'): todas_las_areas.add(eq['area'].strip())
+        for m in todos_muebles:
+            if m.get('area'): todas_las_areas.add(m['area'].strip())
+
+        def _unificar_nombre_area(ar_str):
+            if not ar_str or ar_str.lower() in ('general', '-', 'ninguno'):
+                return 'General'
+            ar_clean = ar_str.strip()
+            if any(ar_clean.lower().startswith(p) for p in ['piso ', 'pb ', 'pb-', 'nivel ', 'planta ']):
+                return ar_clean
+            for a_full in todas_las_areas:
+                if ' - ' in a_full and a_full.split(' - ', 1)[1].strip().lower() == ar_clean.lower():
+                    return a_full
+            return ar_clean
+
+        for eq in todos_equipos:
+            eq['area'] = _unificar_nombre_area(eq.get('area'))
+        for m in todos_muebles:
+            m['area'] = _unificar_nombre_area(m.get('area'))
 
         activos_unificados = todos_equipos + todos_muebles
 
