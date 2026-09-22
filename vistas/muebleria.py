@@ -251,14 +251,14 @@ class VistaMuebleria(ctk.CTkFrame):
 
         ctk.CTkLabel(
             f_titulos, 
-            text="🛋️ Mueblería, Equipos de Computación y Enseres", 
+            text="🛋️ Activos Fijos, Mobiliario, TI y Equipos Médicos", 
             font=ctk.CTkFont(size=24, weight="bold"), 
             text_color=C_TEXT
         ).pack(anchor="w")
 
         ctk.CTkLabel(
             f_titulos, 
-            text="Inventario Institucional de Activos Fijos, TI, Mobiliario y Equipamiento GAMLP", 
+            text="Inventario Institucional Unificado de Activos Fijos, TI, Mobiliario y Equipamiento Médico GAMLP", 
             font=ctk.CTkFont(size=12, slant="italic"), 
             text_color=C_SUBTEXT
         ).pack(anchor="w")
@@ -276,16 +276,18 @@ class VistaMuebleria(ctk.CTkFrame):
         )
         self.lbl_badge_sede.pack(side="right")
 
-        # 2. Tarjetas KPI de Resumen
+        # 2. Tarjetas KPI de Resumen (4 Tarjetas Unificadas)
         self.f_kpis = ctk.CTkFrame(self, fg_color="transparent")
         self.f_kpis.pack(padx=25, pady=(4, 10), fill="x")
         self.f_kpis.columnconfigure(0, weight=1)
         self.f_kpis.columnconfigure(1, weight=1)
         self.f_kpis.columnconfigure(2, weight=1)
+        self.f_kpis.columnconfigure(3, weight=1)
 
         self.card_total = self._crear_kpi_card(self.f_kpis, 0, "📦 Total Activos", "0", C_BLUE)
-        self.card_muebles = self._crear_kpi_card(self.f_kpis, 1, "🪑 Mobiliario / Enseres", "0", C_ORANGE)
-        self.card_asignados = self._crear_kpi_card(self.f_kpis, 2, "👤 Con Asignación", "0", C_BLUE)
+        self.card_equipos = self._crear_kpi_card(self.f_kpis, 1, "🩺 Equipos Médicos", "0", C_GREEN)
+        self.card_muebles = self._crear_kpi_card(self.f_kpis, 2, "🪑 Mobiliario / TI", "0", C_ORANGE)
+        self.card_asignados = self._crear_kpi_card(self.f_kpis, 3, "👤 Con Asignación", "0", C_BLUE)
 
         # 3. Barra de Búsqueda y Filtros
         f_filtros = ctk.CTkFrame(self, fg_color=C_CARD, corner_radius=12, border_width=1, border_color=C_BORDER)
@@ -326,14 +328,14 @@ class VistaMuebleria(ctk.CTkFrame):
         ctk.CTkLabel(f_f_inner, text="Tipo:", font=ctk.CTkFont(size=11, weight="bold"), text_color=C_TEXT).pack(side="left", padx=(4, 2))
         self.combo_filtro_tipo = ctk.CTkComboBox(
             f_f_inner, 
-            values=["[ Todos ]", "💻 Computación / TI", "🪑 Mobiliario / Enseres", "📑 Otros"], 
-            width=150, 
+            values=["[ Todos los Activos ]", "🩺 Equipos Médicos", "💻 Computación / TI", "🪑 Mobiliario / Enseres", "📑 Otros"], 
+            width=175, 
             command=lambda e: self.refrescar_datos(), 
             fg_color=C_BG, 
             border_color=C_BORDER
         )
         self.combo_filtro_tipo.pack(side="left", padx=(0, 10))
-        self.combo_filtro_tipo.set("[ Todos ]")
+        self.combo_filtro_tipo.set("[ Todos los Activos ]")
 
         # Filtro Red de Salud
         ctk.CTkLabel(f_f_inner, text="Red:", font=ctk.CTkFont(size=11, weight="bold"), text_color=C_TEXT).pack(side="left", padx=(4, 2))
@@ -550,7 +552,7 @@ class VistaMuebleria(ctk.CTkFrame):
     def limpiar_filtros(self):
         self.busqueda_var.set("")
         self.combo_filtro_sector.set("[ Todos ]")
-        self.combo_filtro_tipo.set("[ Todos ]")
+        self.combo_filtro_tipo.set("[ Todos los Activos ]")
         self.combo_filtro_red.set("[ Todas las Redes ]")
         self._al_cambiar_filtro_red("[ Todas las Redes ]")
 
@@ -562,6 +564,39 @@ class VistaMuebleria(ctk.CTkFrame):
         t = str(tipo_str).upper()
         return any(k in t for k in ["SILLA", "MESA", "ESCRITORIO", "VITRINA", "ESTANTE", "GAVETERO", "ARCHIVADOR", "CASILLERO", "LOCKER", "SILLÓN", "CAMILLA", "MUEBLE", "ROPERO", "BANCO"])
 
+    def _mapear_equipo_a_activo(self, eq):
+        eq_id = str(eq.get("id") or "")
+        return {
+            "id": eq_id,
+            "_iid": f"EQ_{eq_id}",
+            "id_mostrar": eq_id,
+            "id_original": eq_id,
+            "es_equipo_medico": True,
+            "sector_actual": eq.get("sector_actual") or "SALUD",
+            "direccion_administrativa": eq.get("red_salud_nombre") or "",
+            "unidad_organizacional": eq.get("centro_salud_nombre") or "",
+            "fecha_asignacion": str(eq.get("fecha_adquisicion") or eq.get("fecha_registro") or ""),
+            "tecnico_inventareador": eq.get("tecnico_responsable") or eq.get("creado_por") or "",
+            "persona_asignada": eq.get("persona_asignada") or "",
+            "cargo_asignado": eq.get("cargo_asignado") or "",
+            "ci_asignado": eq.get("ci_asignado") or "",
+            "tipo_activo": "🩺 EQUIPO MÉDICO",
+            "descripcion": eq.get("nombre") or "",
+            "marca": eq.get("marca") or "S/M",
+            "modelo": eq.get("modelo") or "S/M",
+            "serie": eq.get("numero_serie") or "S/C",
+            "detalle_transaccion": eq.get("tipo_adquisicion") or "Asignacion 2026",
+            "codigo_sispam": eq.get("codigo_sispam") or "S/C",
+            "bertin": eq.get("bertin") or "S/C",
+            "sapm": eq.get("sapm") or "S/C",
+            "observaciones_de_asignacion": eq.get("observaciones") or "",
+            "ubicacion": eq.get("area") or eq.get("servicio") or "General",
+            "estado_conservacion": eq.get("estado") or "Operativo",
+            "estado": "Activo",
+            "red_salud_id": eq.get("red_salud_id"),
+            "centro_salud_id": eq.get("centro_salud_id")
+        }
+
     def refrescar_datos(self):
         # Actualizar badge de sede activa
         ctx = getattr(self.app, "contexto_sede", None)
@@ -570,7 +605,27 @@ class VistaMuebleria(ctk.CTkFrame):
         else:
             self.lbl_badge_sede.configure(text="🌐 Acceso General GAMLP")
 
-        todos_muebles = self.app.datos.get("muebleria", [])
+        # 1. Cargar Muebles y TI
+        todos_muebles = []
+        for m in self.app.datos.get("muebleria", []):
+            item_m = dict(m)
+            item_m["es_equipo_medico"] = False
+            item_m["_iid"] = f"M_{item_m.get('id')}"
+            item_m["id_mostrar"] = str(item_m.get("id"))
+            todos_muebles.append(item_m)
+
+        # 2. Cargar y Unificar Equipos Médicos del Inventario
+        todos_equipos = self.app.datos.get("equipos", [])
+        equipos_mapeados = []
+        for eq in todos_equipos:
+            est = str(eq.get("estado") or "").strip().lower()
+            if est in ("baja", "eliminado", "inactivo"):
+                continue
+            equipos_mapeados.append(self._mapear_equipo_a_activo(eq))
+
+        todos_activos = todos_muebles + equipos_mapeados
+        self._todos_activos_unificados = todos_activos
+
         q = self.busqueda_var.get().strip().lower()
         sec_f = self.combo_filtro_sector.get()
         tipo_f = self.combo_filtro_tipo.get()
@@ -584,10 +639,11 @@ class VistaMuebleria(ctk.CTkFrame):
         ctx_red_nom = ctx.get("red_salud") if ctx else None
 
         filtrados = []
+        c_equipos = 0
         c_muebles = 0
         c_asig = 0
 
-        for m in todos_muebles:
+        for m in todos_activos:
             if str(m.get("estado", "Activo")).lower() != "activo":
                 continue
 
@@ -607,13 +663,21 @@ class VistaMuebleria(ctk.CTkFrame):
                 continue
 
             # Filtro Tipo de Activo
+            es_eq = m.get("es_equipo_medico", False)
             t_act = str(m.get("tipo_activo", "")).strip().upper()
-            if tipo_f == "💻 Computación / TI" and not self._es_tipo_computacion(t_act):
-                continue
-            elif tipo_f == "🪑 Mobiliario / Enseres" and not self._es_tipo_muebleria(t_act):
-                continue
-            elif tipo_f == "📑 Otros" and (self._es_tipo_computacion(t_act) or self._es_tipo_muebleria(t_act)):
-                continue
+
+            if tipo_f == "🩺 Equipos Médicos":
+                if not es_eq:
+                    continue
+            elif tipo_f == "💻 Computación / TI":
+                if es_eq or not self._es_tipo_computacion(t_act):
+                    continue
+            elif tipo_f == "🪑 Mobiliario / Enseres":
+                if es_eq or not self._es_tipo_muebleria(t_act):
+                    continue
+            elif tipo_f == "📑 Otros":
+                if es_eq or self._es_tipo_computacion(t_act) or self._es_tipo_muebleria(t_act):
+                    continue
 
             # Filtro Red
             if red_f != "[ Todas las Redes ]":
@@ -630,6 +694,7 @@ class VistaMuebleria(ctk.CTkFrame):
             # Filtro de búsqueda libre
             if q:
                 campos_busqueda = [
+                    str(m.get("id") or ""),
                     str(m.get("codigo_sispam") or ""),
                     str(m.get("bertin") or ""),
                     str(m.get("sapm") or ""),
@@ -650,15 +715,19 @@ class VistaMuebleria(ctk.CTkFrame):
             filtrados.append(m)
 
             # Contadores KPI
-            if self._es_tipo_muebleria(t_act):
+            if es_eq:
+                c_equipos += 1
+            else:
                 c_muebles += 1
+
             if str(m.get("persona_asignada") or "").strip():
                 c_asig += 1
 
         self.datos_filtrados = filtrados
 
-        # Actualizar KPIs
+        # Actualizar 4 KPIs
         self.card_total.configure(text=str(len(filtrados)))
+        self.card_equipos.configure(text=str(c_equipos))
         self.card_muebles.configure(text=str(c_muebles))
         self.card_asignados.configure(text=str(c_asig))
 
@@ -671,9 +740,9 @@ class VistaMuebleria(ctk.CTkFrame):
             self.tabla.insert(
                 "", 
                 "end", 
-                iid=str(m.get("id")), 
+                iid=str(m.get("_iid", m.get("id"))), 
                 values=(
-                    m.get("id"),
+                    m.get("id_mostrar") or m.get("id"),
                     m.get("sector_actual") or "SALUD",
                     m.get("direccion_administrativa") or "",
                     m.get("unidad_organizacional") or "",
@@ -1421,43 +1490,108 @@ class VistaMuebleria(ctk.CTkFrame):
         ).pack(side="right", padx=5, pady=10)
 
     def modificar_mueble(self):
-        if not self.app.tiene_permiso("Muebleria", "cambiar"):
-            messagebox.showwarning("Acceso Denegado", "No tiene permisos para modificar registros de muebles y computación.")
-            return
-
         sel = self.tabla.selection()
         if not sel:
             messagebox.showwarning("Selección requerida", "Por favor seleccione un activo de la tabla para modificar.")
             return
 
-        mueble_id = sel[0]
-        mueble_obj = next((m for m in self.app.datos.get("muebleria", []) if str(m.get("id")) == str(mueble_id)), None)
-        if not mueble_obj:
-            messagebox.showerror("Error", "No se encontró el registro seleccionado.")
+        sel_iid = sel[0]
+        activo_obj = next((m for m in getattr(self, "datos_filtrados", []) if str(m.get("_iid", m.get("id"))) == str(sel_iid) or str(m.get("id")) == str(sel_iid)), None)
+        if not activo_obj:
+            activo_obj = next((m for m in self.app.datos.get("muebleria", []) if str(m.get("id")) == str(sel_iid)), None)
+            if not activo_obj:
+                messagebox.showerror("Error", "No se encontró el registro seleccionado.")
+                return
+
+        if activo_obj.get("es_equipo_medico"):
+            if not self.app.tiene_permiso("Inventario", "cambiar"):
+                messagebox.showwarning("Permiso Denegado", "No tiene permisos para modificar fichas técnicas de equipos médicos.")
+                return
+            eq_orig_id = activo_obj.get("id_original") or activo_obj.get("id")
+            eq = next((e for e in self.app.datos.get("equipos", []) if str(e.get("id")) == str(eq_orig_id)), None)
+            if eq and hasattr(self.app, "abrir_formulario_equipo"):
+                self.app.abrir_formulario_equipo(eq)
+            elif eq:
+                messagebox.showinfo("Ficha de Equipo Médico", f"• Nombre: {eq.get('nombre')}\n• ID: {eq.get('id')}\n• Marca: {eq.get('marca')}\n• Modelo: {eq.get('modelo')}\n• Serie: {eq.get('numero_serie')}\n• SISPAM: {eq.get('codigo_sispam')}\n• Ubicación: {eq.get('area') or eq.get('servicio')}")
+            else:
+                messagebox.showerror("Error", f"No se encontró el equipo médico con ID {eq_orig_id}.")
             return
 
-        self.abrir_formulario_mueble(mueble_obj)
+        if not self.app.tiene_permiso("Muebleria", "cambiar"):
+            messagebox.showwarning("Acceso Denegado", "No tiene permisos para modificar registros de muebles y computación.")
+            return
+
+        self.abrir_formulario_mueble(activo_obj)
 
     def eliminar_mueble(self):
-        if not self.app.tiene_permiso("Muebleria", "eliminar"):
-            messagebox.showwarning("Acceso Denegado", "No tiene permisos para eliminar registros de muebles y computación.")
-            return
-
         sel = self.tabla.selection()
         if not sel:
             messagebox.showwarning("Selección requerida", "Por favor seleccione un activo de la tabla para eliminar.")
             return
 
-        mueble_id = sel[0]
-        mueble_obj = next((m for m in self.app.datos.get("muebleria", []) if str(m.get("id")) == str(mueble_id)), None)
-        desc = mueble_obj.get("descripcion", f"ID {mueble_id}") if mueble_obj else f"ID {mueble_id}"
+        sel_iid = sel[0]
+        activo_obj = next((m for m in getattr(self, "datos_filtrados", []) if str(m.get("_iid", m.get("id"))) == str(sel_iid) or str(m.get("id")) == str(sel_iid)), None)
+        if not activo_obj:
+            activo_obj = next((m for m in self.app.datos.get("muebleria", []) if str(m.get("id")) == str(sel_iid)), None)
+            if not activo_obj:
+                messagebox.showerror("Error", "No se encontró el registro seleccionado.")
+                return
 
+        if activo_obj.get("es_equipo_medico"):
+            if not self.app.tiene_permiso("Inventario", "eliminar"):
+                messagebox.showwarning("Acceso Denegado", "No tiene permisos para dar de baja o eliminar equipos médicos.")
+                return
+
+            eq_id = activo_obj.get("id_original") or activo_obj.get("id")
+            eq_nombre = activo_obj.get("descripcion", "")
+            confirm = messagebox.askyesno(
+                "Confirmar Baja de Equipo Médico",
+                f"¿Está seguro de trasladar a la papelera el siguiente equipo médico?\n\n"
+                f"• ID: {eq_id}\n"
+                f"• Equipo: {eq_nombre}\n"
+                f"• Serie: {activo_obj.get('serie', 'S/C')}\n"
+                f"• Centro: {activo_obj.get('unidad_organizacional', '')}\n\n"
+                f"El registro se trasladará a la papelera de reciclaje.",
+                parent=self
+            )
+            if not confirm:
+                return
+
+            try:
+                conn = obtener_conexion()
+                if not conn:
+                    messagebox.showerror("Error", "No se pudo conectar a la base de datos para eliminar el equipo.")
+                    return
+                cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+                cur.execute("SELECT * FROM equipos WHERE id = %s", (eq_id,))
+                fila = cur.fetchone()
+                if fila:
+                    from database import mover_a_papelera
+                    usuario_act = getattr(self.app, "usuario_actual", {}).get("nombre_usuario", "Sistema")
+                    mover_a_papelera(cur, "equipos", eq_id, dict(fila), usuario_act)
+                cur.execute("DELETE FROM equipos WHERE id = %s", (eq_id,))
+                conn.commit()
+                cur.close()
+                conn.close()
+                self.app.cargar_datos_memoria()
+                self.refrescar_datos()
+                messagebox.showinfo("Éxito", "El equipo médico fue trasladado a la papelera correctamente.")
+            except Exception as e:
+                messagebox.showerror("Error", f"No se pudo eliminar el equipo médico:\n{e}")
+            return
+
+        if not self.app.tiene_permiso("Muebleria", "eliminar"):
+            messagebox.showwarning("Acceso Denegado", "No tiene permisos para eliminar registros de muebles y computación.")
+            return
+
+        mueble_id = activo_obj.get("id")
+        desc = activo_obj.get("descripcion", f"ID {mueble_id}")
         confirm = messagebox.askyesno(
             "Confirmar Eliminación", 
             f"¿Está seguro de que desea eliminar el siguiente activo?\n\n"
             f"• {desc}\n"
-            f"• Tipo: {mueble_obj.get('tipo_activo', '') if mueble_obj else ''}\n"
-            f"• SISPAM: {mueble_obj.get('codigo_sispam', '') if mueble_obj else ''}\n\n"
+            f"• Tipo: {activo_obj.get('tipo_activo', '')}\n"
+            f"• SISPAM: {activo_obj.get('codigo_sispam', '')}\n\n"
             f"El registro se moverá a la papelera con respaldo de auditoría."
         )
         if not confirm:
@@ -1474,23 +1608,38 @@ class VistaMuebleria(ctk.CTkFrame):
             messagebox.showerror("Error", f"No se pudo eliminar el activo:\n{resp}")
 
     def descargar_excel_muebleria(self):
-        """Exporta la lista actual filtrada a un archivo Excel basado en la plantilla oficial."""
+        """Exporta la lista actual (muebles, computadoras y equipos médicos) a un archivo Excel basado en la plantilla oficial."""
         if not self.datos_filtrados:
             messagebox.showwarning("Sin Datos", "No hay activos en la vista actual para exportar.")
             return
 
-        f_def = f"Inventario_Muebleria_Computadoras_GAMLP_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
+        items_a_exportar = self.datos_filtrados
+        total_global = len(getattr(self, "_todos_activos_unificados", []))
+        if total_global > len(self.datos_filtrados):
+            resp_filtro = messagebox.askyesnocancel(
+                "Exportar Inventario a Excel",
+                f"Tiene filtros activos: se muestran {len(self.datos_filtrados)} registros de un total de {total_global} activos.\n\n"
+                f"• Presione SÍ para exportar TODOS los activos ({total_global} activos incluyendo muebles, TI y equipos médicos).\n"
+                f"• Presione NO para exportar únicamente los registros FILTRADOS ({len(self.datos_filtrados)} activos).\n"
+                f"• Presione CANCELAR para salir."
+            )
+            if resp_filtro is None:
+                return
+            elif resp_filtro is True:
+                items_a_exportar = self._todos_activos_unificados
+
+        f_def = f"Inventario_Activos_GAMLP_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
         ruta_guardar = filedialog.asksaveasfilename(
             defaultextension=".xlsx",
             filetypes=[("Archivos de Excel (*.xlsx)", "*.xlsx")],
             initialfile=f_def,
-            title="Guardar Inventario de Mueblería y Computadoras"
+            title="Guardar Inventario Unificado de Activos GAMLP"
         )
         if not ruta_guardar:
             return
 
         try:
-            exito, msg = exportar_muebleria_excel(self.datos_filtrados, ruta_guardar)
+            exito, msg = exportar_muebleria_excel(items_a_exportar, ruta_guardar)
             if exito:
                 resp = messagebox.askyesno("Exportación Exitosa", f"{msg}\n\n¿Desea abrir el archivo generado ahora?")
                 if resp:

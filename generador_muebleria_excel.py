@@ -93,7 +93,7 @@ def exportar_muebleria_excel(lista_muebles, ruta_salida):
             str(m.get("tecnico_inventareador") or ""),
             str(m.get("persona_asignada") or ""),
             str(m.get("ci_asignado") or ""),
-            str(m.get("tipo_activo") or ""),
+            str(m.get("tipo_activo") or "").replace("🩺 ", "").replace("💻 ", "").replace("🪑 ", "").replace("📑 ", "").strip(),
             str(m.get("descripcion") or ""),
             str(m.get("marca") or ""),
             str(m.get("modelo") or ""),
