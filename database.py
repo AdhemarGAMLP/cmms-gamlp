@@ -3077,5 +3077,292 @@ def cargar_imagen_pil(foto_str):
         print(f"[WARN] No se pudo cargar imagen PIL: {e}")
     return None
 
+# ==============================================================================
+# GESTIÓN Y RECUPERACIÓN DE PAPELERA DE SEGURIDAD (ADMIN Y GODHEAD)
+# ==============================================================================
+
+def obtener_papelera_db(filtro_tabla=None, busqueda=None, limite=300):
+    """
+    Retorna la lista de registros eliminados en la papelera, formateados con títulos legibles,
+    códigos y sedes de origen para su inspección y recuperación.
+    """
+    conn = obtener_conexion()
+    if not conn:
+        return []
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        conds = []
+        params = []
+        if filtro_tabla and filtro_tabla != "todos":
+            conds.append("tabla_origen = %s")
+            params.append(filtro_tabla.strip().lower())
+        if busqueda and busqueda.strip():
+            b_term = f"%{busqueda.strip()}%"
+            conds.append("""(
+                id_original ILIKE %s OR 
+                eliminado_por ILIKE %s OR 
+                datos::text ILIKE %s
+            )""")
+            params.extend([b_term, b_term, b_term])
+
+        where_clause = ("WHERE " + " AND ".join(conds)) if conds else ""
+        query = f"SELECT id, tabla_origen, id_original, datos, eliminado_por, fecha_eliminacion FROM papelera {where_clause} ORDER BY id DESC LIMIT %s;"
+        params.append(limite)
+
+        cur.execute(query, tuple(params))
+        filas = cur.fetchall()
+        res = []
+        for r in filas:
+            item = dict(r)
+            d = item.get("datos") or {}
+            if isinstance(d, str):
+                try:
+                    d = json.loads(d)
+                except Exception:
+                    d = {}
+            item["datos"] = d
+            t_orig = str(item.get("tabla_origen") or "").strip().lower()
+
+            if t_orig == "equipos":
+                nom = str(d.get("nombre") or "Equipo Médico").strip()
+                marca = str(d.get("marca") or "").strip()
+                modelo = str(d.get("modelo") or "").strip()
+                det_extra = f" ({marca} {modelo})".strip() if (marca or modelo) else ""
+                item["titulo"] = f"{nom}{det_extra}"
+                item["tipo_label"] = "Equipo Médico"
+                item["tipo_icono"] = "🩺"
+                item["codigo"] = str(d.get("codigo_af") or item.get("id_original") or "-")
+                item["sede"] = str(d.get("centro_salud_nombre") or d.get("servicio") or d.get("area") or "-")
+                item["ubicacion"] = str(d.get("area") or d.get("servicio") or "-")
+            elif t_orig == "muebleria":
+                desc = str(d.get("descripcion") or d.get("tipo_activo") or "Mueble / Activo TI").strip()
+                marca = str(d.get("marca") or "").strip()
+                modelo = str(d.get("modelo") or "").strip()
+                det_extra = f" ({marca} {modelo})".strip() if (marca or modelo) else ""
+                item["titulo"] = f"{desc}{det_extra}"
+                item["tipo_label"] = "Mueblería y TI"
+                item["tipo_icono"] = "🛋️"
+                item["codigo"] = str(d.get("codigo_sispam") or d.get("bertin") or d.get("sapm") or item.get("id_original") or "-")
+                item["sede"] = str(d.get("unidad_organizacional") or d.get("direccion_administrativa") or "-")
+                item["ubicacion"] = str(d.get("ubicacion") or "-")
+            elif t_orig == "areas":
+                nom = str(d.get("nombre") or "Área").strip()
+                piso = str(d.get("piso") or "").strip()
+                piso_str = f" - {piso}" if piso else ""
+                item["titulo"] = f"{nom}{piso_str}"
+                item["tipo_label"] = "Área / Servicio"
+                item["tipo_icono"] = "📍"
+                item["codigo"] = f"Área #{item.get('id_original')}"
+                item["sede"] = str(d.get("centro_salud_nombre") or d.get("red_salud_nombre") or "-")
+                item["ubicacion"] = str(d.get("encargado") or "-")
+            elif t_orig == "catalogo":
+                nom = str(d.get("nombre") or "Modelo de Catálogo").strip()
+                marca = str(d.get("marca") or "").strip()
+                modelo = str(d.get("modelo") or "").strip()
+                item["titulo"] = f"{nom} ({marca} {modelo})".strip()
+                item["tipo_label"] = "Modelo de Catálogo"
+                item["tipo_icono"] = "📋"
+                item["codigo"] = f"Cat #{item.get('id_original')}"
+                item["sede"] = "Catálogo Central"
+                item["ubicacion"] = str(d.get("area") or "-")
+            elif t_orig == "repuestos":
+                nom = str(d.get("nombre") or "Repuesto").strip()
+                cod = str(d.get("codigo") or "").strip()
+                item["titulo"] = f"{nom} [{cod}]".strip()
+                item["tipo_label"] = "Repuesto"
+                item["tipo_icono"] = "🔧"
+                item["codigo"] = cod or str(item.get('id_original'))
+                item["sede"] = str(d.get("centro_salud_nombre") or "-")
+                item["ubicacion"] = str(d.get("ubicacion") or "-")
+            elif t_orig == "historial_intervenciones":
+                tipo = str(d.get("tipo") or "Intervención").strip()
+                f_inter = str(d.get("fecha") or "").strip()
+                item["titulo"] = f"Mantenimiento {tipo} ({f_inter})".strip()
+                item["tipo_label"] = "Historial Intervención"
+                item["tipo_icono"] = "🛠️"
+                item["codigo"] = f"Equipo #{d.get('equipo_id')}"
+                item["sede"] = str(d.get("responsable") or "-")
+                item["ubicacion"] = str(d.get("condicion") or "-")
+            else:
+                item["titulo"] = f"{t_orig.capitalize()} #{item.get('id_original')}"
+                item["tipo_label"] = t_orig.capitalize()
+                item["tipo_icono"] = "📄"
+                item["codigo"] = str(item.get("id_original") or "-")
+                item["sede"] = "-"
+                item["ubicacion"] = "-"
+
+            if hasattr(item.get("fecha_eliminacion"), "isoformat"):
+                item["fecha_eliminacion"] = item["fecha_eliminacion"].isoformat()
+            res.append(item)
+
+        cur.close()
+        conn.close()
+        return res
+    except Exception as e:
+        print(f"[ERROR] Error al obtener registros de papelera: {e}")
+        if conn:
+            try: conn.close()
+            except Exception: pass
+        return []
+
+def recuperar_registro_papelera_db(papelera_id, usuario="admin"):
+    """
+    Restaura un registro previamente eliminado desde la tabla 'papelera' hacia su tabla original,
+    restaurando su estado operativo o re-insertándolo si fue eliminado físicamente.
+    """
+    conn = obtener_conexion()
+    if not conn:
+        return False, "Error al conectar con la base de datos."
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute("SELECT * FROM papelera WHERE id = %s;", (papelera_id,))
+        p_row = cur.fetchone()
+        if not p_row:
+            cur.close()
+            conn.close()
+            return False, "El registro solicitado no existe en la papelera."
+
+        tabla_origen = str(p_row["tabla_origen"]).strip().lower()
+        id_original = p_row["id_original"]
+        datos = p_row["datos"] or {}
+        if isinstance(datos, str):
+            try:
+                datos = json.loads(datos)
+            except Exception:
+                datos = {}
+
+        tablas_validas = {
+            "equipos": "id",
+            "catalogo": "id",
+            "muebleria": "id",
+            "areas": "id",
+            "repuestos": "id",
+            "historial_intervenciones": "id",
+            "usuarios": "nombre_usuario"
+        }
+
+        if tabla_origen not in tablas_validas:
+            cur.close()
+            conn.close()
+            return False, f"La tabla '{tabla_origen}' no está configurada para recuperación automática."
+
+        campo_id = tablas_validas[tabla_origen]
+
+        # Obtener columnas válidas de la tabla de destino
+        cur.execute("""
+            SELECT column_name, data_type 
+            FROM information_schema.columns 
+            WHERE table_name = %s;
+        """, (tabla_origen,))
+        cols_info = {r[0]: r[1] for r in cur.fetchall()}
+        col_names = set(cols_info.keys())
+
+        if not col_names:
+            cur.close()
+            conn.close()
+            return False, f"No se pudo obtener el esquema de la tabla '{tabla_origen}'."
+
+        # Convertir id_original al tipo adecuado si es entero
+        id_query_val = id_original
+        if cols_info.get(campo_id) in ("integer", "bigint", "smallint"):
+            try:
+                id_query_val = int(id_original)
+            except Exception:
+                pass
+
+        # Verificar si el registro existe actualmente en la tabla origen
+        cur.execute(f"SELECT {campo_id} FROM {tabla_origen} WHERE {campo_id} = %s;", (id_query_val,))
+        existe_en_tabla = cur.fetchone()
+
+        titulo_recuperado = str(datos.get("nombre") or datos.get("descripcion") or datos.get("tipo_activo") or id_original)
+
+        if existe_en_tabla:
+            # Si el registro aún existe (por ejemplo con estado = 'Inactivo' o 'Eliminado'), reactivarlo
+            if "estado" in col_names:
+                estado_nuevo = "Operativo" if tabla_origen == "equipos" else "Activo"
+                cur.execute(f"UPDATE {tabla_origen} SET estado = %s WHERE {campo_id} = %s;", (estado_nuevo, id_query_val))
+        else:
+            # Si fue borrado físicamente, re-insertarlo
+            if "estado" in col_names:
+                datos["estado"] = "Operativo" if tabla_origen == "equipos" else "Activo"
+
+            if campo_id not in datos or not datos[campo_id]:
+                datos[campo_id] = id_query_val
+
+            cols_a_insertar = [c for c in datos.keys() if c in col_names]
+            
+            vals_a_insertar = []
+            for c in cols_a_insertar:
+                val = datos[c]
+                col_tipo = cols_info.get(c, "")
+                if col_tipo in ("integer", "bigint", "smallint"):
+                    try:
+                        val = int(val) if val not in (None, "", "null") else None
+                    except Exception:
+                        val = None
+                elif col_tipo == "jsonb" and isinstance(val, (dict, list)):
+                    val = json.dumps(val)
+                vals_a_insertar.append(val)
+
+            placeholders = ["%s"] * len(cols_a_insertar)
+            sql_insert = f"""
+                INSERT INTO {tabla_origen} ({', '.join(cols_a_insertar)})
+                VALUES ({', '.join(placeholders)})
+                ON CONFLICT ({campo_id}) DO NOTHING;
+            """
+            cur.execute(sql_insert, tuple(vals_a_insertar))
+
+            # Reajustar secuencias seriales si aplica
+            if cols_info.get(campo_id) in ("integer", "bigint"):
+                try:
+                    cur.execute(f"SELECT setval(pg_get_serial_sequence('{tabla_origen}', '{campo_id}'), COALESCE((SELECT MAX({campo_id}) FROM {tabla_origen}), 1));")
+                except Exception:
+                    pass
+
+        # Eliminar el registro recuperado de la papelera
+        cur.execute("DELETE FROM papelera WHERE id = %s;", (papelera_id,))
+
+        conn.commit()
+        cur.close()
+        conn.close()
+        return True, f"Registro '{titulo_recuperado}' recuperado exitosamente en {tabla_origen}."
+    except Exception as e:
+        print(f"[ERROR] Error al recuperar registro de papelera {papelera_id}: {e}")
+        if conn:
+            try:
+                conn.rollback()
+                conn.close()
+            except Exception:
+                pass
+        return False, f"Error al recuperar: {str(e)}"
+
+def purgar_registro_papelera_db(papelera_id=None, vaciar_todo=False):
+    """Elimina de forma permanente e irrecuperable uno o todos los registros de la papelera."""
+    conn = obtener_conexion()
+    if not conn:
+        return False, "Error al conectar con la base de datos."
+    try:
+        cur = conn.cursor()
+        if vaciar_todo:
+            cur.execute("DELETE FROM papelera;")
+            msg = "Papelera vaciada por completo."
+        elif papelera_id:
+            cur.execute("DELETE FROM papelera WHERE id = %s;", (papelera_id,))
+            msg = "Registro purgado permanentemente de la papelera."
+        else:
+            cur.close()
+            conn.close()
+            return False, "ID de papelera no especificado."
+        conn.commit()
+        cur.close()
+        conn.close()
+        return True, msg
+    except Exception as e:
+        if conn:
+            try: conn.rollback(); conn.close()
+            except Exception: pass
+        return False, str(e)
+
+
 
 

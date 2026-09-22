@@ -760,6 +760,44 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             transition: all 0.15s ease;
         }
         .btn-card-del:hover { background: #FCA5A5; }
+        .btn-restore-action {
+            padding: 7px 14px;
+            border-radius: 8px;
+            font-size: 12.5px;
+            font-weight: 700;
+            background: #ECFDF5;
+            color: #059669;
+            border: 1px solid #A7F3D0;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .btn-restore-action:hover {
+            background: #10B981;
+            color: #FFFFFF;
+            border-color: #059669;
+            box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3);
+        }
+        .btn-purge-action {
+            padding: 7px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            background: #FEF2F2;
+            color: #B91C1C;
+            border: 1px solid #FECACA;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .btn-purge-action:hover {
+            background: #DC2626;
+            color: #FFFFFF;
+        }
 
         /* MODALES */
         .modal-overlay {
@@ -1529,6 +1567,7 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
 
         {% if es_admin %}
         <button class="tab-btn" data-tab="usuarios" onclick="cambiarPestana('usuarios')">👥 Usuarios</button>
+        <button class="tab-btn" data-tab="papelera" onclick="cambiarPestana('papelera')">🗑️ Papelera (<span id="cnt_papelera_badge">0</span>)</button>
         {% endif %}
 
         <button class="tab-btn" data-tab="links" onclick="cambiarPestana('links')">🔗 Enlaces</button>
@@ -1732,6 +1771,58 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             </div>
             <div id="lista_usuarios" class="cards-grid">
                 <div class="empty-state"><span>👥</span>Cargando usuarios y permisos...</div>
+            </div>
+        </section>
+        {% endif %}
+
+        <!-- 10.B PESTAÑA: PAPELERA DE SEGURIDAD Y RECUPERACIÓN (SOLO ADMINISTRADOR Y GODHEAD) -->
+        {% if es_admin %}
+        <section id="pane_papelera" class="tab-pane">
+            <div style="background: linear-gradient(135deg, #1E293B, #334155); color: #ffffff; padding: 18px 20px; border-radius: 12px; margin-bottom: 16px; box-shadow: 0 4px 12px rgba(30,41,59,0.2);">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                    <div>
+                        <div style="font-size: 19px; font-weight: 800; display: flex; align-items: center; gap: 8px;">
+                            <span>🛡️</span> Papelera de Seguridad del Sistema
+                            <span class="badge" style="background: #F59E0B; color: #78350F; font-size: 11px; padding: 2px 8px; border-radius: 4px; font-weight: 800;">ADMIN & GODHEAD</span>
+                        </div>
+                        <div style="font-size: 13px; opacity: 0.92; margin-top: 4px;">
+                            Elementos borrados de inventario, mueblería, áreas, catálogo y repuestos. Puedes restaurarlos a su estado operativo con un solo clic.
+                        </div>
+                    </div>
+                    <button type="button" class="btn-table-action" onclick="cargarPapeleraGlobal()" style="background: rgba(255,255,255,0.15); color: #FFFFFF; border: 1px solid rgba(255,255,255,0.3); padding: 8px 14px; border-radius: 6px; cursor: pointer; font-weight: 700; display: flex; align-items: center; gap: 6px;">
+                        <span>🔄</span> Actualizar Papelera
+                    </button>
+                </div>
+            </div>
+
+            <!-- FILTROS POR MÓDULO -->
+            <div class="asset-filters-bar">
+                <button type="button" class="btn-filter-pill active" id="pill_pap_todo" onclick="setFiltroPapelera('todos')">
+                    🌐 Ver Todos <span id="cnt_pap_todo" class="pill-count">0</span>
+                </button>
+                <button type="button" class="btn-filter-pill" id="pill_pap_equipos" onclick="setFiltroPapelera('equipos')">
+                    🩺 Equipos Médicos <span id="cnt_pap_equipos" class="pill-count">0</span>
+                </button>
+                <button type="button" class="btn-filter-pill" id="pill_pap_muebles" onclick="setFiltroPapelera('muebleria')">
+                    🛋️ Mueblería y TI <span id="cnt_pap_muebles" class="pill-count">0</span>
+                </button>
+                <button type="button" class="btn-filter-pill" id="pill_pap_areas" onclick="setFiltroPapelera('areas')">
+                    📍 Áreas <span id="cnt_pap_areas" class="pill-count">0</span>
+                </button>
+                <button type="button" class="btn-filter-pill" id="pill_pap_catalogo" onclick="setFiltroPapelera('catalogo')">
+                    📋 Catálogo <span id="cnt_pap_catalogo" class="pill-count">0</span>
+                </button>
+                <button type="button" class="btn-filter-pill" id="pill_pap_repuestos" onclick="setFiltroPapelera('repuestos')">
+                    🔧 Repuestos <span id="cnt_pap_repuestos" class="pill-count">0</span>
+                </button>
+            </div>
+
+            <div class="tab-tools-bar">
+                <input type="text" id="busq_papelera" class="search-input" placeholder="Buscar elemento borrado por título, código AF, serie, usuario o sede..." oninput="filtrarListaPapelera()">
+            </div>
+
+            <div id="lista_papelera" class="cards-grid">
+                <div class="empty-state"><span>🗑️</span>Cargando elementos borrados...</div>
             </div>
         </section>
         {% endif %}
@@ -2726,7 +2817,9 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
         let LISTA_REPUESTOS = [];
         let LISTA_HISTORIAL = [];
         let LISTA_USUARIOS = [];
+        let LISTA_PAPELERA = [];
         let FILTRO_TIPO_ACTIVO = 'todo'; // 'todo' | 'equipos' | 'muebles'
+        let FILTRO_PAPELERA_TABLA = 'todos';
 
         window.addEventListener('DOMContentLoaded', () => {
             let redGuardada = '';
@@ -2744,6 +2837,7 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             cargarCatalogoGlobal();
             if (ES_ADMIN) {
                 cargarUsuariosGlobal();
+                cargarPapeleraGlobal();
             }
             const activePane = document.querySelector('.tab-pane.active');
             if (!activePane) {
@@ -2917,6 +3011,9 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
             const pane = document.getElementById(`pane_${tabName}`);
             if (pane) pane.classList.add('active');
+            if (tabName === 'papelera') {
+                cargarPapeleraGlobal();
+            }
         }
 
         // 3. Modales
@@ -4861,6 +4958,9 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                     } else if (tabla === 'usuarios') {
                         cargarUsuariosGlobal();
                     }
+                    if (ES_ADMIN) {
+                        cargarPapeleraGlobal();
+                    }
                 } else {
                     alert('Error al eliminar: ' + (data.error || data.mensaje));
                 }
@@ -5459,6 +5559,197 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                     alert('Error: ' + (data.error || data.mensaje));
                 }
             } catch (e) { alert('Fallo de conexión: ' + e.message); }
+        }
+
+        // =====================================================================
+        // GESTIÓN Y RECUPERACIÓN DE PAPELERA DE SEGURIDAD (SOLO ADMIN Y GODHEAD)
+        // =====================================================================
+
+        function setFiltroPapelera(tabla) {
+            FILTRO_PAPELERA_TABLA = tabla;
+            document.querySelectorAll('#pane_papelera .btn-filter-pill').forEach(btn => btn.classList.remove('active'));
+            const pillId = tabla === 'todos' ? 'pill_pap_todo' : `pill_pap_${tabla}`;
+            const targetPill = document.getElementById(pillId);
+            if (targetPill) targetPill.classList.add('active');
+            filtrarListaPapelera();
+        }
+
+        async function cargarPapeleraGlobal() {
+            if (!ES_ADMIN) return;
+            const cont = document.getElementById('lista_papelera');
+            if (cont) cont.innerHTML = '<div class="empty-state"><span>⏳</span>Cargando elementos borrados...</div>';
+            try {
+                const res = await fetch('/api/papelera');
+                if (res.ok) {
+                    LISTA_PAPELERA = await res.json();
+                    actualizarContadoresPapelera();
+                    filtrarListaPapelera();
+                } else {
+                    if (cont) cont.innerHTML = '<div class="empty-state"><span>🔒</span>Acceso exclusivo para modo Administrador y Godhead</div>';
+                }
+            } catch (e) {
+                if (cont) cont.innerHTML = `<div class="empty-state"><span>⚠️</span>Error al cargar papelera: ${e.message}</div>`;
+            }
+        }
+
+        function actualizarContadoresPapelera() {
+            const tot = LISTA_PAPELERA.length;
+            const cntEq = LISTA_PAPELERA.filter(it => it.tabla_origen === 'equipos').length;
+            const cntMu = LISTA_PAPELERA.filter(it => it.tabla_origen === 'muebleria').length;
+            const cntAr = LISTA_PAPELERA.filter(it => it.tabla_origen === 'areas').length;
+            const cntCat = LISTA_PAPELERA.filter(it => it.tabla_origen === 'catalogo').length;
+            const cntRep = LISTA_PAPELERA.filter(it => it.tabla_origen === 'repuestos').length;
+
+            const elBadge = document.getElementById('cnt_papelera_badge');
+            if (elBadge) elBadge.textContent = tot;
+            const elTodo = document.getElementById('cnt_pap_todo');
+            if (elTodo) elTodo.textContent = tot;
+            const elEq = document.getElementById('cnt_pap_equipos');
+            if (elEq) elEq.textContent = cntEq;
+            const elMu = document.getElementById('cnt_pap_muebles');
+            if (elMu) elMu.textContent = cntMu;
+            const elAr = document.getElementById('cnt_pap_areas');
+            if (elAr) elAr.textContent = cntAr;
+            const elCat = document.getElementById('cnt_pap_catalogo');
+            if (elCat) elCat.textContent = cntCat;
+            const elRep = document.getElementById('cnt_pap_repuestos');
+            if (elRep) elRep.textContent = cntRep;
+        }
+
+        function filtrarListaPapelera() {
+            const q = (document.getElementById('busq_papelera') ? document.getElementById('busq_papelera').value.toLowerCase().trim() : '');
+            let filtrados = [...LISTA_PAPELERA];
+
+            if (FILTRO_PAPELERA_TABLA && FILTRO_PAPELERA_TABLA !== 'todos') {
+                filtrados = filtrados.filter(it => it.tabla_origen === FILTRO_PAPELERA_TABLA);
+            }
+
+            if (q) {
+                filtrados = filtrados.filter(it => {
+                    const tit = (it.titulo || '').toLowerCase();
+                    const cod = (it.codigo || '').toLowerCase();
+                    const sed = (it.sede || '').toLowerCase();
+                    const ubi = (it.ubicacion || '').toLowerCase();
+                    const por = (it.eliminado_por || '').toLowerCase();
+                    const idO = String(it.id_original || '').toLowerCase();
+                    return tit.includes(q) || cod.includes(q) || sed.includes(q) || ubi.includes(q) || por.includes(q) || idO.includes(q);
+                });
+            }
+
+            renderizarListaPapelera(filtrados);
+        }
+
+        function renderizarListaPapelera(items) {
+            const cont = document.getElementById('lista_papelera');
+            if (!cont) return;
+
+            if (!items || items.length === 0) {
+                cont.innerHTML = `
+                <div class="empty-state" style="padding: 40px 20px;">
+                    <span style="font-size: 38px;">✨</span>
+                    <strong style="color: #10B981; font-size: 15px;">La papelera está vacía</strong>
+                    <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 4px;">
+                        No hay elementos borrados con este criterio. Cuando elimines un registro de inventario, muebles, áreas o catálogo, aparecerá aquí con la opción de restaurarlo.
+                    </div>
+                </div>`;
+                return;
+            }
+
+            let html = '';
+            items.forEach(it => {
+                let badgeColor = '#64748B';
+                let badgeBg = '#F1F5F9';
+                if (it.tabla_origen === 'equipos') { badgeColor = '#0284C7'; badgeBg = '#E0F2FE'; }
+                else if (it.tabla_origen === 'muebleria') { badgeColor = '#7C3AED'; badgeBg = '#EDE9FE'; }
+                else if (it.tabla_origen === 'areas') { badgeColor = '#059669'; badgeBg = '#D1FAE5'; }
+                else if (it.tabla_origen === 'catalogo') { badgeColor = '#D97706'; badgeBg = '#FEF3C7'; }
+                else if (it.tabla_origen === 'repuestos') { badgeColor = '#EA580C'; badgeBg = '#FFEDD5'; }
+
+                const fElim = it.fecha_eliminacion ? new Date(it.fecha_eliminacion).toLocaleString('es-BO') : 'Fecha no registrada';
+
+                html += `
+                <div class="card-item" style="border-left: 5px solid ${badgeColor}; background: #FFFFFF;">
+                    <div class="card-item-header">
+                        <span class="badge" style="background: ${badgeBg}; color: ${badgeColor}; font-weight: 800; font-size: 11px;">
+                            ${it.tipo_icono} ${it.tipo_label.toUpperCase()}
+                        </span>
+                        <span class="badge-status status-regular" style="font-size: 10px;">ID Orig: ${it.id_original}</span>
+                    </div>
+                    <div class="item-title" style="font-size: 15px; font-weight: 800; color: #0F172A; margin: 4px 0;">
+                        ${it.titulo}
+                    </div>
+                    <div class="item-subtitle" style="font-size: 12px; margin-bottom: 6px;">
+                        <span>🏷️ <strong>Cód / Serie:</strong> ${it.codigo}</span>
+                        <span>•</span>
+                        <span>🏥 <strong>Sede:</strong> ${it.sede}</span>
+                        ${it.ubicacion && it.ubicacion !== '-' ? '<span>•</span><span>📍 ' + it.ubicacion + '</span>' : ''}
+                    </div>
+                    <div class="item-detail-row" style="background: #F8FAFC; border: 1px dashed #CBD5E1; padding: 6px 10px; border-radius: 6px; font-size: 11.5px; color: #475569;">
+                        🗑️ <strong>Eliminado por:</strong> ${it.eliminado_por || 'Sistema'} &nbsp;|&nbsp; 🕒 <strong>Fecha:</strong> ${fElim}
+                    </div>
+                    <div class="item-actions" style="margin-top: 10px; display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap;">
+                        <button type="button" class="btn-restore-action" onclick="recuperarElementoPapelera(${it.id}, '${escaparJs(it.titulo)}')">
+                            <span>♻️</span> Recuperar Registro
+                        </button>
+                        <button type="button" class="btn-purge-action" onclick="purgarElementoPapelera(${it.id}, '${escaparJs(it.titulo)}')">
+                            <span>❌</span> Purgar
+                        </button>
+                    </div>
+                </div>`;
+            });
+            cont.innerHTML = html;
+        }
+
+        async function recuperarElementoPapelera(papeleraId, titulo) {
+            const ok = confirm(`¿Deseas RECUPERAR este registro y devolverlo al inventario activo?\n\n"${titulo}"\n\nEl registro volverá a estar 100% operativo en su módulo correspondiente.`);
+            if (!ok) return;
+
+            try {
+                const res = await fetch('/api/papelera/recuperar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: papeleraId })
+                });
+                const data = await res.json();
+                if (data.ok) {
+                    alert(data.mensaje || '✅ Registro recuperado exitosamente.');
+                    await cargarPapeleraGlobal();
+                    const redSel = document.getElementById('top_red') ? document.getElementById('top_red').value : '';
+                    const cenSel = document.getElementById('top_centro') ? document.getElementById('top_centro').value : '';
+                    cargarInventarioCentro(cenSel, redSel);
+                    cargarMueblesCentro(cenSel, redSel);
+                    cargarAreasGlobal(cenSel, redSel);
+                    cargarCatalogoGlobal();
+                    cargarRepuestosCentro(cenSel, redSel);
+                    cargarEstadisticasCentro(cenSel, redSel);
+                } else {
+                    alert('Error al recuperar: ' + (data.error || 'No se pudo procesar'));
+                }
+            } catch (e) {
+                alert('Fallo de conexión al recuperar: ' + e.message);
+            }
+        }
+
+        async function purgarElementoPapelera(papeleraId, titulo) {
+            const ok = confirm(`⚠️ ATENCIÓN: Esta acción eliminará permanentemente de la papelera este registro:\n\n"${titulo}"\n\nEsta acción NO se puede deshacer. ¿Deseas purgar definitivamente?`);
+            if (!ok) return;
+
+            try {
+                const res = await fetch('/api/papelera/eliminar_definitivo', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: papeleraId })
+                });
+                const data = await res.json();
+                if (data.ok) {
+                    alert(data.mensaje || 'Registro purgado permanentemente.');
+                    await cargarPapeleraGlobal();
+                } else {
+                    alert('Error: ' + (data.error || 'No se pudo purgar'));
+                }
+            } catch (e) {
+                alert('Fallo de conexión: ' + e.message);
+            }
         }
     </script>
 </body>

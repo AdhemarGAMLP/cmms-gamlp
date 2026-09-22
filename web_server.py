@@ -36,7 +36,10 @@ from database import (
     obtener_intervenciones_db,
     guardar_intervencion_db,
     obtener_estadisticas_censo_db,
-    eliminar_registro_db
+    eliminar_registro_db,
+    obtener_papelera_db,
+    recuperar_registro_papelera_db,
+    purgar_registro_papelera_db
 )
 from auth import login as auth_login
 from vistas_web_movil import HTML_MOVIL_LOGIN, HTML_MOVIL_REGISTRO
@@ -4279,6 +4282,77 @@ def api_eliminar_registro():
         except Exception:
             pass
 
+    return jsonify({"ok": ok, "mensaje": msg})
+
+@app_web.route('/api/papelera')
+@login_requerido
+def api_papelera():
+    """Retorna los elementos en papelera. Exclusivo para administradores y godhead."""
+    rol = str(session.get('rol', '')).strip().lower()
+    u = str(session.get('usuario', '')).strip().lower()
+    if rol not in ['admin', 'administrador', 'jefe'] and u != 'godhead':
+        return jsonify({"error": "Acceso denegado. Exclusivo para modo Administrador y Godhead."}), 403
+
+    tabla = request.args.get('tabla', '').strip().lower()
+    q = request.args.get('q', '').strip()
+    try:
+        items = obtener_papelera_db(filtro_tabla=tabla or None, busqueda=q or None, limite=300)
+        return jsonify(items)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app_web.route('/api/papelera/recuperar', methods=['POST'])
+@login_requerido
+def api_papelera_recuperar():
+    """Restaura un elemento de la papelera a su tabla origen. Exclusivo para admin y godhead."""
+    global app_gui
+    rol = str(session.get('rol', '')).strip().lower()
+    u = str(session.get('usuario', '')).strip().lower()
+    if rol not in ['admin', 'administrador', 'jefe'] and u != 'godhead':
+        return jsonify({"ok": False, "error": "Acceso denegado. Exclusivo para modo Administrador y Godhead."}), 403
+
+    payload = request.get_json(force=True, silent=True) or {}
+    p_id = payload.get('id')
+    if not p_id:
+        return jsonify({"ok": False, "error": "Parámetro 'id' requerido."}), 400
+
+    try:
+        p_id = int(p_id)
+    except Exception:
+        return jsonify({"ok": False, "error": "ID de papelera inválido."}), 400
+
+    usr = session.get('nombre_completo', session.get('usuario', 'admin'))
+    ok, msg = recuperar_registro_papelera_db(p_id, usuario=usr)
+    if ok and app_gui:
+        try:
+            app_gui.after(300, app_gui.cargar_datos_en_segundo_plano)
+        except Exception:
+            pass
+
+    return jsonify({"ok": ok, "mensaje": msg})
+
+@app_web.route('/api/papelera/eliminar_definitivo', methods=['POST'])
+@login_requerido
+def api_papelera_eliminar_definitivo():
+    """Elimina definitivamente un elemento de la papelera. Exclusivo para admin y godhead."""
+    rol = str(session.get('rol', '')).strip().lower()
+    u = str(session.get('usuario', '')).strip().lower()
+    if rol not in ['admin', 'administrador', 'jefe'] and u != 'godhead':
+        return jsonify({"ok": False, "error": "Acceso denegado. Exclusivo para modo Administrador y Godhead."}), 403
+
+    payload = request.get_json(force=True, silent=True) or {}
+    p_id = payload.get('id')
+    vaciar = bool(payload.get('vaciar_todo', False))
+
+    if not p_id and not vaciar:
+        return jsonify({"ok": False, "error": "Parámetro 'id' o 'vaciar_todo' requerido."}), 400
+
+    try:
+        p_id_int = int(p_id) if p_id else None
+    except Exception:
+        p_id_int = None
+
+    ok, msg = purgar_registro_papelera_db(papelera_id=p_id_int, vaciar_todo=vaciar)
     return jsonify({"ok": ok, "mensaje": msg})
 
 def iniciar_servidor_web():
