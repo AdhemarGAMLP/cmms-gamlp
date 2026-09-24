@@ -1796,30 +1796,34 @@ def generar_siguiente_codigo_af(red_nom, cen_nom, equipos_existentes=None, cola_
     siguiente = max(numeros, default=0) + 1
     return f"{prefijo}{siguiente:06d}"
 
-def obtener_areas_db(centro_nombre=None, perfil=None):
-    """Retorna las áreas registradas en el sistema, opcionalmente filtradas por centro de salud."""
+def obtener_areas_db(centro_nombre=None, perfil=None, red_nombre=None):
+    """Retorna las áreas registradas en el sistema, opcionalmente filtradas por centro de salud y red."""
     conn = obtener_conexion(perfil=perfil)
     if conn:
         try:
             cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+            condiciones = []
+            params = []
+
             if centro_nombre and str(centro_nombre).strip() and str(centro_nombre).strip() not in ("Todos los Centros", "-- Todos los Centros --"):
                 cen_raw = str(centro_nombre).strip()
                 cen_clean = cen_raw.replace("C.S.", "").replace("CS", "").replace("CENTRO DE SALUD", "").replace("HOSPITAL", "").strip()
-                cur.execute("""
-                    SELECT id, nombre, piso, encargado, cargo, ci_encargado, contacto, centro_salud_nombre, red_salud_nombre 
-                    FROM areas 
-                    WHERE centro_salud_nombre ILIKE %s 
-                       OR %s ILIKE ('%%' || centro_salud_nombre || '%%') 
-                       OR centro_salud_nombre ILIKE %s
-                       OR (centro_salud_nombre IS NULL OR centro_salud_nombre = '' OR centro_salud_nombre = '-')
-                    ORDER BY piso DESC, nombre ASC;
-                """, (f"%{cen_clean}%", cen_raw, f"%{cen_raw}%"))
-            else:
-                cur.execute("""
-                    SELECT id, nombre, piso, encargado, cargo, ci_encargado, contacto, centro_salud_nombre, red_salud_nombre 
-                    FROM areas 
-                    ORDER BY piso DESC, nombre ASC;
-                """)
+                condiciones.append("(centro_salud_nombre ILIKE %s OR %s ILIKE ('%%' || centro_salud_nombre || '%%') OR centro_salud_nombre ILIKE %s)")
+                params.extend([f"%{cen_clean}%", cen_raw, f"%{cen_raw}%"])
+
+            if red_nombre and str(red_nombre).strip() and str(red_nombre).strip() not in ("Todas las Redes", "-- Todas las Redes --"):
+                r_raw = str(red_nombre).strip()
+                condiciones.append("(red_salud_nombre ILIKE %s OR %s ILIKE ('%%' || red_salud_nombre || '%%'))")
+                params.extend([f"%{r_raw}%", r_raw])
+
+            where_clause = f"WHERE {' AND '.join(condiciones)}" if condiciones else ""
+            query = f"""
+                SELECT id, nombre, piso, encargado, cargo, ci_encargado, contacto, centro_salud_nombre, red_salud_nombre 
+                FROM areas 
+                {where_clause}
+                ORDER BY piso DESC, nombre ASC;
+            """
+            cur.execute(query, tuple(params))
             areas = [dict(r) for r in cur.fetchall()]
             cur.close()
             conn.close()

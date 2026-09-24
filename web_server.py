@@ -497,7 +497,7 @@ HTML_INVENTARIO = """
                 </div>
                 <div class="filter-group">
                     <label class="filter-label">🏥 Centro de Salud</label>
-                    <select id="filtro-centro" class="select-input" onchange="filtrar()">
+                    <select id="filtro-centro" class="select-input" onchange="alCambiarCentro()">
                         <option value="">Todos los Centros</option>
                         {% for c in centros %}
                         <option value="{{ c['nombre'] }}" data-red-id="{{ c['red_salud_id'] }}">{{ c['nombre'] }}</option>
@@ -664,6 +664,10 @@ HTML_INVENTARIO = """
     </div>
 
     <script>
+        // Mapeo dinámico de áreas por centro de salud
+        const mapaAreasPorCentro = {{ mapa_areas_centro | safe }};
+        const todasLasAreasOriginales = {{ areas | tojson }};
+
         // Lista original de centros para filtrado en cascada
         const todosLosCentros = Array.from(document.querySelectorAll('#filtro-centro option')).map(opt => ({
             value: opt.value,
@@ -702,6 +706,35 @@ HTML_INVENTARIO = """
                     opt.setAttribute('data-red-id', c.redId);
                     selectCentro.appendChild(opt);
                 }
+            });
+
+            alCambiarCentro();
+        }
+
+        function alCambiarCentro() {
+            const selectCentro = document.getElementById('filtro-centro');
+            const selectArea = document.getElementById('filtro-area');
+            const cenVal = (selectCentro.value || '').trim();
+
+            selectArea.innerHTML = '<option value="">' + (cenVal ? 'Todas las Áreas de ' + cenVal : 'Todas las Áreas') + '</option>';
+
+            let areasDisponibles = [];
+            if (cenVal) {
+                if (mapaAreasPorCentro[cenVal]) {
+                    areasDisponibles = mapaAreasPorCentro[cenVal];
+                } else {
+                    const key = Object.keys(mapaAreasPorCentro).find(k => k.toLowerCase() === cenVal.toLowerCase());
+                    areasDisponibles = key ? mapaAreasPorCentro[key] : [];
+                }
+            } else {
+                areasDisponibles = todasLasAreasOriginales;
+            }
+
+            areasDisponibles.forEach(a => {
+                const opt = document.createElement('option');
+                opt.value = a;
+                opt.textContent = a;
+                selectArea.appendChild(opt);
             });
 
             filtrar();
@@ -805,11 +838,18 @@ HTML_INVENTARIO = """
             }
         }
 
-        // Ejecutar conteo inicial
+        // Ejecutar conteo inicial y pre-seleccionar centro activo si está disponible
         document.addEventListener('DOMContentLoaded', () => {
-            filtrar();
+            const selectCentro = document.getElementById('filtro-centro');
+            const urlParams = new URLSearchParams(window.location.search);
+            const centroParam = urlParams.get('centro');
+            if (centroParam && selectCentro.querySelector(`option[value="${centroParam}"]`)) {
+                selectCentro.value = centroParam;
+            } else if (selectCentro.querySelector('option[value="BAJO SAN PEDRO"]')) {
+                selectCentro.value = "BAJO SAN PEDRO";
+            }
+            alCambiarCentro();
         });
-        filtrar();
     </script>
 </body>
 </html>
@@ -1038,6 +1078,32 @@ def vista_inventario_web():
         garantia = sum(1 for a in activos_db if a.get('garantia') == 'Con Garantía' or 'reg' in str(a.get('estado','')).lower() or 'man' in str(a.get('estado','')).lower())
         bajas = sum(1 for a in activos_db if 'baja' in str(a.get('estado','')).lower() or 'mal' in str(a.get('estado','')).lower())
 
+        # Mapear qué áreas pertenecen a qué centro de salud
+        mapa_areas_centro = {}
+        for a in activos_db:
+            cen = (a.get('centro_salud_nombre') or '').strip()
+            ar = (a.get('area') or '').strip()
+            if cen and ar:
+                mapa_areas_centro.setdefault(cen, set()).add(ar)
+
+        areas_bd = obtener_areas_db()
+        for ab in areas_bd:
+            cen = (ab.get('centro_salud_nombre') or '').strip()
+            nom = (ab.get('nombre') or '').strip()
+            piso = (ab.get('piso') or '').strip()
+            if not nom: continue
+            if piso and piso != '-':
+                p_low = piso.lower()
+                if not p_low.startswith('piso') and not p_low.startswith('planta') and not p_low.startswith('pb'):
+                    piso = f"Piso {piso}"
+                fmt_ar = f"{piso} - {nom}"
+            else:
+                fmt_ar = nom
+            if cen and fmt_ar:
+                mapa_areas_centro.setdefault(cen, set()).add(fmt_ar)
+
+        mapa_areas_json = {k: sorted(list(v)) for k, v in mapa_areas_centro.items()}
+
         return render_template_string(
             HTML_INVENTARIO, 
             activos=activos_db,
@@ -1046,6 +1112,7 @@ def vista_inventario_web():
             redes=redes_db,
             centros=centros_db,
             areas=areas_lista,
+            mapa_areas_centro=json.dumps(mapa_areas_json),
             total=total, 
             cnt_todo=cnt_todo,
             cnt_equipos=cnt_equipos,
@@ -3980,10 +4047,11 @@ def api_sedes():
 
 @app_web.route('/api/areas')
 def api_areas():
-    """Retorna las áreas registradas, opcionalmente filtradas por centro de salud."""
+    """Retorna las áreas registradas, opcionalmente filtradas por centro de salud y red."""
     centro = request.args.get('centro', '').strip()
+    red = request.args.get('red', '').strip()
     try:
-        areas = obtener_areas_db(centro)
+        areas = obtener_areas_db(centro_nombre=centro or None, red_nombre=red or None)
         return jsonify(areas)
     except Exception as e:
         return jsonify({"error": str(e)}), 500

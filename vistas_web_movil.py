@@ -2873,6 +2873,9 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
 
             if (valorPrevio && centros.some(c => c.nombre === valorPrevio)) {
                 selCen.value = valorPrevio;
+            } else if (centros.length > 0) {
+                const preferido = centros.find(c => c.nombre.toUpperCase().includes('BAJO SAN PEDRO')) || centros[0];
+                selCen.value = preferido.nombre;
             }
 
             alCambiarCentroGlobal();
@@ -3090,14 +3093,26 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
         function obtenerAreaObj(val) {
             if (!val) return null;
             const v = String(val).toLowerCase().trim();
-            return (LISTA_AREAS || []).find(a => {
-                const fmt = formatearAreaNombre(a).toLowerCase().trim();
+            // 1. Coincidencia exacta por ID
+            let match = (LISTA_AREAS || []).find(a => String(a.id) === v);
+            if (match) return match;
+
+            // 2. Coincidencia exacta por nombre formateado (ej: "Piso 1 - Consultorio 3")
+            match = (LISTA_AREAS || []).find(a => formatearAreaNombre(a).toLowerCase().trim() === v);
+            if (match) return match;
+
+            // 3. Coincidencia exacta por nombre de área (ej: "Consultorio 3")
+            match = (LISTA_AREAS || []).find(a => (a.nombre || '').toLowerCase().trim() === v);
+            if (match) return match;
+
+            // 4. Coincidencia limpia por sufijo " - <nombre>"
+            match = (LISTA_AREAS || []).find(a => {
                 const nom = (a.nombre || '').toLowerCase().trim();
-                if (fmt === v || nom === v || String(a.id) === v) return true;
-                if (v.endsWith('- ' + nom) || v.endsWith(nom)) return true;
-                if (nom && v.includes(nom)) return true;
-                return false;
-            }) || null;
+                return nom && (v.endsWith(' - ' + nom) || v === nom);
+            });
+            if (match) return match;
+
+            return null;
         }
 
         // =====================================================================
@@ -3434,7 +3449,7 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
         // CARGA DE ÁREAS VINCULADAS AL CENTRO SELECCIONADO
         // =====================================================================
 
-        async function cargarAreasGlobal(centro, red = '') {
+        async function cargarAreasGlobal(centro, red = '', areaPrevia = '') {
             try {
                 let url = `/api/areas?centro=${encodeURIComponent(centro || '')}`;
                 if (red) url += `&red=${encodeURIComponent(red)}`;
@@ -3452,12 +3467,24 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                         const fmt = formatearAreaNombre(a);
                         if (selEqArea) {
                             const o1 = document.createElement('option');
-                            o1.value = fmt; o1.textContent = fmt;
+                            o1.value = fmt; 
+                            o1.textContent = fmt;
+                            o1.setAttribute('data-id', a.id);
+                            o1.setAttribute('data-encargado', a.encargado || '');
+                            o1.setAttribute('data-cargo', a.cargo || '');
+                            o1.setAttribute('data-ci', a.ci_encargado || '');
+                            o1.setAttribute('data-piso', a.piso || '');
                             selEqArea.appendChild(o1);
                         }
                         if (selMueArea) {
                             const o2 = document.createElement('option');
-                            o2.value = fmt; o2.textContent = fmt;
+                            o2.value = fmt; 
+                            o2.textContent = fmt;
+                            o2.setAttribute('data-id', a.id);
+                            o2.setAttribute('data-encargado', a.encargado || '');
+                            o2.setAttribute('data-cargo', a.cargo || '');
+                            o2.setAttribute('data-ci', a.ci_encargado || '');
+                            o2.setAttribute('data-piso', a.piso || '');
                             selMueArea.appendChild(o2);
                         }
                     });
@@ -3477,14 +3504,15 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                     });
                 }
 
-                // Auto-seleccionar primer área si existe para autollenar datos de doctor y custodio
-                if (selEqArea && (!selEqArea.value || selEqArea.selectedIndex <= 0) && selEqArea.options.length > 1) {
-                    selEqArea.selectedIndex = 1;
-                    alCambiarAreaModal();
-                }
-                if (selMueArea && (!selMueArea.value || selMueArea.selectedIndex <= 0) && selMueArea.options.length > 1) {
-                    selMueArea.selectedIndex = 1;
-                    alCambiarAreaMuebleModal();
+                if (areaPrevia) {
+                    if (selEqArea) {
+                        selEqArea.value = areaPrevia;
+                        alCambiarAreaModal();
+                    }
+                    if (selMueArea) {
+                        selMueArea.value = areaPrevia;
+                        alCambiarAreaMuebleModal();
+                    }
                 }
 
                 // Mantener sincronizado el selector de áreas del catálogo
@@ -5014,25 +5042,60 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
         }
 
         function alCambiarAreaModal() {
-            const aNom = document.getElementById('modal_eq_area').value;
-            if (!aNom) return;
-            const match = obtenerAreaObj(aNom);
+            const sel = document.getElementById('modal_eq_area');
+            if (!sel) return;
+            const aNom = sel.value;
+            const opt = sel.options && sel.selectedIndex >= 0 ? sel.options[sel.selectedIndex] : null;
+            const areaId = opt ? opt.getAttribute('data-id') : null;
+
+            let match = null;
+            if (areaId) {
+                match = (LISTA_AREAS || []).find(a => String(a.id) === String(areaId));
+            }
+            if (!match && aNom) {
+                match = obtenerAreaObj(aNom);
+            }
+
             if (match) {
-                if (match.encargado) document.getElementById('modal_eq_persona').value = match.encargado;
-                if (match.cargo) document.getElementById('modal_eq_cargo').value = match.cargo;
-                if (match.ci_encargado) document.getElementById('modal_eq_ci').value = match.ci_encargado;
-                if (match.piso && document.getElementById('modal_eq_piso')) document.getElementById('modal_eq_piso').value = match.piso;
+                document.getElementById('modal_eq_persona').value = match.encargado || '';
+                document.getElementById('modal_eq_cargo').value = match.cargo || '';
+                document.getElementById('modal_eq_ci').value = match.ci_encargado || '';
+                if (document.getElementById('modal_eq_piso')) {
+                    document.getElementById('modal_eq_piso').value = match.piso || '';
+                }
+            } else {
+                document.getElementById('modal_eq_persona').value = '';
+                document.getElementById('modal_eq_cargo').value = '';
+                document.getElementById('modal_eq_ci').value = '';
+                if (document.getElementById('modal_eq_piso')) {
+                    document.getElementById('modal_eq_piso').value = '';
+                }
             }
         }
 
         function alCambiarAreaMuebleModal() {
-            const aNom = document.getElementById('mue_area').value;
-            if (!aNom) return;
-            const match = obtenerAreaObj(aNom);
+            const sel = document.getElementById('mue_area');
+            if (!sel) return;
+            const aNom = sel.value;
+            const opt = sel.options && sel.selectedIndex >= 0 ? sel.options[sel.selectedIndex] : null;
+            const areaId = opt ? opt.getAttribute('data-id') : null;
+
+            let match = null;
+            if (areaId) {
+                match = (LISTA_AREAS || []).find(a => String(a.id) === String(areaId));
+            }
+            if (!match && aNom) {
+                match = obtenerAreaObj(aNom);
+            }
+
             if (match) {
-                if (match.encargado) document.getElementById('mue_persona').value = match.encargado;
-                if (match.cargo) document.getElementById('mue_cargo').value = match.cargo;
-                if (match.ci_encargado) document.getElementById('mue_ci').value = match.ci_encargado;
+                document.getElementById('mue_persona').value = match.encargado || '';
+                document.getElementById('mue_cargo').value = match.cargo || '';
+                document.getElementById('mue_ci').value = match.ci_encargado || '';
+            } else {
+                document.getElementById('mue_persona').value = '';
+                document.getElementById('mue_cargo').value = '';
+                document.getElementById('mue_ci').value = '';
             }
         }
 
