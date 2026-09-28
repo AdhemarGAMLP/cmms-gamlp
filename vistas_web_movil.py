@@ -2239,12 +2239,9 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                             </button>
                         </div>
                         <input type="file" id="input_camara" accept="image/*" capture="environment" style="display:none;" onchange="procesarFotoMovil(this)">
-                        <input type="file" id="input_galeria" accept="image/*" style="display:none;" onchange="procesarFotoMovil(this)">
+                        <input type="file" id="input_galeria" accept="image/*" multiple style="display:none;" onchange="procesarFotoMovil(this)">
 
-                        <div id="foto_preview_box" class="foto-preview-box">
-                            <img id="img_preview" class="foto-preview-img" src="" alt="Foto">
-                            <button type="button" class="btn-del-foto" onclick="quitarFotoMovil()">✕</button>
-                        </div>
+                        <div id="foto_preview_box" style="display:none; margin-top:14px; background:#F8FAFC; border:1.5px solid #E2E8F0; border-radius:12px; padding:12px;"></div>
                         <input type="hidden" id="foto_base64" value="">
                     </div>
                 </div>
@@ -3489,29 +3486,19 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                         }
                     });
                 } else {
-                    const defAreas = ['General', 'Piso 1 - Consulta Externa', 'Piso 1 - Emergencias', 'Piso 1 - Administración', 'Piso 1 - Farmacia', 'Piso 1 - Odontología'];
-                    defAreas.forEach(fmt => {
-                        if (selEqArea) {
-                            const o1 = document.createElement('option');
-                            o1.value = fmt; o1.textContent = fmt;
-                            selEqArea.appendChild(o1);
-                        }
-                        if (selMueArea) {
-                            const o2 = document.createElement('option');
-                            o2.value = fmt; o2.textContent = fmt;
-                            selMueArea.appendChild(o2);
-                        }
-                    });
+                    const noOpt = document.createElement('option');
+                    noOpt.value = "";
+                    noOpt.textContent = "⚠️ Sin áreas en este centro. Cree una primero en '+ Nueva Área'";
+                    if (selEqArea) selEqArea.appendChild(noOpt.cloneNode(true));
+                    if (selMueArea) selMueArea.appendChild(noOpt);
                 }
 
                 if (areaPrevia) {
                     if (selEqArea) {
                         selEqArea.value = areaPrevia;
-                        alCambiarAreaModal();
                     }
                     if (selMueArea) {
                         selMueArea.value = areaPrevia;
-                        alCambiarAreaMuebleModal();
                     }
                 }
 
@@ -3536,10 +3523,6 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                     if (Array.isArray(datos) && datos.length > 0) {
                         areasDisponibles = datos;
                         LISTA_AREAS = datos;
-                    } else {
-                        const resGlobal = await fetch('/api/areas');
-                        const datosGlobal = await resGlobal.json();
-                        if (Array.isArray(datosGlobal)) areasDisponibles = datosGlobal;
                     }
                 } catch (e) {
                     console.error('Error cargando áreas para catálogo:', e);
@@ -4692,14 +4675,21 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             }
             recalcularCriticidad();
 
-            // Sección 5: Foto
+            // Sección 5: Foto(s)
+            FOTOS_EQUIPO_ACTUAL = [];
             if (eq.foto) {
-                document.getElementById('foto_base64').value = eq.foto;
-                document.getElementById('img_preview').src = eq.foto;
-                document.getElementById('foto_preview_box').style.display = 'block';
-            } else {
-                quitarFotoMovil();
+                const fStr = String(eq.foto).trim();
+                if (fStr.startsWith('[') && fStr.endsWith(']')) {
+                    try {
+                        FOTOS_EQUIPO_ACTUAL = JSON.parse(fStr);
+                    } catch (e) {
+                        FOTOS_EQUIPO_ACTUAL = [fStr];
+                    }
+                } else if (fStr) {
+                    FOTOS_EQUIPO_ACTUAL = [fStr];
+                }
             }
+            renderizarGaleriaFotosModal();
 
             // Sección 6: Datos Técnicos y Contexto
             document.getElementById('modal_eq_voltaje').value = eq.voltaje || '';
@@ -5001,39 +4991,102 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
         // FOTOGRAFÍA DUAL (CÁMARA / GALERÍA) CON COMPRESIÓN CLIENTE
         // =====================================================================
 
-        function procesarFotoMovil(input) {
-            if (!input.files || !input.files[0]) return;
-            const file = input.files[0];
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const img = new Image();
-                img.onload = function() {
-                    const canvas = document.createElement('canvas');
-                    let w = img.width, h = img.height;
-                    const max = 1024;
-                    if (w > h && w > max) { h = Math.round(h * (max / w)); w = max; }
-                    else if (h > max) { w = Math.round(w * (max / h)); h = max; }
-                    canvas.width = w; canvas.height = h;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, w, h);
-                    const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-                    document.getElementById('foto_base64').value = dataUrl;
-                    document.getElementById('img_preview').src = dataUrl;
-                    document.getElementById('foto_preview_box').style.display = 'block';
-                };
-                img.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
+        let FOTOS_EQUIPO_ACTUAL = [];
+
+        function renderizarGaleriaFotosModal() {
+            const box = document.getElementById('foto_preview_box');
+            if (!box) return;
+            if (!Array.isArray(FOTOS_EQUIPO_ACTUAL) || FOTOS_EQUIPO_ACTUAL.length === 0) {
+                box.innerHTML = '';
+                box.style.display = 'none';
+                document.getElementById('foto_base64').value = '';
+                return;
+            }
+            box.style.display = 'block';
+            let html = `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <span style="font-size:12px; font-weight:800; color:#0F172A;">📸 Fotos del Equipo (${FOTOS_EQUIPO_ACTUAL.length})</span>
+                <button type="button" onclick="quitarFotoMovil()" style="background:none; border:none; color:#EF4444; font-size:11.5px; font-weight:700; cursor:pointer;">Quitar todas</button>
+            </div>
+            <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(95px, 1fr)); gap:10px;">`;
+
+            FOTOS_EQUIPO_ACTUAL.forEach((src, idx) => {
+                const esPrincipal = idx === 0;
+                html += `
+                    <div style="position:relative; border-radius:10px; overflow:hidden; border:2px solid ${esPrincipal ? '#0284C7' : '#E2E8F0'}; background:#0F172A; height:100px; box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+                        <img src="${src}" style="width:100%; height:100%; object-fit:cover; display:block;" alt="Foto ${idx+1}">
+                        <span style="position:absolute; top:4px; left:4px; background:${esPrincipal ? '#0284C7' : 'rgba(15,23,42,0.8)'}; color:#fff; font-size:9.5px; font-weight:800; padding:2px 5px; border-radius:4px;">
+                            ${esPrincipal ? '⭐ Portada' : '#' + (idx + 1)}
+                        </span>
+                        <button type="button" onclick="quitarFotoIndividual(${idx})" style="position:absolute; top:4px; right:4px; width:20px; height:20px; border-radius:50%; background:#EF4444; color:#fff; border:none; cursor:pointer; font-weight:bold; font-size:10px; display:flex; align-items:center; justify-content:center; box-shadow:0 1px 2px rgba(0,0,0,0.3);">✕</button>
+                        ${!esPrincipal ? `<button type="button" onclick="hacerFotoPrincipal(${idx})" style="position:absolute; bottom:3px; left:3px; right:3px; background:rgba(255,255,255,0.92); color:#0F172A; border:none; border-radius:4px; font-size:9px; font-weight:800; padding:2px; cursor:pointer;">Hacer Portada</button>` : ''}
+                    </div>
+                `;
+            });
+            html += '</div><small style="display:block; margin-top:8px; color:#64748B; font-size:11px;">💡 La primera foto se mostrará como carátula principal. Puedes subir las que quieras.</small>';
+            box.innerHTML = html;
+            document.getElementById('foto_base64').value = JSON.stringify(FOTOS_EQUIPO_ACTUAL);
+        }
+
+        function quitarFotoIndividual(idx) {
+            FOTOS_EQUIPO_ACTUAL.splice(idx, 1);
+            renderizarGaleriaFotosModal();
+        }
+
+        function hacerFotoPrincipal(idx) {
+            if (idx > 0 && idx < FOTOS_EQUIPO_ACTUAL.length) {
+                const f = FOTOS_EQUIPO_ACTUAL.splice(idx, 1)[0];
+                FOTOS_EQUIPO_ACTUAL.unshift(f);
+                renderizarGaleriaFotosModal();
+            }
         }
 
         function quitarFotoMovil() {
+            FOTOS_EQUIPO_ACTUAL = [];
             const inCam = document.getElementById('input_camara');
             const inGal = document.getElementById('input_galeria');
             if (inCam) inCam.value = '';
             if (inGal) inGal.value = '';
-            document.getElementById('foto_base64').value = '';
-            document.getElementById('img_preview').src = '';
-            document.getElementById('foto_preview_box').style.display = 'none';
+            renderizarGaleriaFotosModal();
+        }
+
+        async function procesarFotoMovil(input) {
+            if (!input.files || input.files.length === 0) return;
+            const files = Array.from(input.files);
+            for (const file of files) {
+                try {
+                    const dataUrl = await comprimirArchivoImagen(file);
+                    FOTOS_EQUIPO_ACTUAL.push(dataUrl);
+                } catch (e) {
+                    console.error("Error comprimiendo imagen:", e);
+                }
+            }
+            input.value = '';
+            renderizarGaleriaFotosModal();
+        }
+
+        function comprimirArchivoImagen(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        let w = img.width, h = img.height;
+                        const max = 800; // Resolución optimizada para móviles y web
+                        if (w > h && w > max) { h = Math.round(h * (max / w)); w = max; }
+                        else if (h > max) { w = Math.round(w * (max / h)); h = max; }
+                        canvas.width = w; canvas.height = h;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, w, h);
+                        const dataUrl = canvas.toDataURL('image/jpeg', 0.70);
+                        resolve(dataUrl);
+                    };
+                    img.onerror = reject;
+                    img.src = e.target.result;
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
         }
 
         function toggleChip(el) { el.classList.toggle('active'); }
@@ -5057,18 +5110,11 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             }
 
             if (match) {
-                document.getElementById('modal_eq_persona').value = match.encargado || '';
-                document.getElementById('modal_eq_cargo').value = match.cargo || '';
-                document.getElementById('modal_eq_ci').value = match.ci_encargado || '';
-                if (document.getElementById('modal_eq_piso')) {
-                    document.getElementById('modal_eq_piso').value = match.piso || '';
-                }
-            } else {
-                document.getElementById('modal_eq_persona').value = '';
-                document.getElementById('modal_eq_cargo').value = '';
-                document.getElementById('modal_eq_ci').value = '';
-                if (document.getElementById('modal_eq_piso')) {
-                    document.getElementById('modal_eq_piso').value = '';
+                if (match.encargado) document.getElementById('modal_eq_persona').value = match.encargado;
+                if (match.cargo) document.getElementById('modal_eq_cargo').value = match.cargo;
+                if (match.ci_encargado) document.getElementById('modal_eq_ci').value = match.ci_encargado;
+                if (document.getElementById('modal_eq_piso') && match.piso) {
+                    document.getElementById('modal_eq_piso').value = match.piso;
                 }
             }
         }
@@ -5089,13 +5135,9 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             }
 
             if (match) {
-                document.getElementById('mue_persona').value = match.encargado || '';
-                document.getElementById('mue_cargo').value = match.cargo || '';
-                document.getElementById('mue_ci').value = match.ci_encargado || '';
-            } else {
-                document.getElementById('mue_persona').value = '';
-                document.getElementById('mue_cargo').value = '';
-                document.getElementById('mue_ci').value = '';
+                if (match.encargado) document.getElementById('mue_persona').value = match.encargado;
+                if (match.cargo) document.getElementById('mue_cargo').value = match.cargo;
+                if (match.ci_encargado) document.getElementById('mue_ci').value = match.ci_encargado;
             }
         }
 
@@ -5261,11 +5303,26 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
         // SUBMITS A LA API (EQUIPOS, CATÁLOGO, MUEBLES, ÁREAS, REPUESTOS, INTERVENCIONES)
         // =====================================================================
 
+        let BLOQUEO_GUARDADO_EN_CURSO = false;
+
         async function guardarEquipoMovil(event) {
             event.preventDefault();
+            if (BLOQUEO_GUARDADO_EN_CURSO) {
+                console.warn("Petición en curso, ignorando clic repetido");
+                return;
+            }
             const btn = document.getElementById('btn_guardar_eq');
+
+            const areaVal = (document.getElementById('modal_eq_area') ? document.getElementById('modal_eq_area').value : '').trim();
+            if (!areaVal || areaVal.startsWith('--') || areaVal.includes('⚠️')) {
+                alert('⚠️ Es obligatorio seleccionar un Área para el equipo médico.');
+                return;
+            }
+
+            BLOQUEO_GUARDADO_EN_CURSO = true;
             btn.disabled = true;
-            btn.textContent = 'Guardando en Servidor...';
+            btn.textContent = '⏳ Guardando en Servidor... Espere';
+            btn.style.opacity = '0.6';
 
             // Recoger los 13 criterios de evaluación
             const detallesCat = [];
@@ -5387,6 +5444,8 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             } finally {
                 btn.disabled = false;
                 btn.textContent = '💾 Guardar Equipo Médico';
+                btn.style.opacity = '1';
+                BLOQUEO_GUARDADO_EN_CURSO = false;
             }
         }
 
@@ -5432,6 +5491,25 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
 
         async function guardarNuevoMueble(event) {
             event.preventDefault();
+            if (BLOQUEO_GUARDADO_EN_CURSO) {
+                console.warn("Petición en curso, ignorando clic repetido");
+                return;
+            }
+            const btn = event.target.querySelector('button[type="submit"]') || document.getElementById('btn_guardar_mue');
+
+            const areaAct = (document.getElementById('mue_area') ? document.getElementById('mue_area').value : '').trim();
+            if (!areaAct || areaAct.startsWith('--') || areaAct.includes('⚠️')) {
+                alert('⚠️ Es obligatorio seleccionar un Área para el activo de mueblería o computación.');
+                return;
+            }
+
+            BLOQUEO_GUARDADO_EN_CURSO = true;
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = '⏳ Guardando Mueble / TI...';
+                btn.style.opacity = '0.6';
+            }
+
             const idVal = document.getElementById('mue_id').value;
             const redSel = (document.getElementById('mue_red') ? document.getElementById('mue_red').value : '') || (document.getElementById('top_red') ? document.getElementById('top_red').value : '');
             const cenSel = (document.getElementById('mue_centro') ? document.getElementById('mue_centro').value : '') || (document.getElementById('top_centro') ? document.getElementById('top_centro').value : '');
@@ -5498,12 +5576,29 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                     }
                 } else {
                     alert('Error al guardar activo: ' + (data.error || data.id || 'Consulte al administrador'));
+            } catch (e) {
+                alert('Fallo de conexión al servidor: ' + e.message);
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = '💾 Guardar Mueble / Computación';
+                    btn.style.opacity = '1';
                 }
-            } catch (e) { alert('Fallo de conexión al servidor: ' + e.message); }
+                BLOQUEO_GUARDADO_EN_CURSO = false;
+            }
         }
 
         async function guardarNuevaArea(event) {
             event.preventDefault();
+            if (BLOQUEO_GUARDADO_EN_CURSO) return;
+            const btn = event.target.querySelector('button[type="submit"]');
+            BLOQUEO_GUARDADO_EN_CURSO = true;
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = '⏳ Guardando Área...';
+                btn.style.opacity = '0.6';
+            }
+
             const idVal = document.getElementById('area_id').value;
             const redVal = (document.getElementById('area_red') ? document.getElementById('area_red').value : '') || document.getElementById('top_red').value;
             const cenVal = (document.getElementById('area_centro') ? document.getElementById('area_centro').value : '') || document.getElementById('top_centro').value;
@@ -5542,7 +5637,16 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                 } else {
                     alert('Error: ' + data.error);
                 }
-            } catch (e) { alert('Fallo de conexión: ' + e.message); }
+            } catch (e) {
+                alert('Fallo de conexión: ' + e.message);
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = '💾 Guardar Área';
+                    btn.style.opacity = '1';
+                }
+                BLOQUEO_GUARDADO_EN_CURSO = false;
+            }
         }
 
         async function guardarNuevoRepuesto(event) {

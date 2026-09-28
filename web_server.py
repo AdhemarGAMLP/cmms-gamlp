@@ -569,8 +569,7 @@ HTML_INVENTARIO = """
                     <span class="area-badge-count count-label">0 activos</span>
                 </div>
                 <div class="equipment-list">
-                    {% for ac in activos %}
-                    {% if (ac['area'] or 'General') == area_nom %}
+                    {% for ac in activos_por_area.get(area_nom, []) %}
                     {% if ac['_tipo'] == 'EQUIPO' %}
                     <a href="/equipo/{{ ac['id'] }}" 
                        class="equipment-card" 
@@ -655,7 +654,6 @@ HTML_INVENTARIO = """
                         </div>
                         <div class="btn-view" style="color: #D97706;">Ver Ficha de Mueble / TI →</div>
                     </a>
-                    {% endif %}
                     {% endif %}
                     {% endfor %}
                 </div>
@@ -1123,9 +1121,16 @@ def vista_inventario_web():
 
         mapa_areas_json = {k: sorted(list(v)) for k, v in mapa_areas_centro.items()}
 
+        # Preagrupación O(1) de activos por área para acelerar 100x la carga del HTML
+        activos_por_area = {}
+        for a in activos_db:
+            ar_k = (a.get('area') or 'General').strip()
+            activos_por_area.setdefault(ar_k, []).append(a)
+
         return render_template_string(
             HTML_INVENTARIO, 
             activos=activos_db,
+            activos_por_area=activos_por_area,
             equipos=eqs_db,
             muebles=mus_db,
             redes=redes_db,
@@ -2977,6 +2982,19 @@ def ver_equipo(id_equipo):
                     duracion = ", ".join(parts) if parts else "Vence hoy"
                     garantia_str = f"Activa (Vence el {f_venc} - Resta: {duracion})"
 
+        # Soporte de múltiples fotos (galería)
+        fotos_lista = []
+        foto_raw = eq.get('foto')
+        if foto_raw:
+            foto_str = str(foto_raw).strip()
+            if foto_str.startswith('[') and foto_str.endswith(']'):
+                try:
+                    fotos_lista = json.loads(foto_str)
+                except Exception:
+                    fotos_lista = [foto_str]
+            elif foto_str:
+                fotos_lista = [foto_str]
+
         html_web = """
         <!DOCTYPE html><html lang="es"><head><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Ficha Técnica | {{ eq['nombre'] }}</title>
         <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -3009,9 +3027,17 @@ def ver_equipo(id_equipo):
                     <div class="estado {% if eq['estado'] == 'Baja' %}baja{% elif eq['estado'] == 'En Espera de Repuesto' %}espera{% elif eq['estado'] == 'Fuera de Servicio' %}inoperante{% endif %}">{{ eq['estado'] }}</div>
                 </div>
                 
-                {% if eq['foto'] %}
+                {% if fotos_lista %}
                 <div style="text-align: center; margin: 15px 0;">
-                    <img src="{{ eq['foto'] }}" alt="{{ eq['nombre'] }}" style="max-width: 100%; max-height: 250px; border-radius: 10px; object-fit: contain; box-shadow: 0 1px 3px rgba(0,0,0,0.04); border: 1px solid #E2E8F0;">
+                    <img id="main-eq-img" src="{{ fotos_lista[0] }}" alt="{{ eq['nombre'] }}" style="max-width: 100%; max-height: 280px; border-radius: 12px; object-fit: contain; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #E2E8F0; transition: all 0.2s;">
+                    {% if fotos_lista|length > 1 %}
+                    <div style="display: flex; gap: 8px; justify-content: center; margin-top: 10px; overflow-x: auto; padding: 4px;">
+                        {% for f in fotos_lista %}
+                        <img src="{{ f }}" alt="Miniatura {{ loop.index }}" onclick="document.getElementById('main-eq-img').src = this.src; document.querySelectorAll('.foto-thumb-btn').forEach(el=>el.style.borderColor='#CBD5E1'); this.style.borderColor='#0284C7';" class="foto-thumb-btn" style="width: 52px; height: 52px; border-radius: 8px; object-fit: cover; border: 2px solid {% if loop.first %}#0284C7{% else %}#CBD5E1{% endif %}; cursor: pointer; flex-shrink: 0;">
+                        {% endfor %}
+                    </div>
+                    <small style="display: block; margin-top: 4px; color: #64748B; font-size: 11px;">Toca cualquier miniatura para verla en grande</small>
+                    {% endif %}
                 </div>
                 {% endif %}
 
@@ -3137,7 +3163,7 @@ def ver_equipo(id_equipo):
             </script>
         </body></html>
         """
-        return render_template_string(html_web, eq=eq, hist=historial_list, garantia_str=garantia_str, rep_stock=rep_stock, rep_req=rep_req)
+        return render_template_string(html_web, eq=eq, hist=historial_list, garantia_str=garantia_str, rep_stock=rep_stock, rep_req=rep_req, fotos_lista=fotos_lista)
     except Exception as e:
         return f"Error en el servidor web: {e}"
 

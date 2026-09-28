@@ -1042,7 +1042,22 @@ def guardar_mueble_db(datos):
                 estado_conservacion, m_id
             ))
             ret_id = m_id
-        else:
+        if not m_id:
+            # Antiduplicación por multiclic / internet lento
+            cur.execute("""
+                SELECT id FROM muebleria
+                WHERE unidad_organizacional = %s
+                  AND LOWER(descripcion) = LOWER(%s)
+                  AND (LOWER(serie) = LOWER(%s) OR (serie IN ('S/C', 'S/N', '', 'SN') AND %s IN ('S/C', 'S/N', '', 'SN')))
+                  AND fecha_registro = CURRENT_DATE
+                ORDER BY id DESC LIMIT 1;
+            """, (unidad_organizacional, descripcion, serie, serie))
+            dup_m = cur.fetchone()
+            if dup_m:
+                cur.close()
+                conn.close()
+                return True, dup_m[0]
+
             cur.execute("""
                 INSERT INTO muebleria (
                     sector_actual, direccion_administrativa, unidad_organizacional,
@@ -1808,8 +1823,12 @@ def obtener_areas_db(centro_nombre=None, perfil=None, red_nombre=None):
             if centro_nombre and str(centro_nombre).strip() and str(centro_nombre).strip() not in ("Todos los Centros", "-- Todos los Centros --"):
                 cen_raw = str(centro_nombre).strip()
                 cen_clean = cen_raw.replace("C.S.", "").replace("CS", "").replace("CENTRO DE SALUD", "").replace("HOSPITAL", "").strip()
-                condiciones.append("(centro_salud_nombre ILIKE %s OR %s ILIKE ('%%' || centro_salud_nombre || '%%') OR centro_salud_nombre ILIKE %s)")
-                params.extend([f"%{cen_clean}%", cen_raw, f"%{cen_raw}%"])
+                condiciones.append("""(
+                    TRIM(LOWER(centro_salud_nombre)) = TRIM(LOWER(%s))
+                    OR TRIM(LOWER(centro_salud_nombre)) = TRIM(LOWER(%s))
+                    OR (LENGTH(%s) >= 4 AND LOWER(centro_salud_nombre) LIKE %s)
+                )""")
+                params.extend([cen_raw, cen_clean, cen_clean, f"%{cen_clean.lower()}%"])
 
             if red_nombre and str(red_nombre).strip() and str(red_nombre).strip() not in ("Todas las Redes", "-- Todas las Redes --"):
                 r_raw = str(red_nombre).strip()
@@ -2528,12 +2547,40 @@ def guardar_equipo_db(eq_data):
             c_row = cur.fetchone()
             if c_row: cen_id = c_row[0]
 
-        # Anticolisión: si es un nuevo registro y el ID ya existe en BD, autoincrementar correlativo
+        # Anticolisión y Antiduplicación estricta por reintento / multiclic
         es_edicion = bool(eq.get("_es_edicion", False))
         if not es_edicion:
+            nom_eq = str(eq.get("nombre") or "").strip()
+            serie_eq = str(eq.get("numero_serie") or "").strip()
+            marca_eq = str(eq.get("marca") or "").strip()
+            # Si el mismo equipo en el mismo centro ya fue registrado hoy, evitar duplicarlo
+            cur.execute("""
+                SELECT id FROM equipos 
+                WHERE (LOWER(centro_salud_nombre) = LOWER(%s) OR %s = '')
+                  AND LOWER(nombre) = LOWER(%s)
+                  AND LOWER(marca) = LOWER(%s)
+                  AND (LOWER(numero_serie) = LOWER(%s) OR (numero_serie IN ('S/C', 'S/N', '', 'SN') AND %s IN ('S/C', 'S/N', '', 'SN')))
+                  AND fecha_registro = CURRENT_DATE
+                ORDER BY id DESC LIMIT 1;
+            """, (c_nom, c_nom, nom_eq, marca_eq, serie_eq, serie_eq))
+            dup_reciente = cur.fetchone()
+            if dup_reciente and not eq.get("id"):
+                cur.close()
+                conn.close()
+                return True, dup_reciente[0], "Registro ya procesado exitosamente (duplicado evitado)"
+
             if eq_id:
                 cur.execute("SELECT 1 FROM equipos WHERE id = %s;", (eq_id,))
                 if cur.fetchone():
+                    # Si el ID ya existe y los datos son idénticos, es un reenvío del mismo formulario
+                    cur.execute("""
+                        SELECT id FROM equipos 
+                        WHERE id = %s AND LOWER(nombre) = LOWER(%s) AND LOWER(marca) = LOWER(%s)
+                    """, (eq_id, nom_eq, marca_eq))
+                    if cur.fetchone():
+                        cur.close()
+                        conn.close()
+                        return True, eq_id, "Registro existente confirmado (duplicado evitado)"
                     eq_id = generar_siguiente_codigo_af(r_nom, c_nom)
                     eq["id"] = eq_id
             elif r_nom and c_nom:
