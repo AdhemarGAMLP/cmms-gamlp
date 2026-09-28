@@ -5524,7 +5524,7 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             let descAct = (document.getElementById('mue_desc') ? document.getElementById('mue_desc').value.trim() : '');
             if (!descAct) descAct = tipoAct;
 
-            const areaAct = (document.getElementById('mue_area') ? document.getElementById('mue_area').value : '') || 'General';
+            const ubicacionArea = areaAct || 'General';
 
             const payload = {
                 id: idVal ? parseInt(idVal) : null,
@@ -5544,7 +5544,7 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                 sapm: (document.getElementById('mue_sapm') ? document.getElementById('mue_sapm').value.trim() : '') || 'S/C',
                 detalle_transaccion: (document.getElementById('mue_transaccion') ? document.getElementById('mue_transaccion').value.trim() : '') || 'Asignacion 2026',
                 fecha_asignacion: (document.getElementById('mue_fecha_asig') ? document.getElementById('mue_fecha_asig').value : '') || new Date().toISOString().slice(0, 10),
-                ubicacion: areaAct,
+                ubicacion: ubicacionArea,
                 persona_asignada: document.getElementById('mue_persona') ? document.getElementById('mue_persona').value.trim() : '',
                 cargo_asignado: document.getElementById('mue_cargo') ? document.getElementById('mue_cargo').value.trim() : '',
                 ci_asignado: document.getElementById('mue_ci') ? document.getElementById('mue_ci').value.trim() : '',
@@ -5576,6 +5576,7 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                     }
                 } else {
                     alert('Error al guardar activo: ' + (data.error || data.id || 'Consulte al administrador'));
+                }
             } catch (e) {
                 alert('Fallo de conexión al servidor: ' + e.message);
             } finally {
