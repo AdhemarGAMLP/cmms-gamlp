@@ -58,6 +58,11 @@ from config import CARPETAS, CONFIG
 app_web = Flask(__name__)
 app_web.secret_key = os.environ.get("FLASK_SECRET_KEY", "gamlp_sgem_secret_key_2026_super_secure")
 app = app_web  # Alias para servidores WSGI de producción (Gunicorn / Render / Vercel)
+try:
+    from flask_compress import Compress
+    Compress(app_web)
+except Exception:
+    pass
 app_gui = None  # Referencia global de la GUI de Tkinter para sincronización
 
 def login_requerido(f):
@@ -880,8 +885,22 @@ def obtener_activos_unificados_db(red_filtro=None, centro_filtro=None):
         """)
         centros_db = [dict(r) for r in cur.fetchall()]
 
-        # 2. Cargar Equipos
-        cur.execute("SELECT * FROM equipos WHERE COALESCE(estado, 'Operativo') NOT IN ('Inactivo', 'Eliminado') ORDER BY nombre ASC")
+        # 2. Cargar Equipos (Optimizado: Excluir foto en base64 para ahorrar 28MB por petición)
+        COLUMNAS_EQUIPOS_LIGERAS = """
+            id, nombre, marca, modelo, servicio, area, procedencia, fabricante, proveedor,
+            anio_fab, numero_serie, t_elec, t_elco, t_mec, t_hid, t_neu, t_vap, a_comp,
+            a_como, a_don, te_fijo, te_mov, te_por, garantia, fecha_inicio_garantia,
+            fecha_vencimiento_garantia, criticidad, categorizacion_detalle, estado,
+            fecha_adquisicion, fecha_registro, costo, voltaje, potencia, temperatura,
+            humedad, corriente, peso, dimensiones, resolucion, contexto_operacional,
+            funciones_equipo, acciones_preventivas, acciones_falla, fallas_funcionales,
+            causas_fallo, efectos_fallo, efecto_entorno, observaciones, vida_util,
+            bateria_respaldo, version_software, suministro_gases, centro_salud_id,
+            red_salud_id, centro_salud_nombre, red_salud_nombre, municipio_nombre,
+            departamento_nombre, sector_actual, persona_asignada, ci_asignado,
+            codigo_sispam, bertin, sapm, cargo_asignado
+        """
+        cur.execute(f"SELECT {COLUMNAS_EQUIPOS_LIGERAS} FROM equipos WHERE COALESCE(estado, 'Operativo') NOT IN ('Inactivo', 'Eliminado') ORDER BY nombre ASC")
         equipos_raw = [dict(r) for r in cur.fetchall()]
         
         # 3. Cargar Muebles y Computación
@@ -2055,7 +2074,24 @@ def vista_analisis_web():
         chart_censo_labels = json.dumps([item["nombre_display"] for item in censo_items[:8]])
         chart_censo_data = json.dumps([item["cantidad"] for item in censo_items[:8]])
 
-        activos_json = json.dumps(activos_contexto, default=str)
+        # Optimización de ancho de banda: solo serializar campos necesarios para el modal interactivo
+        activos_ligeros = [
+            {
+                "id": a.get("id"),
+                "id_db": a.get("id_db") or a.get("id"),
+                "codigo_af": a.get("codigo_af") or a.get("id"),
+                "nombre": a.get("nombre"),
+                "marca": a.get("marca"),
+                "modelo": a.get("modelo"),
+                "centro_salud_nombre": a.get("centro_salud_nombre"),
+                "area": a.get("area"),
+                "servicio": a.get("servicio"),
+                "_tipo": a.get("_tipo"),
+                "_icono": a.get("_icono", "🩺" if a.get("_tipo") == "EQUIPO" else "🛋️")
+            }
+            for a in activos_contexto
+        ]
+        activos_json = json.dumps(activos_ligeros, default=str)
 
         return render_template_string(
             HTML_ANALISIS,
