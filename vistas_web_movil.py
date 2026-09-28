@@ -2972,8 +2972,8 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                 }
             }
 
-            // 2. Cargar áreas del centro seleccionado
-            await cargarAreasGlobal(cenSel, redSel);
+            // 2. Cargar áreas estrictamente del centro seleccionado en modal_eq_area
+            await actualizarAreasDropdown('modal_eq_area', cenSel, redSel);
 
             // 3. Autollenar datos de custodio/doctor
             alCambiarAreaModal();
@@ -2988,7 +2988,7 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
         async function alCambiarCentroModalMueble() {
             const redSel = document.getElementById('mue_red') ? document.getElementById('mue_red').value : '';
             const cenSel = document.getElementById('mue_centro') ? document.getElementById('mue_centro').value : '';
-            await cargarAreasGlobal(cenSel, redSel);
+            await actualizarAreasDropdown('mue_area', cenSel, redSel);
             alCambiarAreaMuebleModal();
         }
 
@@ -3446,60 +3446,102 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
         // CARGA DE ÁREAS VINCULADAS AL CENTRO SELECCIONADO
         // =====================================================================
 
-        async function cargarAreasGlobal(centro, red = '', areaPrevia = '') {
+        async function actualizarAreasDropdown(selectId, centro, red = '', areaPrevia = '') {
+            const sel = document.getElementById(selectId);
+            if (!sel) return;
+
+            sel.innerHTML = '';
+
+            const centroLimpio = (centro || '').trim();
+            if (!centroLimpio || centroLimpio.startsWith('--') || centroLimpio.toLowerCase().includes('todos')) {
+                const optVacio = document.createElement('option');
+                optVacio.value = "";
+                optVacio.textContent = "-- Primero seleccione un Centro de Salud --";
+                sel.appendChild(optVacio);
+                return;
+            }
+
+            const optCarga = document.createElement('option');
+            optCarga.value = "";
+            optCarga.textContent = "⏳ Cargando áreas del centro...";
+            sel.appendChild(optCarga);
+
             try {
-                let url = `/api/areas?centro=${encodeURIComponent(centro || '')}`;
-                if (red) url += `&red=${encodeURIComponent(red)}`;
+                let url = `/api/areas?centro=${encodeURIComponent(centroLimpio)}`;
+                if (red && !red.startsWith('--')) url += `&red=${encodeURIComponent(red)}`;
                 const res = await fetch(url);
-                LISTA_AREAS = await res.json();
-                renderizarListaAreas(LISTA_AREAS);
+                const areas = await res.json();
 
-                const selEqArea = document.getElementById('modal_eq_area');
-                const selMueArea = document.getElementById('mue_area');
-                if (selEqArea) selEqArea.innerHTML = '<option value="">-- Seleccionar Ubicación (Piso - Área) --</option>';
-                if (selMueArea) selMueArea.innerHTML = '<option value="">-- Seleccionar Ubicación (Piso - Área) --</option>';
+                sel.innerHTML = '<option value="">-- Seleccionar Ubicación (Piso - Área) --</option>';
 
-                if (Array.isArray(LISTA_AREAS) && LISTA_AREAS.length > 0) {
-                    LISTA_AREAS.forEach(a => {
+                if (Array.isArray(areas) && areas.length > 0) {
+                    const areasVistas = new Set();
+                    areas.forEach(a => {
                         const fmt = formatearAreaNombre(a);
-                        if (selEqArea) {
-                            const o1 = document.createElement('option');
-                            o1.value = fmt; 
-                            o1.textContent = fmt;
-                            o1.setAttribute('data-id', a.id);
-                            o1.setAttribute('data-encargado', a.encargado || '');
-                            o1.setAttribute('data-cargo', a.cargo || '');
-                            o1.setAttribute('data-ci', a.ci_encargado || '');
-                            o1.setAttribute('data-piso', a.piso || '');
-                            selEqArea.appendChild(o1);
-                        }
-                        if (selMueArea) {
-                            const o2 = document.createElement('option');
-                            o2.value = fmt; 
-                            o2.textContent = fmt;
-                            o2.setAttribute('data-id', a.id);
-                            o2.setAttribute('data-encargado', a.encargado || '');
-                            o2.setAttribute('data-cargo', a.cargo || '');
-                            o2.setAttribute('data-ci', a.ci_encargado || '');
-                            o2.setAttribute('data-piso', a.piso || '');
-                            selMueArea.appendChild(o2);
-                        }
+                        const normKey = fmt.toLowerCase().trim();
+                        if (areasVistas.has(normKey)) return; // Evitar cualquier duplicado visual
+                        areasVistas.add(normKey);
+
+                        const opt = document.createElement('option');
+                        opt.value = fmt;
+                        opt.textContent = fmt;
+                        opt.setAttribute('data-id', a.id || '');
+                        opt.setAttribute('data-encargado', a.encargado || '');
+                        opt.setAttribute('data-cargo', a.cargo || '');
+                        opt.setAttribute('data-ci', a.ci_encargado || '');
+                        opt.setAttribute('data-piso', a.piso || '');
+                        sel.appendChild(opt);
                     });
                 } else {
                     const noOpt = document.createElement('option');
                     noOpt.value = "";
-                    noOpt.textContent = "⚠️ Sin áreas en este centro. Cree una primero en '+ Nueva Área'";
-                    if (selEqArea) selEqArea.appendChild(noOpt.cloneNode(true));
-                    if (selMueArea) selMueArea.appendChild(noOpt);
+                    noOpt.textContent = "⚠️ Sin áreas registradas en este centro. Cree una en '+ Nueva Área'";
+                    sel.appendChild(noOpt);
                 }
 
                 if (areaPrevia) {
-                    if (selEqArea) {
-                        selEqArea.value = areaPrevia;
+                    let matchOpt = Array.from(sel.options).find(o => o.value === areaPrevia);
+                    if (!matchOpt) {
+                        const pNorm = areaPrevia.toLowerCase().replace(/piso\\s*/g, '').replace(/planta\\s*baja/g, 'pb').trim();
+                        matchOpt = Array.from(sel.options).find(o => {
+                            const oNorm = o.value.toLowerCase().replace(/piso\\s*/g, '').replace(/planta\\s*baja/g, 'pb').trim();
+                            return oNorm.includes(pNorm) || pNorm.includes(oNorm);
+                        });
                     }
-                    if (selMueArea) {
-                        selMueArea.value = areaPrevia;
+                    if (matchOpt) {
+                        sel.value = matchOpt.value;
+                    } else if (areaPrevia && areaPrevia !== 'General') {
+                        const customOpt = document.createElement('option');
+                        customOpt.value = areaPrevia;
+                        customOpt.textContent = areaPrevia;
+                        sel.appendChild(customOpt);
+                        sel.value = areaPrevia;
                     }
+                }
+            } catch (e) {
+                console.error("Error al actualizar dropdown de áreas:", e);
+                sel.innerHTML = '<option value="">⚠️ Error al cargar áreas</option>';
+            }
+        }
+
+        async function cargarAreasGlobal(centro, red = '', areaPrevia = '') {
+            try {
+                let url = `/api/areas?centro=${encodeURIComponent(centro || '')}`;
+                if (red && !red.startsWith('--')) url += `&red=${encodeURIComponent(red)}`;
+                const res = await fetch(url);
+                LISTA_AREAS = await res.json();
+                renderizarListaAreas(LISTA_AREAS);
+
+                // Actualizar los dropdowns de modales con filtrado estricto por centro
+                const centroLimpio = (centro || '').trim();
+                if (centroLimpio && !centroLimpio.startsWith('--') && !centroLimpio.toLowerCase().includes('todos')) {
+                    await actualizarAreasDropdown('modal_eq_area', centroLimpio, red, areaPrevia);
+                    await actualizarAreasDropdown('mue_area', centroLimpio, red, areaPrevia);
+                } else {
+                    const selEqArea = document.getElementById('modal_eq_area');
+                    const selMueArea = document.getElementById('mue_area');
+                    if (selEqArea) selEqArea.innerHTML = '<option value="">-- Primero seleccione un Centro de Salud --</option>';
+                    if (selMueArea) selMueArea.innerHTML = '<option value="">-- Primero seleccione un Centro de Salud --</option>';
                 }
 
                 // Mantener sincronizado el selector de áreas del catálogo
@@ -4577,23 +4619,15 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             // Sección 1: Identificación y Ubicación
             const red = document.getElementById('top_red').value;
             const centro = document.getElementById('top_centro').value;
-            inicializarSelectoresSedesModal('modal_eq_red', 'modal_eq_centro', eq.red_salud_nombre || red, eq.centro_salud_nombre || centro);
-            await cargarAreasGlobal(eq.centro_salud_nombre || centro, eq.red_salud_nombre || red);
+            const cenAct = eq.centro_salud_nombre || centro;
+            const redAct = eq.red_salud_nombre || red;
+            inicializarSelectoresSedesModal('modal_eq_red', 'modal_eq_centro', redAct, cenAct);
+            await actualizarAreasDropdown('modal_eq_area', cenAct, redAct, eq.area);
             if (document.getElementById('modal_eq_catalogo_input')) document.getElementById('modal_eq_catalogo_input').value = '';
             if (document.getElementById('modal_eq_catalogo')) document.getElementById('modal_eq_catalogo').value = '';
 
             document.getElementById('modal_eq_sector').value = eq.sector_actual || 'SALUD';
             document.getElementById('modal_eq_servicio').value = eq.servicio || '';
-            const selArea = document.getElementById('modal_eq_area');
-            if (eq.area) {
-                const match = obtenerAreaObj(eq.area);
-                if (match) {
-                    selArea.value = formatearAreaNombre(match);
-                    if (document.getElementById('modal_eq_piso')) document.getElementById('modal_eq_piso').value = match.piso || '';
-                } else {
-                    selArea.value = eq.area;
-                }
-            }
             document.getElementById('modal_eq_persona').value = eq.persona_asignada || '';
             document.getElementById('modal_eq_cargo').value = eq.cargo_asignado || '';
             document.getElementById('modal_eq_ci').value = eq.ci_asignado || '';
@@ -4758,7 +4792,7 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             abrirModal('modal_catalogo');
         }
 
-        function abrirModalMueble() {
+        async function abrirModalMueble() {
             document.getElementById('modal_mue_title').textContent = '🛋️ Registrar Activo Fijo (Mueblería / TI)';
             document.getElementById('mue_id').value = '';
 
@@ -4787,8 +4821,8 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
 
             abrirModal('modal_mueble');
 
-            // Auto-llenar datos del área seleccionada
-            alCambiarCentroModalMueble();
+            // Auto-llenar datos del área seleccionada estrictamente para este centro
+            await alCambiarCentroModalMueble();
         }
 
         async function editarMueble(id) {
@@ -4799,8 +4833,10 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
 
             const red = document.getElementById('top_red').value;
             const centro = document.getElementById('top_centro').value;
-            inicializarSelectoresSedesModal('mue_red', 'mue_centro', m.direccion_administrativa || red, m.unidad_organizacional || centro);
-            await cargarAreasGlobal(m.unidad_organizacional || centro, m.direccion_administrativa || red);
+            const cenAct = m.unidad_organizacional || centro;
+            const redAct = m.direccion_administrativa || red;
+            inicializarSelectoresSedesModal('mue_red', 'mue_centro', redAct, cenAct);
+            await actualizarAreasDropdown('mue_area', cenAct, redAct, m.ubicacion);
 
             document.getElementById('mue_tipo').value = m.tipo_activo || '';
             document.getElementById('mue_sector').value = m.sector_actual || 'SALUD';
@@ -5099,8 +5135,23 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             if (!sel) return;
             const aNom = sel.value;
             const opt = sel.options && sel.selectedIndex >= 0 ? sel.options[sel.selectedIndex] : null;
-            const areaId = opt ? opt.getAttribute('data-id') : null;
 
+            if (opt && opt.hasAttribute('data-encargado')) {
+                const enc = opt.getAttribute('data-encargado') || '';
+                const car = opt.getAttribute('data-cargo') || '';
+                const ci = opt.getAttribute('data-ci') || '';
+                const pis = opt.getAttribute('data-piso') || '';
+
+                document.getElementById('modal_eq_persona').value = enc;
+                document.getElementById('modal_eq_cargo').value = car;
+                document.getElementById('modal_eq_ci').value = ci;
+                if (document.getElementById('modal_eq_piso') && pis) {
+                    document.getElementById('modal_eq_piso').value = pis;
+                }
+                return;
+            }
+
+            const areaId = opt ? opt.getAttribute('data-id') : null;
             let match = null;
             if (areaId) {
                 match = (LISTA_AREAS || []).find(a => String(a.id) === String(areaId));
@@ -5116,6 +5167,10 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                 if (document.getElementById('modal_eq_piso') && match.piso) {
                     document.getElementById('modal_eq_piso').value = match.piso;
                 }
+            } else {
+                document.getElementById('modal_eq_persona').value = '';
+                document.getElementById('modal_eq_cargo').value = '';
+                document.getElementById('modal_eq_ci').value = '';
             }
         }
 
@@ -5124,8 +5179,19 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             if (!sel) return;
             const aNom = sel.value;
             const opt = sel.options && sel.selectedIndex >= 0 ? sel.options[sel.selectedIndex] : null;
-            const areaId = opt ? opt.getAttribute('data-id') : null;
 
+            if (opt && opt.hasAttribute('data-encargado')) {
+                const enc = opt.getAttribute('data-encargado') || '';
+                const car = opt.getAttribute('data-cargo') || '';
+                const ci = opt.getAttribute('data-ci') || '';
+
+                document.getElementById('mue_persona').value = enc;
+                document.getElementById('mue_cargo').value = car;
+                document.getElementById('mue_ci').value = ci;
+                return;
+            }
+
+            const areaId = opt ? opt.getAttribute('data-id') : null;
             let match = null;
             if (areaId) {
                 match = (LISTA_AREAS || []).find(a => String(a.id) === String(areaId));
@@ -5138,6 +5204,10 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                 if (match.encargado) document.getElementById('mue_persona').value = match.encargado;
                 if (match.cargo) document.getElementById('mue_cargo').value = match.cargo;
                 if (match.ci_encargado) document.getElementById('mue_ci').value = match.ci_encargado;
+            } else {
+                document.getElementById('mue_persona').value = '';
+                document.getElementById('mue_cargo').value = '';
+                document.getElementById('mue_ci').value = '';
             }
         }
 

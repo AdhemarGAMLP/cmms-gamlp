@@ -6,7 +6,7 @@ PERFILES_DB = {
         "nombre": "🟢 Nueva Base (Relevamiento 2026)",
         "descripcion": "Base de datos limpia en Supabase para el relevamiento 2026.",
         "db_host": "aws-0-us-east-2.pooler.supabase.com",
-        "db_port": "5432",
+        "db_port": "6543",
         "db_name": "postgres",
         "db_user": "postgres.stdcxbwhxvezocdnwvnx",
         "db_password": "Ademarz123$",

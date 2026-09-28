@@ -14,12 +14,16 @@ def obtener_conexion(perfil=None):
         else:
             cfg_db = CONFIG
 
+        port_val = str(cfg_db["db_port"])
+        if "pooler.supabase.com" in str(cfg_db.get("db_host", "")).lower() and port_val == "5432":
+            port_val = "6543"
+
         kwargs = {
             "dbname": cfg_db["db_name"],
             "user": cfg_db["db_user"],
             "password": cfg_db["db_password"],
             "host": cfg_db["db_host"],
-            "port": cfg_db["db_port"],
+            "port": port_val,
             "connect_timeout": 6,
             "keepalives": 1,
             "keepalives_idle": 30,
@@ -29,7 +33,15 @@ def obtener_conexion(perfil=None):
         if cfg_db.get("db_sslmode") or ("supabase" in str(cfg_db.get("db_host", "")).lower()):
             kwargs["sslmode"] = cfg_db.get("db_sslmode", "require")
             
-        conn = psycopg2.connect(**kwargs)
+        try:
+            conn = psycopg2.connect(**kwargs)
+        except Exception as e_first:
+            if "pooler.supabase.com" in str(kwargs.get("host", "")):
+                alt_port = 6543 if str(kwargs.get("port")) == "5432" else 5432
+                kwargs["port"] = alt_port
+                conn = psycopg2.connect(**kwargs)
+            else:
+                raise e_first
         conn.set_client_encoding('UTF8')
         return conn
     except Exception as e:
@@ -1826,9 +1838,10 @@ def obtener_areas_db(centro_nombre=None, perfil=None, red_nombre=None):
                 condiciones.append("""(
                     TRIM(LOWER(centro_salud_nombre)) = TRIM(LOWER(%s))
                     OR TRIM(LOWER(centro_salud_nombre)) = TRIM(LOWER(%s))
-                    OR (LENGTH(%s) >= 4 AND LOWER(centro_salud_nombre) LIKE %s)
+                    OR TRIM(LOWER(centro_salud_nombre)) = TRIM(LOWER('C.S. ' || %s))
+                    OR TRIM(LOWER(centro_salud_nombre)) = TRIM(LOWER('CENTRO DE SALUD ' || %s))
                 )""")
-                params.extend([cen_raw, cen_clean, cen_clean, f"%{cen_clean.lower()}%"])
+                params.extend([cen_raw, cen_clean, cen_clean, cen_clean])
 
             if red_nombre and str(red_nombre).strip() and str(red_nombre).strip() not in ("Todas las Redes", "-- Todas las Redes --"):
                 r_raw = str(red_nombre).strip()
@@ -1994,13 +2007,32 @@ def guardar_area_db(datos):
                 WHERE id=%s;
             """, (cen_id, cen_nom, red_nom, nom, piso, contacto, encargado, cargo, ci_enc, a_id))
         else:
+            # Verificar si ya existe un área con el mismo nombre y piso en este centro para evitar duplicados
             cur.execute("""
-                INSERT INTO areas (centro_salud_id, centro_salud_nombre, red_salud_nombre, nombre, piso, contacto, encargado, cargo, ci_encargado) 
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-                RETURNING id;
-            """, (cen_id, cen_nom, red_nom, nom, piso, contacto, encargado, cargo, ci_enc))
-            new_id = cur.fetchone()[0]
-            a_dict["id"] = new_id
+                SELECT id FROM areas 
+                WHERE (centro_salud_id = %s OR LOWER(TRIM(centro_salud_nombre)) = LOWER(TRIM(%s)))
+                  AND LOWER(TRIM(nombre)) = LOWER(TRIM(%s))
+                  AND LOWER(TRIM(COALESCE(piso, ''))) = LOWER(TRIM(%s))
+                LIMIT 1;
+            """, (cen_id, cen_nom, nom, piso))
+            existente = cur.fetchone()
+            if existente:
+                a_id = existente[0]
+                cur.execute("""
+                    UPDATE areas 
+                    SET centro_salud_id=%s, centro_salud_nombre=%s, red_salud_nombre=%s,
+                        nombre=%s, piso=%s, contacto=%s, encargado=%s, cargo=%s, ci_encargado=%s 
+                    WHERE id=%s;
+                """, (cen_id, cen_nom, red_nom, nom, piso, contacto, encargado, cargo, ci_enc, a_id))
+                a_dict["id"] = a_id
+            else:
+                cur.execute("""
+                    INSERT INTO areas (centro_salud_id, centro_salud_nombre, red_salud_nombre, nombre, piso, contacto, encargado, cargo, ci_encargado) 
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    RETURNING id;
+                """, (cen_id, cen_nom, red_nom, nom, piso, contacto, encargado, cargo, ci_enc))
+                new_id = cur.fetchone()[0]
+                a_dict["id"] = new_id
 
         conn.commit()
         cur.close()
