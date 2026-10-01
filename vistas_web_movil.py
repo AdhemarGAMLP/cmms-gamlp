@@ -2367,25 +2367,6 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                         <input type="text" id="cat_modelo" class="form-control" placeholder="Ej: CardioTouch 3000">
                     </div>
                 </div>
-                <div class="row-2">
-                    <div class="form-group">
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-                            <label class="form-label" for="cat_area" style="margin-bottom:0;">Área Sugerida (*):</label>
-                            <button type="button" id="btn_toggle_cat_area" onclick="toggleModoAreaCatalogo()" style="background:none; border:none; color:var(--accent); font-size:11.5px; font-weight:700; cursor:pointer; text-decoration:underline;">
-                                ✏️ Escribir manual
-                            </button>
-                        </div>
-                        <select id="cat_area" class="form-control" onchange="alCambiarAreaCatalogo()">
-                            <option value="">-- Seleccionar Área Creada --</option>
-                            <option value="__NUEVA__">➕ Escribir otra área personalizada...</option>
-                        </select>
-                        <input type="text" id="cat_area_manual" class="form-control" placeholder="Escribe el nombre del área..." style="display:none; margin-top:6px;">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label" for="cat_piso">Piso:</label>
-                        <input type="text" id="cat_piso" class="form-control" placeholder="Piso (se llena solo al elegir área)">
-                    </div>
-                </div>
                 <button type="submit" id="btn_guardar_cat" class="btn-modal-submit">💾 Guardar en Catálogo Central</button>
             </form>
         </div>
@@ -3271,7 +3252,6 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                     <div class="predictive-subtitle">
                         ${c.marca ? `<strong>Marca:</strong> ${c.marca}` : ''} 
                         ${c.modelo ? `| <strong>Modelo:</strong> ${c.modelo}` : ''}
-                        ${c.area ? `| <strong>Área sugerida:</strong> ${c.area}` : ''}
                     </div>
                 </div>`;
             });
@@ -3289,13 +3269,6 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             if (c.marca) document.getElementById('modal_eq_marca').value = c.marca;
             if (c.modelo) document.getElementById('modal_eq_modelo').value = c.modelo;
 
-            if (c.area) {
-                const matchArea = obtenerAreaObj(c.area);
-                if (matchArea) {
-                    document.getElementById('modal_eq_area').value = formatearAreaNombre(matchArea);
-                    alCambiarAreaModal();
-                }
-            }
             cerrarCajasPredictivas();
         }
 
@@ -3353,7 +3326,6 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                     const eModelo = document.getElementById('cat_modelo');
                     if (eMarca && !eMarca.value && cat.marca) eMarca.value = cat.marca;
                     if (eModelo && !eModelo.value && cat.modelo) eModelo.value = cat.modelo;
-                    if (cat.area) poblarSelectorAreasCatalogo(cat.area, cat.piso);
                 }
             }
             cerrarCajasPredictivas();
@@ -3543,123 +3515,12 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                     if (selEqArea) selEqArea.innerHTML = '<option value="">-- Primero seleccione un Centro de Salud --</option>';
                     if (selMueArea) selMueArea.innerHTML = '<option value="">-- Primero seleccione un Centro de Salud --</option>';
                 }
-
-                // Mantener sincronizado el selector de áreas del catálogo
-                await poblarSelectorAreasCatalogo();
             } catch (e) { console.error(e); }
         }
 
-        async function poblarSelectorAreasCatalogo(areaPrevia = '', pisoPrevio = '') {
-            const selCatArea = document.getElementById('cat_area');
-            if (!selCatArea) return;
-
-            let areasDisponibles = Array.isArray(LISTA_AREAS) && LISTA_AREAS.length > 0 ? [...LISTA_AREAS] : [];
-            if (areasDisponibles.length === 0) {
-                try {
-                    const cenSel = document.getElementById('top_centro') ? document.getElementById('top_centro').value : '';
-                    const redSel = document.getElementById('top_red') ? document.getElementById('top_red').value : '';
-                    let url = `/api/areas?centro=${encodeURIComponent(cenSel || '')}`;
-                    if (redSel) url += `&red=${encodeURIComponent(redSel)}`;
-                    let res = await fetch(url);
-                    let datos = await res.json();
-                    if (Array.isArray(datos) && datos.length > 0) {
-                        areasDisponibles = datos;
-                        LISTA_AREAS = datos;
-                    }
-                } catch (e) {
-                    console.error('Error cargando áreas para catálogo:', e);
-                }
-            }
-
-            selCatArea.innerHTML = `
-                <option value="">-- Seleccionar Área Creada --</option>
-                <option value="__NUEVA__">➕ Escribir otra área personalizada...</option>
-            `;
-
-            const mapaAreas = new Map();
-            areasDisponibles.forEach(a => {
-                const nom = (a.nombre || '').trim();
-                if (nom && !mapaAreas.has(nom.toLowerCase())) {
-                    mapaAreas.set(nom.toLowerCase(), a);
-                }
-            });
-
-            let encontrada = false;
-            mapaAreas.forEach((a) => {
-                const opt = document.createElement('option');
-                opt.value = a.nombre;
-                opt.dataset.piso = a.piso || '';
-                const txtPiso = a.piso ? `(${a.piso})` : '';
-                const txtCentro = a.centro_salud_nombre ? `• ${a.centro_salud_nombre}` : '';
-                const strCompleta = `${a.nombre} ${txtPiso} ${txtCentro}`.trim();
-                opt.textContent = strCompleta.split(' ').filter(Boolean).join(' ');
-                if (areaPrevia && (a.nombre.toLowerCase() === areaPrevia.toLowerCase() || opt.value.toLowerCase() === areaPrevia.toLowerCase())) {
-                    opt.selected = true;
-                    encontrada = true;
-                }
-                selCatArea.appendChild(opt);
-            });
-
-            if (areaPrevia && !encontrada && areaPrevia !== '__NUEVA__') {
-                const optCustom = document.createElement('option');
-                optCustom.value = areaPrevia;
-                optCustom.dataset.piso = pisoPrevio || '';
-                optCustom.textContent = `${areaPrevia} ${pisoPrevio ? `(${pisoPrevio})` : ''}`.trim();
-                optCustom.selected = true;
-                selCatArea.appendChild(optCustom);
-            }
-
-            if (pisoPrevio && document.getElementById('cat_piso')) {
-                document.getElementById('cat_piso').value = pisoPrevio;
-            }
-        }
-
-        function alCambiarAreaCatalogo() {
-            const sel = document.getElementById('cat_area');
-            const inpManual = document.getElementById('cat_area_manual');
-            const inpPiso = document.getElementById('cat_piso');
-            const btnToggle = document.getElementById('btn_toggle_cat_area');
-            if (!sel) return;
-
-            if (sel.value === '__NUEVA__') {
-                sel.style.display = 'none';
-                if (inpManual) {
-                    inpManual.style.display = 'block';
-                    inpManual.focus();
-                }
-                if (btnToggle) btnToggle.textContent = '📋 Elegir de lista';
-                if (inpPiso) inpPiso.value = '';
-                return;
-            }
-
-            const optSel = sel.options[sel.selectedIndex];
-            if (optSel && optSel.dataset && optSel.dataset.piso) {
-                if (inpPiso) inpPiso.value = optSel.dataset.piso;
-            } else if (!sel.value) {
-                if (inpPiso) inpPiso.value = '';
-            }
-        }
-
-        function toggleModoAreaCatalogo() {
-            const sel = document.getElementById('cat_area');
-            const inpManual = document.getElementById('cat_area_manual');
-            const btnToggle = document.getElementById('btn_toggle_cat_area');
-            if (!sel || !inpManual) return;
-
-            if (inpManual.style.display === 'none') {
-                sel.style.display = 'none';
-                inpManual.style.display = 'block';
-                inpManual.value = sel.value && sel.value !== '__NUEVA__' ? sel.value : '';
-                inpManual.focus();
-                if (btnToggle) btnToggle.textContent = '📋 Elegir de lista';
-            } else {
-                inpManual.style.display = 'none';
-                sel.style.display = 'block';
-                if (btnToggle) btnToggle.textContent = '✏️ Escribir manual';
-                if (sel.value === '__NUEVA__') sel.value = '';
-                alCambiarAreaCatalogo();
-            }
-        }
+        async function poblarSelectorAreasCatalogo(areaPrevia = '', pisoPrevio = '') {}
+        function alCambiarAreaCatalogo() {}
+        function toggleModoAreaCatalogo() {}
 
         async function cargarCatalogoGlobal() {
             try {
@@ -3928,7 +3789,6 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                     <div class="item-subtitle">
                         <span>🏷️ ${c.marca || 'Genérico'} - ${c.modelo || 'Estándar'}</span>
                     </div>
-                    ${c.area ? `<div class="item-detail-row">📍 <strong>Área Sugerida:</strong> ${c.area} ${c.piso ? `(${c.piso})` : ''}</div>` : ''}
                     ${actionsHtml ? `<div class="item-actions">${actionsHtml}</div>` : ''}
                 </div>`;
             });
@@ -4534,6 +4394,7 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             document.getElementById('modal_eq_sispam').value = '';
             document.getElementById('modal_eq_bertin').value = '';
             document.getElementById('modal_eq_sapm').value = '';
+            if (document.getElementById('modal_eq_piso')) document.getElementById('modal_eq_piso').value = '';
 
             // Auto-llenar datos del área seleccionada
             alCambiarAreaModal();
@@ -4623,14 +4484,15 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             const redAct = eq.red_salud_nombre || red;
             inicializarSelectoresSedesModal('modal_eq_red', 'modal_eq_centro', redAct, cenAct);
             await actualizarAreasDropdown('modal_eq_area', cenAct, redAct, eq.area);
+            alCambiarAreaModal();
             if (document.getElementById('modal_eq_catalogo_input')) document.getElementById('modal_eq_catalogo_input').value = '';
             if (document.getElementById('modal_eq_catalogo')) document.getElementById('modal_eq_catalogo').value = '';
 
             document.getElementById('modal_eq_sector').value = eq.sector_actual || 'SALUD';
             document.getElementById('modal_eq_servicio').value = eq.servicio || '';
-            document.getElementById('modal_eq_persona').value = eq.persona_asignada || '';
-            document.getElementById('modal_eq_cargo').value = eq.cargo_asignado || '';
-            document.getElementById('modal_eq_ci').value = eq.ci_asignado || '';
+            if (eq.persona_asignada) document.getElementById('modal_eq_persona').value = eq.persona_asignada;
+            if (eq.cargo_asignado) document.getElementById('modal_eq_cargo').value = eq.cargo_asignado;
+            if (eq.ci_asignado) document.getElementById('modal_eq_ci').value = eq.ci_asignado;
             document.getElementById('modal_eq_nombre').value = eq.nombre || '';
             document.getElementById('modal_eq_marca').value = eq.marca || '';
             document.getElementById('modal_eq_modelo').value = eq.modelo || '';
@@ -4757,17 +4619,8 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             document.getElementById('cat_nombre').value = '';
             document.getElementById('cat_marca').value = '';
             document.getElementById('cat_modelo').value = '';
-            document.getElementById('cat_piso').value = '';
             document.getElementById('btn_guardar_cat').textContent = '💾 Guardar en Catálogo Central';
 
-            const inpManual = document.getElementById('cat_area_manual');
-            const selArea = document.getElementById('cat_area');
-            const btnToggle = document.getElementById('btn_toggle_cat_area');
-            if (inpManual) { inpManual.style.display = 'none'; inpManual.value = ''; }
-            if (selArea) selArea.style.display = 'block';
-            if (btnToggle) btnToggle.textContent = '✏️ Escribir manual';
-
-            await poblarSelectorAreasCatalogo();
             abrirModal('modal_catalogo');
         }
 
@@ -4781,14 +4634,6 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             document.getElementById('cat_modelo').value = c.modelo || '';
             document.getElementById('btn_guardar_cat').textContent = '💾 Actualizar Modelo';
 
-            const inpManual = document.getElementById('cat_area_manual');
-            const selArea = document.getElementById('cat_area');
-            const btnToggle = document.getElementById('btn_toggle_cat_area');
-            if (inpManual) { inpManual.style.display = 'none'; inpManual.value = ''; }
-            if (selArea) selArea.style.display = 'block';
-            if (btnToggle) btnToggle.textContent = '✏️ Escribir manual';
-
-            await poblarSelectorAreasCatalogo(c.area || '', c.piso || '');
             abrirModal('modal_catalogo');
         }
 
@@ -5133,21 +4978,27 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
         function alCambiarAreaModal() {
             const sel = document.getElementById('modal_eq_area');
             if (!sel) return;
-            const aNom = sel.value;
+            const aNom = (sel.value || '').trim();
             const opt = sel.options && sel.selectedIndex >= 0 ? sel.options[sel.selectedIndex] : null;
 
-            if (opt && opt.hasAttribute('data-encargado')) {
+            if (!aNom || !opt || opt.value === '') {
+                if (document.getElementById('modal_eq_persona')) document.getElementById('modal_eq_persona').value = '';
+                if (document.getElementById('modal_eq_cargo')) document.getElementById('modal_eq_cargo').value = '';
+                if (document.getElementById('modal_eq_ci')) document.getElementById('modal_eq_ci').value = '';
+                if (document.getElementById('modal_eq_piso')) document.getElementById('modal_eq_piso').value = '';
+                return;
+            }
+
+            if (opt.hasAttribute('data-piso') || opt.hasAttribute('data-encargado')) {
                 const enc = opt.getAttribute('data-encargado') || '';
                 const car = opt.getAttribute('data-cargo') || '';
                 const ci = opt.getAttribute('data-ci') || '';
                 const pis = opt.getAttribute('data-piso') || '';
 
-                document.getElementById('modal_eq_persona').value = enc;
-                document.getElementById('modal_eq_cargo').value = car;
-                document.getElementById('modal_eq_ci').value = ci;
-                if (document.getElementById('modal_eq_piso') && pis) {
-                    document.getElementById('modal_eq_piso').value = pis;
-                }
+                if (document.getElementById('modal_eq_persona')) document.getElementById('modal_eq_persona').value = enc;
+                if (document.getElementById('modal_eq_cargo')) document.getElementById('modal_eq_cargo').value = car;
+                if (document.getElementById('modal_eq_ci')) document.getElementById('modal_eq_ci').value = ci;
+                if (document.getElementById('modal_eq_piso')) document.getElementById('modal_eq_piso').value = pis;
                 return;
             }
 
@@ -5161,16 +5012,15 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             }
 
             if (match) {
-                if (match.encargado) document.getElementById('modal_eq_persona').value = match.encargado;
-                if (match.cargo) document.getElementById('modal_eq_cargo').value = match.cargo;
-                if (match.ci_encargado) document.getElementById('modal_eq_ci').value = match.ci_encargado;
-                if (document.getElementById('modal_eq_piso') && match.piso) {
-                    document.getElementById('modal_eq_piso').value = match.piso;
-                }
+                if (document.getElementById('modal_eq_persona')) document.getElementById('modal_eq_persona').value = match.encargado || '';
+                if (document.getElementById('modal_eq_cargo')) document.getElementById('modal_eq_cargo').value = match.cargo || '';
+                if (document.getElementById('modal_eq_ci')) document.getElementById('modal_eq_ci').value = match.ci_encargado || '';
+                if (document.getElementById('modal_eq_piso')) document.getElementById('modal_eq_piso').value = match.piso || '';
             } else {
-                document.getElementById('modal_eq_persona').value = '';
-                document.getElementById('modal_eq_cargo').value = '';
-                document.getElementById('modal_eq_ci').value = '';
+                if (document.getElementById('modal_eq_persona')) document.getElementById('modal_eq_persona').value = '';
+                if (document.getElementById('modal_eq_cargo')) document.getElementById('modal_eq_cargo').value = '';
+                if (document.getElementById('modal_eq_ci')) document.getElementById('modal_eq_ci').value = '';
+                if (document.getElementById('modal_eq_piso')) document.getElementById('modal_eq_piso').value = '';
             }
         }
 
@@ -5218,14 +5068,6 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             if (it.nombre) document.getElementById('modal_eq_nombre').value = it.nombre;
             if (it.marca) document.getElementById('modal_eq_marca').value = it.marca;
             if (it.modelo) document.getElementById('modal_eq_modelo').value = it.modelo;
-
-            if (it.area && LISTA_AREAS.length > 0) {
-                const matchArea = obtenerAreaObj(it.area);
-                if (matchArea) {
-                    document.getElementById('modal_eq_area').value = formatearAreaNombre(matchArea);
-                    alCambiarAreaModal();
-                }
-            }
         }
 
         // =====================================================================
@@ -5523,24 +5365,13 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             event.preventDefault();
             const idVal = document.getElementById('cat_id').value;
 
-            let areaVal = '';
-            const selArea = document.getElementById('cat_area');
-            const inpManual = document.getElementById('cat_area_manual');
-            if (inpManual && inpManual.style.display !== 'none' && inpManual.value.trim()) {
-                areaVal = inpManual.value.trim();
-            } else if (selArea && selArea.value && selArea.value !== '__NUEVA__') {
-                areaVal = selArea.value.trim();
-            } else if (inpManual && inpManual.value.trim()) {
-                areaVal = inpManual.value.trim();
-            }
-
             const payload = {
                 id: idVal ? parseInt(idVal) : null,
                 nombre: (document.getElementById('cat_nombre').value || '').trim(),
                 marca: (document.getElementById('cat_marca').value || '').trim(),
                 modelo: (document.getElementById('cat_modelo').value || '').trim(),
-                area: areaVal,
-                piso: (document.getElementById('cat_piso').value || '').trim()
+                area: '',
+                piso: ''
             };
             try {
                 const res = await fetch('/api/guardar_catalogo', {
@@ -5550,7 +5381,7 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                 });
                 const data = await res.json();
                 if (data.ok) {
-                    alert('✅ Modelo guardado en catálogo');
+                    alert('✅ Modelo guardado en catálogo central');
                     cerrarModal('modal_catalogo');
                     cargarCatalogoGlobal();
                 } else {

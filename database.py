@@ -394,7 +394,7 @@ def _ejecutar_migraciones_completas(conn, cur, version_actual):
     except:
         pass
     try:
-        cur.execute(r"UPDATE catalogo SET area = trim(regexp_replace(area, '\s*\(Piso\s*[-0-9]+\)', '', 'g')) WHERE area IS NOT NULL;")
+        cur.execute("UPDATE catalogo SET area = NULL, piso = NULL WHERE area IS NOT NULL OR piso IS NOT NULL;")
     except:
         pass
     conn.commit()
@@ -2055,8 +2055,8 @@ def guardar_catalogo_db(datos):
         nom = str(datos.get("nombre") or "").strip()
         mar = str(datos.get("marca") or "").strip()
         mdl = str(datos.get("modelo") or "").strip()
-        ar = str(datos.get("area") or "").strip()
-        ps = str(datos.get("piso") or "").strip()
+        ar = str(datos.get("area") or "").strip() or None
+        ps = str(datos.get("piso") or "").strip() or None
 
         c_id = datos.get("id")
         if c_id:
