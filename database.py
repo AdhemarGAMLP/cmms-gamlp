@@ -1883,8 +1883,8 @@ def obtener_catalogo_equipos_db(perfil=None):
             except: pass
     return []
 
-def obtener_equipos_db(centro_nombre=None, limite=300, perfil=None, red_nombre=None):
-    """Retorna equipos médicos con todos sus campos para inventario y edición web."""
+def obtener_equipos_db(centro_nombre=None, limite=3000, perfil=None, red_nombre=None, incluir_foto=False, offset=0):
+    """Retorna equipos médicos para inventario y edición web. Por defecto excluye fotos pesadas en Base64 para ahorrar ancho de banda."""
     conn = obtener_conexion(perfil=perfil)
     if conn:
         try:
@@ -1902,14 +1902,34 @@ def obtener_equipos_db(centro_nombre=None, limite=300, perfil=None, red_nombre=N
                 params.extend([f"%{red_raw}%", red_raw])
 
             where_clause = ("WHERE " + " AND ".join(conds)) if conds else ""
-            query = f"SELECT * FROM equipos {where_clause} ORDER BY id DESC LIMIT %s;"
-            params.append(limite)
+
+            if incluir_foto:
+                cols_sql = "*"
+            else:
+                cols_sql = """
+                    id, nombre, marca, modelo, servicio, area, procedencia, fabricante, proveedor, anio_fab,
+                    t_elec, t_elco, t_mec, t_hid, t_neu, t_vap, a_comp, a_como, a_don, te_fijo, te_mov, te_por,
+                    garantia, criticidad, categorizacion_detalle, estado, fecha_adquisicion, fecha_registro,
+                    fecha_vencimiento_garantia, numero_serie, fecha_inicio_garantia, costo, voltaje, corriente,
+                    potencia, vida_util, temperatura, peso, dimensiones, bateria_respaldo, resolucion,
+                    version_software, humedad, suministro_gases, contexto_operacional, funciones_equipo,
+                    acciones_preventivas, acciones_falla, fallas_funcionales, causas_fallo, efectos_fallo,
+                    efecto_entorno, observaciones, red_salud_id, red_salud_nombre, centro_salud_id,
+                    centro_salud_nombre, municipio_nombre, departamento_nombre, sector_actual, persona_asignada,
+                    cargo_asignado, ci_asignado, codigo_sispam, bertin, sapm,
+                    (CASE WHEN foto IS NOT NULL AND foto != '' THEN TRUE ELSE FALSE END) AS tiene_foto
+                """
+
+            query = f"SELECT {cols_sql} FROM equipos {where_clause} ORDER BY fecha_registro DESC, id DESC LIMIT %s OFFSET %s;"
+            params.extend([limite, offset])
 
             cur.execute(query, tuple(params))
             filas = cur.fetchall()
             res = []
             for r in filas:
                 d = dict(r)
+                if not incluir_foto:
+                    d["foto"] = None
                 for k, v in d.items():
                     if hasattr(v, "isoformat"):
                         d[k] = v.isoformat()
@@ -1922,6 +1942,29 @@ def obtener_equipos_db(centro_nombre=None, limite=300, perfil=None, red_nombre=N
             try: conn.close()
             except: pass
     return []
+
+def obtener_equipo_por_id_db(id_equipo):
+    """Retorna un único equipo con todos sus campos incluyendo fotos completas en Base64 para edición."""
+    conn = obtener_conexion()
+    if conn:
+        try:
+            cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+            cur.execute("SELECT * FROM equipos WHERE id = %s OR id = %s OR id = %s LIMIT 1;", 
+                        (id_equipo, id_equipo.replace('S/N ', 'SN-'), id_equipo.replace('SN-', 'S/N ')))
+            r = cur.fetchone()
+            cur.close()
+            conn.close()
+            if r:
+                d = dict(r)
+                for k, v in d.items():
+                    if hasattr(v, "isoformat"):
+                        d[k] = v.isoformat()
+                return d
+        except Exception as e:
+            print(f"[WARN] Error al obtener equipo por ID {id_equipo}: {e}")
+            try: conn.close()
+            except: pass
+    return None
 
 def obtener_muebles_db(centro_nombre=None, limite=300, perfil=None, red_nombre=None):
     """Retorna los activos de mueblería y computación con todos sus campos."""

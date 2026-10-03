@@ -26,6 +26,7 @@ from database import (
     obtener_areas_db,
     obtener_catalogo_equipos_db,
     obtener_equipos_db,
+    obtener_equipo_por_id_db,
     obtener_muebles_db,
     guardar_area_db,
     guardar_catalogo_db,
@@ -4176,12 +4177,34 @@ def api_guardar_equipo():
 
 @app_web.route('/api/equipos')
 def api_equipos():
-    """Retorna la lista de equipos médicos registrados."""
+    """Retorna la lista de equipos médicos registrados (sin fotos pesadas por defecto para ahorrar ancho de banda)."""
     centro = request.args.get('centro', '').strip()
     red = request.args.get('red', '').strip()
+    limite = request.args.get('limite', default=3000, type=int)
+    offset = request.args.get('offset', default=0, type=int)
+    incluir_foto = request.args.get('incluir_foto', default='0') in ('1', 'true', 'True')
     try:
-        equipos = obtener_equipos_db(centro_nombre=centro or None, limite=3000, red_nombre=red or None)
+        equipos = obtener_equipos_db(
+            centro_nombre=centro or None, 
+            limite=limite, 
+            red_nombre=red or None,
+            incluir_foto=incluir_foto,
+            offset=offset
+        )
         return jsonify(equipos)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app_web.route('/api/equipo/<path:id_equipo>')
+def api_obtener_equipo(id_equipo):
+    """Endpoint bajo demanda para obtener datos completos y fotos de un equipo al editarlo."""
+    import urllib.parse
+    id_clean = urllib.parse.unquote(str(id_equipo)).strip()
+    try:
+        eq = obtener_equipo_por_id_db(id_clean)
+        if eq:
+            return jsonify(eq)
+        return jsonify({"error": "Equipo no encontrado"}), 404
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

@@ -799,6 +799,28 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             color: #FFFFFF;
         }
 
+        .btn-ver-mas-activos {
+            background: #FFFFFF;
+            color: var(--primary-dark, #003B64);
+            border: 2px solid var(--accent, #0284C7);
+            padding: 12px 28px;
+            border-radius: 30px;
+            font-size: 13.5px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(2, 132, 199, 0.16);
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-ver-mas-activos:hover {
+            background: var(--accent, #0284C7);
+            color: #FFFFFF;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(2, 132, 199, 0.3);
+        }
+
         /* MODALES */
         .modal-overlay {
             position: fixed;
@@ -2798,6 +2820,7 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
         let LISTA_PAPELERA = [];
         let FILTRO_TIPO_ACTIVO = 'todo'; // 'todo' | 'equipos' | 'muebles'
         let FILTRO_PAPELERA_TABLA = 'todos';
+        let LIMITE_MOSTRAR_INVENTARIO = 100; // Paginación fluida: últimos 100 activos inicialmente
 
         window.addEventListener('DOMContentLoaded', () => {
             let redGuardada = '';
@@ -2860,6 +2883,7 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
         }
 
         async function alCambiarCentroGlobal() {
+            LIMITE_MOSTRAR_INVENTARIO = 100;
             const redSel = document.getElementById('top_red').value;
             const cenSel = document.getElementById('top_centro').value;
             try { localStorage.setItem('cmms_top_centro', cenSel); } catch(e){}
@@ -3693,8 +3717,11 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                 return;
             }
 
+            const totalItems = items.length;
+            const itemsAMostrar = items.slice(0, LIMITE_MOSTRAR_INVENTARIO);
+
             let html = '';
-            items.forEach(it => {
+            itemsAMostrar.forEach(it => {
                 const esEquipo = it._tipo !== 'MUEBLE';
                 if (esEquipo) {
                     const st = (it.estado || 'Bueno').toLowerCase();
@@ -3763,6 +3790,26 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                     </div>`;
                 }
             });
+
+            if (totalItems > LIMITE_MOSTRAR_INVENTARIO) {
+                const restantes = totalItems - LIMITE_MOSTRAR_INVENTARIO;
+                const proximoBloque = Math.min(100, restantes);
+                html += `
+                <div style="text-align: center; margin: 20px 0 35px 0;">
+                    <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 10px; font-weight: 600;">
+                        Mostrando ${itemsAMostrar.length} de ${totalItems} activos registrados
+                    </div>
+                    <button type="button" class="btn-ver-mas-activos" onclick="cargarMasActivosInventario()">
+                        ⬇️ Cargar más activos (+${proximoBloque})
+                    </button>
+                </div>`;
+            } else if (totalItems > 100) {
+                html += `
+                <div style="text-align: center; margin: 20px 0 30px 0; font-size: 12px; color: var(--text-muted); font-weight: 600;">
+                    ✅ Mostrando todos los activos (${totalItems} en total)
+                </div>`;
+            }
+
             cont.innerHTML = html;
         }
 
@@ -4050,6 +4097,7 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
 
         function setFiltroTipoActivo(tipo) {
             FILTRO_TIPO_ACTIVO = tipo;
+            LIMITE_MOSTRAR_INVENTARIO = 100;
             ['todo', 'equipos', 'muebles'].forEach(t => {
                 const btn = document.getElementById(`pill_inv_${t}`);
                 if (btn) {
@@ -4087,6 +4135,18 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                 items = items.concat(mus);
             }
 
+            // Ordenar: últimos registrados primero (por fecha_registro DESC o id DESC)
+            items.sort((a, b) => {
+                const fA = a.fecha_registro || '';
+                const fB = b.fecha_registro || '';
+                if (fA && fB && fA !== fB) {
+                    return fB.localeCompare(fA);
+                }
+                const idA = String(a.id || '');
+                const idB = String(b.id || '');
+                return idB.localeCompare(idA, undefined, { numeric: true });
+            });
+
             if (q) {
                 items = items.filter(it => {
                     const idStr = String(it.id || it.codigo_sispam || '').toLowerCase();
@@ -4104,6 +4164,12 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
         }
 
         function filtrarListaInventario() {
+            LIMITE_MOSTRAR_INVENTARIO = 100;
+            aplicarFiltroInventario();
+        }
+
+        function cargarMasActivosInventario() {
+            LIMITE_MOSTRAR_INVENTARIO += 100;
             aplicarFiltroInventario();
         }
 
@@ -4472,6 +4538,21 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             const eq = LISTA_EQUIPOS.find(e => String(e.id) === String(id));
             if (!eq) return;
 
+            // Lazy loading: Traer foto(s) bajo demanda únicamente al editar
+            if (eq.tiene_foto && !eq.foto) {
+                try {
+                    const res = await fetch('/api/equipo/' + encodeURIComponent(eq.id));
+                    if (res.ok) {
+                        const dataEq = await res.json();
+                        if (dataEq && dataEq.foto) {
+                            eq.foto = dataEq.foto;
+                        }
+                    }
+                } catch(e) {
+                    console.error('Error al cargar foto bajo demanda:', e);
+                }
+            }
+
             document.getElementById('modal_eq_title').textContent = `✎ Modificar Equipo [${eq.id}]`;
             document.getElementById('display_af_modal').textContent = eq.id;
             document.getElementById('modal_eq_id_af').value = eq.id;
@@ -4839,11 +4920,16 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                 if (data.ok) {
                     alert('🗑️ ' + data.mensaje);
                     const redSel = document.getElementById('top_red').value;
-                    const cenSel = document.getElementById('top_centro').value;
-                    if (tabla === 'equipos' || tabla === 'muebleria') {
-                        cargarInventarioCentro(cenSel, redSel);
-                        cargarMueblesCentro(cenSel, redSel);
-                        cargarEstadisticasCentro(cenSel, redSel);
+                    if (tabla === 'equipos') {
+                        LISTA_EQUIPOS = LISTA_EQUIPOS.filter(e => String(e.id) !== String(id));
+                        actualizarContadoresInventario();
+                        aplicarFiltroInventario();
+                    } else if (tabla === 'muebleria') {
+                        LISTA_MUEBLES = LISTA_MUEBLES.filter(m => String(m.id || m.m_id) !== String(id));
+                        const contMuebles = document.getElementById('lista_muebles');
+                        if (contMuebles) renderizarListaMuebles(LISTA_MUEBLES);
+                        actualizarContadoresInventario();
+                        aplicarFiltroInventario();
                     } else if (tabla === 'catalogo') {
                         cargarCatalogoGlobal();
                     } else if (tabla === 'areas') {
@@ -5344,9 +5430,29 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                         document.getElementById('top_centro').value = cenVal;
                         alCambiarCentroGlobal();
                     } else {
-                        cargarInventarioCentro(cenVal, redVal);
-                        cargarMueblesCentro(cenVal, redVal);
-                        cargarEstadisticasCentro(cenVal, redVal);
+                        // Actualización directa en memoria (ahorra transferencias HTTP pesadas)
+                        const idGuardado = data.id || payload.id;
+                        const idx = LISTA_EQUIPOS.findIndex(e => String(e.id) === String(idGuardado));
+                        const eqObj = {
+                            ...payload,
+                            id: idGuardado,
+                            tiene_foto: !!(payload.foto && payload.foto.length > 0)
+                        };
+                        if (idx >= 0) {
+                            LISTA_EQUIPOS[idx] = { ...LISTA_EQUIPOS[idx], ...eqObj };
+                        } else {
+                            LISTA_EQUIPOS.unshift(eqObj);
+                        }
+                        actualizarContadoresInventario();
+                        aplicarFiltroInventario();
+
+                        const selInter = document.getElementById('inter_equipo');
+                        if (selInter && !Array.from(selInter.options).some(o => o.value === idGuardado)) {
+                            const opt = document.createElement('option');
+                            opt.value = idGuardado;
+                            opt.textContent = `[${idGuardado}] ${eqObj.nombre} (${eqObj.area || 'Sin Área'})`;
+                            selInter.appendChild(opt);
+                        }
                     }
                 } else {
                     alert('Error: ' + (data.error || 'No se pudo guardar'));
@@ -5471,9 +5577,23 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                         document.getElementById('top_centro').value = cenSel;
                         alCambiarCentroGlobal();
                     } else {
-                        cargarMueblesCentro(cenSel, redSel);
-                        cargarInventarioCentro(cenSel, redSel);
-                        cargarEstadisticasCentro(cenSel, redSel);
+                        // Actualización directa en memoria (ahorra transferencias HTTP)
+                        const idMueble = data.id || payload.id || payload.m_id;
+                        const idx = LISTA_MUEBLES.findIndex(m => String(m.id || m.m_id) === String(idMueble));
+                        const muebleObj = {
+                            ...payload,
+                            id: idMueble,
+                            m_id: idMueble
+                        };
+                        if (idx >= 0) {
+                            LISTA_MUEBLES[idx] = { ...LISTA_MUEBLES[idx], ...muebleObj };
+                        } else {
+                            LISTA_MUEBLES.unshift(muebleObj);
+                        }
+                        const contMuebles = document.getElementById('lista_muebles');
+                        if (contMuebles) renderizarListaMuebles(LISTA_MUEBLES);
+                        actualizarContadoresInventario();
+                        aplicarFiltroInventario();
                     }
                 } else {
                     alert('Error al guardar activo: ' + (data.error || data.id || 'Consulte al administrador'));
