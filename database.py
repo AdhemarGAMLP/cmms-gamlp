@@ -1980,12 +1980,9 @@ def obtener_muebles_db(centro_nombre=None, limite=300, perfil=None, red_nombre=N
                 conds.append("""(
                     unidad_organizacional ILIKE %s 
                     OR %s ILIKE ('%%' || unidad_organizacional || '%%')
-                    OR ubicacion ILIKE %s
-                    OR %s ILIKE ('%%' || ubicacion || '%%')
-                    OR descripcion ILIKE %s
                     OR (centro_salud_id IN (SELECT id FROM centros_salud WHERE nombre ILIKE %s OR %s ILIKE ('%%' || nombre || '%%')))
                 )""")
-                params.extend([f"%{cen_clean}%", cen_raw, f"%{cen_clean}%", cen_raw, f"%{cen_clean}%", f"%{cen_clean}%", cen_raw])
+                params.extend([f"%{cen_clean}%", cen_raw, f"%{cen_clean}%", cen_raw])
             if red_nombre and not str(red_nombre).startswith("[") and str(red_nombre).strip() not in ("Todas las Redes", "-- Todas las Redes (GAMLP) --"):
                 red_raw = str(red_nombre).strip()
                 conds.append("""(
