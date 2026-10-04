@@ -936,27 +936,8 @@ def obtener_activos_unificados_db(red_filtro=None, centro_filtro=None):
                     eq['f_prox'] = proximos[0].strftime("%d/%m/%Y")
             todos_equipos.append(eq)
 
-        # Identificadores de equipos médicos para evitar duplicados en muebles
-        EXENTOS_DUPLICADOS = {"", "S/C", "0", "DONACION", "SIN CODIGO", "SIN SERIE", "NINGUNO", "N/A", "NO APLICA", "S/N", "SN", "-"}
-        series_eq = {str(eq.get('numero_serie') or '').strip().upper() for eq in equipos_raw if str(eq.get('numero_serie') or '').strip().upper() not in EXENTOS_DUPLICADOS}
-        sispam_eq = {str(eq.get('codigo_sispam') or '').strip().upper() for eq in equipos_raw if str(eq.get('codigo_sispam') or '').strip().upper() not in EXENTOS_DUPLICADOS}
-        bertin_eq = {str(eq.get('bertin') or '').strip().upper() for eq in equipos_raw if str(eq.get('bertin') or '').strip().upper() not in EXENTOS_DUPLICADOS}
-        sapm_eq = {str(eq.get('sapm') or '').strip().upper() for eq in equipos_raw if str(eq.get('sapm') or '').strip().upper() not in EXENTOS_DUPLICADOS}
-
         todos_muebles = []
         for m in muebles_raw:
-            m_serie = str(m.get('serie') or '').strip().upper()
-            m_sispam = str(m.get('codigo_sispam') or '').strip().upper()
-            m_bertin = str(m.get('bertin') or '').strip().upper()
-            m_sapm = str(m.get('sapm') or '').strip().upper()
-
-            # Evitar mostrar muebles que en realidad son clones duplicados de un equipo médico
-            if (m_serie and m_serie in series_eq) or \
-               (m_sispam and m_sispam in sispam_eq) or \
-               (m_bertin and m_bertin in bertin_eq) or \
-               (m_sapm and m_sapm in sapm_eq):
-                continue
-
             # Resolver Centro de Salud
             cen_nom = m.get('centro_nombre_fk') or m.get('unidad_organizacional') or ''
             if not cen_nom:

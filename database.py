@@ -1966,7 +1966,7 @@ def obtener_equipo_por_id_db(id_equipo):
             except: pass
     return None
 
-def obtener_muebles_db(centro_nombre=None, limite=300, perfil=None, red_nombre=None):
+def obtener_muebles_db(centro_nombre=None, limite=3000, perfil=None, red_nombre=None):
     """Retorna los activos de mueblería y computación con todos sus campos."""
     conn = obtener_conexion(perfil=perfil)
     if conn:
@@ -2493,12 +2493,23 @@ def obtener_estadisticas_censo_db(centro_nombre=None, perfil=None, red_nombre=No
         # Muebles
         conds_mu = ["COALESCE(estado, 'Activo') NOT IN ('Inactivo', 'Eliminado')"]
         params_mu = []
-        if centro_nombre and not str(centro_nombre).startswith("["):
-            conds_mu.append("(ubicacion ILIKE %s OR descripcion ILIKE %s OR unidad_organizacional ILIKE %s)")
-            params_mu.extend([f"%{centro_nombre}%", f"%{centro_nombre}%", f"%{centro_nombre}%"])
-        if red_nombre and not str(red_nombre).startswith("["):
-            conds_mu.append("(ubicacion ILIKE %s OR descripcion ILIKE %s OR unidad_organizacional ILIKE %s)")
-            params_mu.extend([f"%{red_nombre}%", f"%{red_nombre}%", f"%{red_nombre}%"])
+        if centro_nombre and not str(centro_nombre).startswith("[") and str(centro_nombre).strip() not in ("Todos los Centros", "-- Todos los Centros --"):
+            cen_raw = str(centro_nombre).strip()
+            cen_clean = cen_raw.replace("C.S.", "").replace("CS", "").replace("CENTRO DE SALUD", "").replace("HOSPITAL", "").strip()
+            conds_mu.append("""(
+                unidad_organizacional ILIKE %s 
+                OR %s ILIKE ('%%' || unidad_organizacional || '%%')
+                OR (centro_salud_id IN (SELECT id FROM centros_salud WHERE nombre ILIKE %s OR %s ILIKE ('%%' || nombre || '%%')))
+            )""")
+            params_mu.extend([f"%{cen_clean}%", cen_raw, f"%{cen_clean}%", cen_raw])
+        if red_nombre and not str(red_nombre).startswith("[") and str(red_nombre).strip() not in ("Todas las Redes", "-- Todas las Redes (GAMLP) --"):
+            red_raw = str(red_nombre).strip()
+            conds_mu.append("""(
+                direccion_administrativa ILIKE %s 
+                OR %s ILIKE ('%%' || direccion_administrativa || '%%')
+                OR (red_salud_id IN (SELECT id FROM redes_salud WHERE nombre ILIKE %s OR %s ILIKE ('%%' || nombre || '%%')))
+            )""")
+            params_mu.extend([f"%{red_raw}%", red_raw, f"%{red_raw}%", red_raw])
         filtro_mu = "WHERE " + " AND ".join(conds_mu)
         sql_mu = f"SELECT COUNT(*) FROM muebleria {filtro_mu};"
         cur.execute(sql_mu, tuple(params_mu))
