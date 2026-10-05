@@ -5518,6 +5518,7 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             }
 
             const idVal = document.getElementById('mue_id').value;
+            const idParsed = (idVal && !isNaN(parseInt(idVal)) && parseInt(idVal) > 0) ? parseInt(idVal) : null;
             const redSel = (document.getElementById('mue_red') ? document.getElementById('mue_red').value : '') || (document.getElementById('top_red') ? document.getElementById('top_red').value : '');
             const cenSel = (document.getElementById('mue_centro') ? document.getElementById('mue_centro').value : '') || (document.getElementById('top_centro') ? document.getElementById('top_centro').value : '');
             const redes = SEDES_DATA.redes || [];
@@ -5534,8 +5535,8 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             const ubicacionArea = areaAct || 'General';
 
             const payload = {
-                id: idVal ? parseInt(idVal) : null,
-                m_id: idVal ? parseInt(idVal) : null,
+                id: idParsed,
+                m_id: idParsed,
                 direccion_administrativa: redSel,
                 unidad_organizacional: cenSel,
                 red_salud_id: rId,
@@ -5596,7 +5597,7 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                         aplicarFiltroInventario();
                     }
                 } else {
-                    alert('Error al guardar activo: ' + (data.error || data.id || 'Consulte al administrador'));
+                    alert('Error al guardar activo: ' + (data.error || 'Consulte al administrador'));
                 }
             } catch (e) {
                 alert('Fallo de conexión al servidor: ' + e.message);

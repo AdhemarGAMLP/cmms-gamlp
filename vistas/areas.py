@@ -317,8 +317,8 @@ class VistaAreas(ctk.CTkFrame):
                 centros = [c["nombre"] for c in sedes.get("centros", []) if c.get("red_salud_id") == red_obj["id"]]
             else:
                 centros = [c["nombre"] for c in sedes.get("centros", [])]
-            if "RED 1" in (red_nom or "").upper() and "167 AUXILIO" not in centros:
-                centros.append("167 AUXILIO")
+            if "RED 1" in (red_nom or "").upper() and "ALMACEN" not in centros:
+                centros.append("ALMACEN")
             if not centros:
                 centros = ["CENTRO DE SALUD GAMLP"]
             combo_centro.configure(values=centros)

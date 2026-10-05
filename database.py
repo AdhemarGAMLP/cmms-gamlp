@@ -976,6 +976,14 @@ def guardar_mueble_db(datos):
         except (ValueError, TypeError):
             m_id = None
 
+        if m_id:
+            try:
+                cur.execute("SELECT id FROM muebleria WHERE id = %s;", (m_id,))
+                if not cur.fetchone():
+                    m_id = None
+            except Exception:
+                m_id = None
+
         sector_actual = str(datos.get("sector_actual") or "SALUD").strip()
         direccion_administrativa = str(datos.get("direccion_administrativa") or datos.get("red_salud_nombre") or "").strip()
         unidad_organizacional = str(datos.get("unidad_organizacional") or datos.get("centro_salud_nombre") or "").strip()
@@ -1012,7 +1020,15 @@ def guardar_mueble_db(datos):
         except (ValueError, TypeError):
             centro_salud_id = None
 
-        # Si no vinieron los IDs numéricos pero sí los nombres de Red / Centro, buscarlos
+        # Validar y resolver red_salud_id
+        if red_salud_id:
+            try:
+                cur.execute("SELECT id FROM redes_salud WHERE id = %s;", (red_salud_id,))
+                if not cur.fetchone():
+                    red_salud_id = None
+            except Exception:
+                red_salud_id = None
+
         if not red_salud_id and direccion_administrativa:
             try:
                 cur.execute("SELECT id FROM redes_salud WHERE nombre = %s OR codigo = %s OR nombre ILIKE %s LIMIT 1;", 
@@ -1021,12 +1037,31 @@ def guardar_mueble_db(datos):
                 if r_row: red_salud_id = r_row[0]
             except Exception: pass
 
+        # Validar y resolver centro_salud_id
+        if centro_salud_id:
+            try:
+                cur.execute("SELECT id, red_salud_id FROM centros_salud WHERE id = %s;", (centro_salud_id,))
+                c_row = cur.fetchone()
+                if not c_row:
+                    centro_salud_id = None
+                elif not red_salud_id and c_row[1]:
+                    red_salud_id = c_row[1]
+            except Exception:
+                centro_salud_id = None
+
         if not centro_salud_id and unidad_organizacional:
             try:
-                cur.execute("SELECT id FROM centros_salud WHERE (nombre = %s OR nombre ILIKE %s) AND (red_salud_id = %s OR %s IS NULL) LIMIT 1;", 
+                cur.execute("SELECT id, red_salud_id FROM centros_salud WHERE (nombre = %s OR nombre ILIKE %s) AND (red_salud_id = %s OR %s IS NULL) LIMIT 1;", 
                             (unidad_organizacional, f"%{unidad_organizacional}%", red_salud_id, red_salud_id))
                 c_row = cur.fetchone()
-                if c_row: centro_salud_id = c_row[0]
+                if not c_row:
+                    cur.execute("SELECT id, red_salud_id FROM centros_salud WHERE nombre ILIKE %s OR %s ILIKE ('%%' || nombre || '%%') LIMIT 1;", 
+                                (f"%{unidad_organizacional}%", unidad_organizacional))
+                    c_row = cur.fetchone()
+                if c_row:
+                    centro_salud_id = c_row[0]
+                    if not red_salud_id and c_row[1]:
+                        red_salud_id = c_row[1]
             except Exception: pass
 
         cargo_asignado = str(datos.get("cargo_asignado") or "").strip()
@@ -2033,6 +2068,14 @@ def guardar_area_db(datos):
         cargo = str(a_dict.get("cargo") or "").strip()
         ci_enc = str(a_dict.get("ci_encargado") or "").strip()
 
+        if cen_id:
+            try:
+                cur.execute("SELECT id FROM centros_salud WHERE id = %s;", (cen_id,))
+                if not cur.fetchone():
+                    cen_id = None
+            except Exception:
+                cen_id = None
+
         if not cen_id and cen_nom:
             cur.execute("SELECT id FROM centros_salud WHERE nombre = %s OR nombre ILIKE %s LIMIT 1;", (cen_nom, f"%{cen_nom}%"))
             c_row = cur.fetchone()
@@ -2617,18 +2660,56 @@ def guardar_equipo_db(eq_data):
         cur = conn.cursor()
         red_id = eq.get("red_salud_id")
         cen_id = eq.get("centro_salud_id")
+        try:
+            red_id = int(red_id) if red_id not in (None, "", "null", 0) else None
+        except (ValueError, TypeError):
+            red_id = None
+        try:
+            cen_id = int(cen_id) if cen_id not in (None, "", "null", 0) else None
+        except (ValueError, TypeError):
+            cen_id = None
+
+        if red_id:
+            try:
+                cur.execute("SELECT id FROM redes_salud WHERE id = %s;", (red_id,))
+                if not cur.fetchone():
+                    red_id = None
+            except Exception:
+                red_id = None
 
         if not red_id and r_nom:
-            cur.execute("SELECT id FROM redes_salud WHERE nombre = %s OR codigo = %s OR nombre ILIKE %s LIMIT 1;", 
-                        (r_nom, eq.get("red_salud_nombre", ""), f"%{r_nom}%"))
-            r_row = cur.fetchone()
-            if r_row: red_id = r_row[0]
+            try:
+                cur.execute("SELECT id FROM redes_salud WHERE nombre = %s OR codigo = %s OR nombre ILIKE %s LIMIT 1;", 
+                            (r_nom, eq.get("red_salud_nombre", ""), f"%{r_nom}%"))
+                r_row = cur.fetchone()
+                if r_row: red_id = r_row[0]
+            except Exception: pass
+
+        if cen_id:
+            try:
+                cur.execute("SELECT id, red_salud_id FROM centros_salud WHERE id = %s;", (cen_id,))
+                c_check = cur.fetchone()
+                if not c_check:
+                    cen_id = None
+                elif not red_id and c_check[1]:
+                    red_id = c_check[1]
+            except Exception:
+                cen_id = None
 
         if not cen_id and c_nom:
-            cur.execute("SELECT id FROM centros_salud WHERE nombre = %s OR nombre ILIKE %s LIMIT 1;", 
-                        (c_nom, f"%{c_nom}%"))
-            c_row = cur.fetchone()
-            if c_row: cen_id = c_row[0]
+            try:
+                cur.execute("SELECT id, red_salud_id FROM centros_salud WHERE (nombre = %s OR nombre ILIKE %s) AND (red_salud_id = %s OR %s IS NULL) LIMIT 1;", 
+                            (c_nom, f"%{c_nom}%", red_id, red_id))
+                c_row = cur.fetchone()
+                if not c_row:
+                    cur.execute("SELECT id, red_salud_id FROM centros_salud WHERE nombre ILIKE %s OR %s ILIKE ('%%' || nombre || '%%') LIMIT 1;", 
+                                (f"%{c_nom}%", c_nom))
+                    c_row = cur.fetchone()
+                if c_row:
+                    cen_id = c_row[0]
+                    if not red_id and c_row[1]:
+                        red_id = c_row[1]
+            except Exception: pass
 
         # Anticolisión y Antiduplicación estricta por reintento / multiclic
         es_edicion = bool(eq.get("_es_edicion", False))
