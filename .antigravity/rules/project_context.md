@@ -14,3 +14,5 @@ Este espacio de trabajo contiene **CMMS GAMLP**, la plataforma oficial de gesti�
    - La base de datos es PostgreSQL en Supabase (`relevamiento_2026`).
    - El centro `ALMACEN` en Red 1 tiene el ID `2118` (nunca usar '167 AUXILIO').
    - Validar siempre `centro_salud_id` y `red_salud_id` contra las tablas maestras antes de inserciones o actualizaciones en `database.py`.
+6. **Respaldo Automático a GitHub:**
+   - Al completar cualquier tarea, cambio o corrección solicitada por el usuario, la IA debe compilar, hacer `git commit` y `git push origin main` automáticamente para que el código quede inmediatamente respaldado en la nube sin esperar instrucciones adicionales.

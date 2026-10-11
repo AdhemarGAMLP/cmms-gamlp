@@ -71,6 +71,9 @@ CMMS_GAMLP/
 - En móviles y web pública, los inventarios cargan los **últimos 100 activos** registrados con botón "Ver más / Cargar más" para evitar saturar el ancho de banda 4G de los técnicos.
 - Las fotos pesadas no se envían en el listado masivo (`/api/equipos`), sino bajo demanda individual (`/api/equipo/<id>`).
 
+### 5. Respaldo Automático a GitHub (Obligatorio)
+- Al completar cualquier tarea, refactor o corrección solicitada por el usuario, Claude DEBE compilar sintaxis y ejecutar `git commit` y `git push origin main` automáticamente. Esto asegura que el código quede 100% respaldado en GitHub y sincronizado en Render sin requerir intervención manual del usuario.
+
 ---
 
 ## 🛠️ Comandos Frecuentes
