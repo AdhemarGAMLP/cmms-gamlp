@@ -18,6 +18,7 @@ from database import (
     obtener_conexion,
     comprimir_imagen_base64,
     obtener_jerarquia_sedes_db,
+    invalidar_cache_jerarquia,
     generar_codigo_red,
     generar_sigla_centro,
     generar_siguiente_codigo_af,
@@ -74,6 +75,15 @@ def login_requerido(f):
             return redirect(url_for('movil_login', next=request.path))
         return f(*args, **kwargs)
     return decorada
+
+@app_web.after_request
+def agregar_headers_no_cache(response):
+    """Evita que los navegadores móviles guarden formularios dinámicos y endpoints de datos en caché."""
+    if request.path.startswith('/movil') or request.path.startswith('/api/'):
+        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+    return response
 
 
 # Pantalla de éxito responsiva con enlace de descarga Excel
@@ -3973,7 +3983,8 @@ def movil_logout():
 def movil_registro():
     """Formulario interactivo y táctil para registro de equipamiento médico desde celular."""
     try:
-        sedes_data = obtener_jerarquia_sedes_db()
+        forzar = request.args.get('refresh', '').lower() in ('1', 'true', 'si', 'yes') or request.args.get('recargar', '').lower() in ('1', 'true')
+        sedes_data = obtener_jerarquia_sedes_db(forzar_recarga=forzar)
         usuario_dict = {
             "nombre_usuario": session.get('usuario', ''),
             "nombre_completo": session.get('nombre_completo', session.get('usuario', 'Técnico')),
@@ -4085,8 +4096,24 @@ def api_historico_estadisticas():
 def api_sedes():
     """Retorna la jerarquía de redes y centros de salud en formato JSON."""
     try:
-        data = obtener_jerarquia_sedes_db()
+        forzar = request.args.get('refresh', '').lower() in ('1', 'true', 'si', 'yes') or request.args.get('recargar', '').lower() in ('1', 'true')
+        data = obtener_jerarquia_sedes_db(forzar_recarga=forzar)
         return jsonify(data)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app_web.route('/api/sedes/recargar', methods=['GET', 'POST'])
+def api_sedes_recargar():
+    """Fuerza la recarga inmediata de la jerarquía de sedes y centros desde la base de datos."""
+    try:
+        invalidar_cache_jerarquia()
+        data = obtener_jerarquia_sedes_db(forzar_recarga=True)
+        total_centros = len(data.get('centros', []))
+        return jsonify({
+            "status": "ok",
+            "mensaje": f"Sedes sincronizadas correctamente. {total_centros} centros disponibles.",
+            "total_centros": total_centros
+        })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

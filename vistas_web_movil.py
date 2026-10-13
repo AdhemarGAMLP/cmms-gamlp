@@ -1541,7 +1541,12 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                 </select>
             </div>
             <div class="sede-sel-group">
-                <label for="top_centro">🏥 Centro de Salud:</label>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                    <label for="top_centro" style="margin-bottom: 0;">🏥 Centro de Salud:</label>
+                    <button type="button" id="btn_recargar_sedes_top" onclick="refrescarSedesServidor()" title="Refrescar lista de sedes y centros" style="background: none; border: none; color: #0284C7; font-size: 11px; font-weight: 700; cursor: pointer; padding: 1px 4px; display: inline-flex; align-items: center; gap: 3px;">
+                        <span id="icono_spin_sedes" style="display: inline-block;">🔄</span> Actualizar
+                    </button>
+                </div>
                 <select id="top_centro" class="sede-select" onchange="alCambiarCentroGlobal()">
                     <option value="">-- Todos los Centros --</option>
                 </select>
@@ -1777,6 +1782,7 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
         <section id="pane_sedes" class="tab-pane">
             <div class="tab-tools-bar">
                 <input type="text" id="busq_sedes" class="search-input" placeholder="Buscar red o centro..." oninput="filtrarListaSedes()">
+                <button type="button" class="btn-add-action" style="background: #0284C7; white-space: nowrap;" onclick="refrescarSedesServidor()">🔄 Recargar Centros</button>
             </div>
             <div id="lista_sedes" class="cards-grid">
                 <div class="empty-state"><span>🏥</span>Cargando directorio de sedes...</div>
@@ -2785,7 +2791,7 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
 
     <!-- JAVASCRIPT GLOBAL -->
     <script>
-        const SEDES_DATA = {{ sedes | tojson }};
+        let SEDES_DATA = {{ sedes | tojson }};
         const USUARIO_ACTUAL = {{ usuario | tojson }};
         const ES_ADMIN = {{ 'true' if es_admin else 'false' }};
         const USUARIO_PERMISOS = {{ usuario.get('permisos', {}) | tojson }};
@@ -2822,6 +2828,62 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
         let FILTRO_PAPELERA_TABLA = 'todos';
         let LIMITE_MOSTRAR_INVENTARIO = 100; // Paginación fluida: últimos 100 activos inicialmente
 
+        // Sincronización dinámica de Sedes y Centros desde el servidor en la nube
+        async function refrescarSedesServidor(forzarSilencioso = false) {
+            const iconSpin = document.getElementById('icono_spin_sedes');
+            if (iconSpin) {
+                iconSpin.style.transition = 'transform 0.6s ease';
+                iconSpin.style.transform = 'rotate(360deg)';
+            }
+            try {
+                const resp = await fetch('/api/sedes?refresh=1&t=' + Date.now());
+                if (resp.ok) {
+                    const data = await resp.json();
+                    if (data && data.centros && data.centros.length > 0) {
+                        SEDES_DATA = data;
+                        
+                        // Actualizar opciones del selector de Redes
+                        const selRed = document.getElementById('top_red');
+                        const valRedActual = selRed ? selRed.value : '';
+                        if (selRed) {
+                            const redes = SEDES_DATA.redes || [];
+                            selRed.innerHTML = '<option value="">-- Todas las Redes (GAMLP) --</option>';
+                            redes.forEach(r => {
+                                const opt = document.createElement('option');
+                                opt.value = r.nombre;
+                                opt.setAttribute('data-id', r.id);
+                                opt.textContent = r.nombre;
+                                if (r.nombre === valRedActual) opt.selected = true;
+                                selRed.appendChild(opt);
+                            });
+                        }
+                        
+                        // Actualizar centros de la red actual preservando el centro seleccionado
+                        const selCen = document.getElementById('top_centro');
+                        const valCenActual = selCen ? selCen.value : '';
+                        alCambiarRedGlobal(valCenActual);
+                        
+                        // Si la pestaña Sedes está cargada, re-renderizar directorio
+                        if (typeof renderizarSedesDirectorio === 'function') {
+                            renderizarSedesDirectorio();
+                        }
+                        
+                        if (!forzarSilencioso && typeof mostrarNotificacion === 'function') {
+                            mostrarNotificacion(`🏥 Sedes actualizadas: ${data.centros.length} centros sincronizados`, 'info');
+                        }
+                    }
+                }
+            } catch (err) {
+                console.warn('Error al sincronizar sedes desde servidor:', err);
+            } finally {
+                if (iconSpin) {
+                    setTimeout(() => {
+                        iconSpin.style.transform = 'rotate(0deg)';
+                    }, 650);
+                }
+            }
+        }
+
         window.addEventListener('DOMContentLoaded', () => {
             let redGuardada = '';
             let cenGuardado = '';
@@ -2848,6 +2910,11 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                     if (tabKey) cambiarPestana(tabKey);
                 }
             }
+
+            // Sincronizar sedes en segundo plano al cargar para reflejar altas recientes
+            setTimeout(() => {
+                refrescarSedesServidor(true);
+            }, 600);
         });
 
         // 1. Selector Territorial

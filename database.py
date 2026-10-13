@@ -1,6 +1,7 @@
 # database.py
 import os
 import json
+import time
 import psycopg2
 import psycopg2.extras
 from datetime import date, datetime
@@ -620,6 +621,8 @@ def sembrar_datos_sedes_gamlp(cur, conn):
 
 
 _CACHE_JERARQUIA_SEDES = None
+_CACHE_JERARQUIA_SEDES_TIME = 0
+CACHE_SEDES_TTL_SEGUNDOS = 60  # Recarga automáticamente cada 60s para reflejar nuevos centros sin reiniciar
 
 def _obtener_ruta_cache_sedes():
     db_host_key = str(CONFIG.get("db_host", "default")).replace(":", "_").replace("/", "_").replace(".", "_")
@@ -627,8 +630,10 @@ def _obtener_ruta_cache_sedes():
 
 def obtener_jerarquia_sedes_db(forzar_recarga=False, perfil=None):
     """Obtiene la jerarquía completa de Departamentos, Municipios, Redes y Centros de Salud (con caché en memoria y disco persistente)."""
-    global _CACHE_JERARQUIA_SEDES
-    if not perfil and _CACHE_JERARQUIA_SEDES and not forzar_recarga:
+    global _CACHE_JERARQUIA_SEDES, _CACHE_JERARQUIA_SEDES_TIME
+    ahora = time.time()
+    cache_valido = (_CACHE_JERARQUIA_SEDES is not None and (ahora - _CACHE_JERARQUIA_SEDES_TIME) < CACHE_SEDES_TTL_SEGUNDOS)
+    if not perfil and cache_valido and not forzar_recarga:
         return _CACHE_JERARQUIA_SEDES
 
     conn = obtener_conexion(perfil=perfil)
@@ -742,6 +747,7 @@ def obtener_jerarquia_sedes_db(forzar_recarga=False, perfil=None):
             "redes": redes,
             "centros": centros
         }
+        _CACHE_JERARQUIA_SEDES_TIME = time.time()
         # Guardar en archivo local para uso offline
         try:
             with open(_obtener_ruta_cache_sedes(), "w", encoding="utf-8") as f:
@@ -764,8 +770,29 @@ def obtener_jerarquia_sedes_db(forzar_recarga=False, perfil=None):
         }
 
 def invalidar_cache_jerarquia():
-    global _CACHE_JERARQUIA_SEDES
+    """Limpia el caché de sedes en memoria y disco, y sincroniza la nube si está conectada."""
+    global _CACHE_JERARQUIA_SEDES, _CACHE_JERARQUIA_SEDES_TIME
     _CACHE_JERARQUIA_SEDES = None
+    _CACHE_JERARQUIA_SEDES_TIME = 0
+    try:
+        ruta_s = _obtener_ruta_cache_sedes()
+        if os.path.exists(ruta_s):
+            os.remove(ruta_s)
+    except Exception:
+        pass
+    # Notificar a Render en segundo plano para invalidar su caché de inmediato
+    try:
+        import threading
+        import urllib.request
+        def _ping_render_recargar():
+            try:
+                req = urllib.request.Request("https://cmms-gamlp.onrender.com/api/sedes/recargar", headers={"User-Agent": "CMMS-Desktop"})
+                urllib.request.urlopen(req, timeout=3)
+            except Exception:
+                pass
+        threading.Thread(target=_ping_render_recargar, daemon=True).start()
+    except Exception:
+        pass
 
 def guardar_centro_salud_db(datos):
     """Inserta o actualiza un Centro de Salud / Hospital en la base de datos."""
