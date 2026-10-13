@@ -58,6 +58,7 @@ from config import CARPETAS, CONFIG
 
 app_web = Flask(__name__)
 app_web.secret_key = os.environ.get("FLASK_SECRET_KEY", "gamlp_sgem_secret_key_2026_super_secure")
+app_web.config['MAX_CONTENT_LENGTH'] = 32 * 1024 * 1024  # 32 MB para subida segura de múltiples fotos
 app = app_web  # Alias para servidores WSGI de producción (Gunicorn / Render / Vercel)
 try:
     from flask_compress import Compress

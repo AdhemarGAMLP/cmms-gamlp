@@ -5022,9 +5022,12 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             for (const file of files) {
                 try {
                     const dataUrl = await comprimirArchivoImagen(file);
-                    FOTOS_EQUIPO_ACTUAL.push(dataUrl);
+                    if (dataUrl && dataUrl.length > 50) {
+                        FOTOS_EQUIPO_ACTUAL.push(dataUrl);
+                    }
                 } catch (e) {
                     console.error("Error comprimiendo imagen:", e);
+                    alert("⚠️ No se pudo procesar la foto (" + (file.name || 'archivo') + "). Por favor intenta tomarla nuevamente.");
                 }
             }
             input.value = '';
@@ -5035,21 +5038,38 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
                 reader.onload = function(e) {
+                    const rawData = e.target.result;
                     const img = new Image();
                     img.onload = function() {
-                        const canvas = document.createElement('canvas');
-                        let w = img.width, h = img.height;
-                        const max = 800; // Resolución optimizada para móviles y web
-                        if (w > h && w > max) { h = Math.round(h * (max / w)); w = max; }
-                        else if (h > max) { w = Math.round(w * (max / h)); h = max; }
-                        canvas.width = w; canvas.height = h;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, w, h);
-                        const dataUrl = canvas.toDataURL('image/jpeg', 0.70);
-                        resolve(dataUrl);
+                        try {
+                            const canvas = document.createElement('canvas');
+                            let w = img.width, h = img.height;
+                            const max = 1000; // Resolución optimizada para móviles y web
+                            if (w > h && w > max) { h = Math.round(h * (max / w)); w = max; }
+                            else if (h > max) { w = Math.round(w * (max / h)); h = max; }
+                            canvas.width = w || 800; canvas.height = h || 600;
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                            const dataUrl = canvas.toDataURL('image/jpeg', 0.75);
+                            if (dataUrl && dataUrl.length > 100) {
+                                resolve(dataUrl);
+                            } else {
+                                resolve(rawData);
+                            }
+                        } catch (errCanvas) {
+                            console.warn("Fallo canvas resize, usando imagen directa:", errCanvas);
+                            resolve(rawData);
+                        }
                     };
-                    img.onerror = reject;
-                    img.src = e.target.result;
+                    img.onerror = function(err) {
+                        console.warn("Fallo decodificar imagen en Image(), usando rawData:", err);
+                        if (rawData && String(rawData).startsWith('data:image')) {
+                            resolve(rawData);
+                        } else {
+                            reject(err || new Error("No se pudo decodificar la imagen"));
+                        }
+                    };
+                    img.src = rawData;
                 };
                 reader.onerror = reject;
                 reader.readAsDataURL(file);
@@ -5381,7 +5401,7 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                 garantia: garVal,
                 fecha_inicio_garantia: document.getElementById('modal_eq_gar_inicio').value || null,
                 fecha_vencimiento_garantia: document.getElementById('modal_eq_gar_fin').value || null,
-                foto: document.getElementById('foto_base64').value,
+                foto: (Array.isArray(FOTOS_EQUIPO_ACTUAL) && FOTOS_EQUIPO_ACTUAL.length > 0) ? JSON.stringify(FOTOS_EQUIPO_ACTUAL) : (document.getElementById('foto_base64') ? document.getElementById('foto_base64').value : ''),
                 t_elec: document.querySelector('.chip-btn[data-f="t_elec"]').classList.contains('active'),
                 t_elco: document.querySelector('.chip-btn[data-f="t_elco"]').classList.contains('active'),
                 t_mec: document.querySelector('.chip-btn[data-f="t_mec"]').classList.contains('active'),

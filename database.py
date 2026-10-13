@@ -3229,26 +3229,39 @@ def obtener_firma_datos_db():
 # =========================================================================
 # COMPRESIÓN Y SINCRONIZACIÓN UNIVERSAL DE IMÁGENES (BASE64 OPTIMIZADO)
 # =========================================================================
-def comprimir_imagen_base64(ruta_or_bytes, max_size=(1200, 1200), quality=90):
-    """
-    Comprime una imagen a formato JPEG optimizado con alta nitidez (max 1200x1200 px, 90% calidad)
-    y fondo blanco para transparencias PNG.
-    """
-    if not ruta_or_bytes:
+def _comprimir_un_data_url_o_bytes(img_item, max_size=(1200, 1200), quality=85):
+    """Auxiliar para comprimir o normalizar una sola imagen (base64 dataURL o ruta)."""
+    if not img_item:
         return ""
     import base64
     import io
+    import os
     from PIL import Image
     try:
-        if isinstance(ruta_or_bytes, str):
-            if ruta_or_bytes.startswith("data:image"):
-                return ruta_or_bytes
-            if not os.path.exists(ruta_or_bytes):
-                return ""
-            img = Image.open(ruta_or_bytes)
+        if isinstance(img_item, str):
+            img_item = img_item.strip()
+            if img_item.startswith("data:image"):
+                # Si ya es un dataUrl razonable (< 200 KB), mantenerlo directo para máxima velocidad
+                if len(img_item) < 200000:
+                    return img_item
+                try:
+                    header, b64_data = img_item.split(",", 1)
+                    img_bytes = base64.b64decode(b64_data)
+                    img = Image.open(io.BytesIO(img_bytes))
+                except Exception:
+                    return img_item  # Si falla el decode, no destruir la foto original
+            elif os.path.exists(img_item):
+                img = Image.open(img_item)
+            else:
+                # Intentar si es base64 directo sin cabecera
+                try:
+                    img_bytes = base64.b64decode(img_item)
+                    img = Image.open(io.BytesIO(img_bytes))
+                except Exception:
+                    return ""
         else:
-            img = Image.open(ruta_or_bytes)
-            
+            img = Image.open(img_item)
+
         # Convertir a RGB respetando fondo blanco si tiene canal alfa / transparencia
         if img.mode in ("RGBA", "LA", "P"):
             bg = Image.new("RGB", img.size, (255, 255, 255))
@@ -3258,18 +3271,64 @@ def comprimir_imagen_base64(ruta_or_bytes, max_size=(1200, 1200), quality=90):
             img = bg
         elif img.mode != "RGB":
             img = img.convert("RGB")
-            
+
         img.thumbnail(max_size, Image.LANCZOS)
-        
         buffer = io.BytesIO()
         img.save(buffer, format="JPEG", quality=quality, optimize=True)
-        img_bytes = buffer.getvalue()
-        
-        b64_str = base64.b64encode(img_bytes).decode("utf-8")
+        b64_str = base64.b64encode(buffer.getvalue()).decode("utf-8")
         return f"data:image/jpeg;base64,{b64_str}"
     except Exception as e:
-        print(f"[WARN] Error al comprimir imagen a Base64: {e}")
+        print(f"[WARN] Error al procesar imagen individual: {e}")
+        # En caso de error inesperado, SI es un data:image retornar el original para NUNCA perder la foto
+        if isinstance(img_item, str) and img_item.startswith("data:image"):
+            return img_item
         return ""
+
+
+def comprimir_imagen_base64(ruta_or_bytes, max_size=(1200, 1200), quality=85):
+    """
+    Comprime una imagen o lista de imágenes a formato JPEG optimizado.
+    Soporta:
+      - Array JSON de imágenes: '["data:image...", ...]'
+      - Lista de imágenes de Python: ['data:image...', ...]
+      - DataURL individual: 'data:image/jpeg;base64,...'
+      - Archivo local o bytes.
+    NUNCA destruye una imagen existente si falla la compresión.
+    """
+    if not ruta_or_bytes:
+        return ""
+    import json
+
+    # 1. Si es una cadena JSON que contiene un array de fotos
+    if isinstance(ruta_or_bytes, str):
+        s = ruta_or_bytes.strip()
+        if s.startswith("[") and s.endswith("]"):
+            try:
+                lista_fotos = json.loads(s)
+                if isinstance(lista_fotos, list):
+                    fotos_opt = []
+                    for f in lista_fotos:
+                        if f:
+                            res_f = _comprimir_un_data_url_o_bytes(f, max_size=max_size, quality=quality)
+                            if res_f:
+                                fotos_opt.append(res_f)
+                    return json.dumps(fotos_opt) if fotos_opt else s
+            except Exception as e_json:
+                print(f"[WARN] Error parseando JSON de fotos en comprimir_imagen_base64: {e_json}")
+                return ruta_or_bytes
+
+    # 2. Si es una lista Python directa
+    if isinstance(ruta_or_bytes, list):
+        fotos_opt = []
+        for f in ruta_or_bytes:
+            if f:
+                res_f = _comprimir_un_data_url_o_bytes(f, max_size=max_size, quality=quality)
+                if res_f:
+                    fotos_opt.append(res_f)
+        return json.dumps(fotos_opt) if fotos_opt else ""
+
+    # 3. Imagen individual
+    return _comprimir_un_data_url_o_bytes(ruta_or_bytes, max_size=max_size, quality=quality)
 
 def cargar_imagen_pil(foto_str):
     """
