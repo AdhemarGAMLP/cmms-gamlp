@@ -341,8 +341,8 @@ class VistaMuebleria(ctk.CTkFrame):
         ctk.CTkLabel(f_f_inner, text="Estado:", font=ctk.CTkFont(size=11, weight="bold"), text_color=C_TEXT).pack(side="left", padx=(3, 2))
         self.combo_filtro_estado = ctk.CTkComboBox(
             f_f_inner, 
-            values=["[ Todos ]", "Baja", "Bueno", "Regular", "Malo", "Operativo"], 
-            width=105, 
+            values=["[ Todos ]", "Baja", "Baja + Malo (376)", "Malo", "Bueno", "Regular", "Operativo"], 
+            width=145, 
             command=lambda e: self.refrescar_datos(), 
             fg_color=C_BG, 
             border_color=C_BORDER
@@ -695,12 +695,18 @@ class VistaMuebleria(ctk.CTkFrame):
                 if es_eq or self._es_tipo_computacion(t_act) or self._es_tipo_muebleria(t_act):
                     continue
 
-            # Filtro Estado de Conservación / Baja
+            # Filtro Estado de Conservación / Baja / Malo
             if est_f != "[ Todos ]":
                 m_est = str(m.get("estado_conservacion") or m.get("estado_bien") or "").strip().lower()
                 target_est = est_f.lower()
                 if target_est == "baja":
                     if "baja" not in m_est:
+                        continue
+                elif "376" in target_est or "baja + malo" in target_est:
+                    if "baja" not in m_est and "mal" not in m_est:
+                        continue
+                elif target_est == "malo":
+                    if "mal" not in m_est:
                         continue
                 else:
                     if target_est != m_est:
@@ -1674,9 +1680,21 @@ class VistaMuebleria(ctk.CTkFrame):
         if est_f.lower() == "baja":
             if cen_f != "[ Todos los Centros ]":
                 cen_clean = "".join(c for c in cen_f if c.isalnum() or c in (' ', '_', '-')).strip().replace(' ', '_')
-                f_def = f"Activos_Baja_{cen_clean}_{timestamp}.xlsx"
+                f_def = f"Activos_De_Baja_{cen_clean}_{timestamp}.xlsx"
             else:
                 f_def = f"Activos_De_Baja_GAMLP_{timestamp}.xlsx"
+        elif "376" in est_f.lower() or "baja + malo" in est_f.lower():
+            if cen_f != "[ Todos los Centros ]":
+                cen_clean = "".join(c for c in cen_f if c.isalnum() or c in (' ', '_', '-')).strip().replace(' ', '_')
+                f_def = f"Activos_Baja_Y_Fuera_Servicio_{cen_clean}_{timestamp}.xlsx"
+            else:
+                f_def = f"Activos_Baja_Y_Fuera_Servicio_GAMLP_{timestamp}.xlsx"
+        elif est_f.lower() == "malo":
+            if cen_f != "[ Todos los Centros ]":
+                cen_clean = "".join(c for c in cen_f if c.isalnum() or c in (' ', '_', '-')).strip().replace(' ', '_')
+                f_def = f"Activos_Mal_Estado_{cen_clean}_{timestamp}.xlsx"
+            else:
+                f_def = f"Activos_Mal_Estado_GAMLP_{timestamp}.xlsx"
         elif cen_f != "[ Todos los Centros ]":
             cen_clean = "".join(c for c in cen_f if c.isalnum() or c in (' ', '_', '-')).strip().replace(' ', '_')
             f_def = f"Inventario_{cen_clean}_{timestamp}.xlsx"

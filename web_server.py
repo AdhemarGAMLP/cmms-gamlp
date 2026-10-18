@@ -566,7 +566,7 @@ HTML_INVENTARIO = """
             </div>
             <div class="stat-card">
                 <div class="stat-num" style="color: var(--danger);" id="stat-baj">{{ bajas }}</div>
-                <div class="stat-lbl" id="lbl-stat-baj">Bajas / Fuera de Servicio</div>
+                <div class="stat-lbl" id="lbl-stat-baj">Activos de Baja</div>
             </div>
         </div>
 
@@ -802,9 +802,9 @@ HTML_INVENTARIO = """
                         tarjetasVisiblesEnArea++;
                         totalVisibles++;
                         const estLow = tEstado.toLowerCase();
-                        if (estLow.includes('baja') || estLow.includes('mal')) {
+                        if (estLow.includes('baja')) {
                             bajasVisibles++;
-                        } else if (estLow.includes('reg') || estLow.includes('man') || tGarantia === 'Con Garantía') {
+                        } else if (estLow.includes('reg') || estLow.includes('mal') || estLow.includes('man') || tGarantia === 'Con Garantía') {
                             garantiaVisibles++;
                         } else {
                             operativosVisibles++;
@@ -1085,8 +1085,8 @@ def vista_inventario_web():
         cnt_muebles = len(mus_db)
 
         operativos = sum(1 for a in activos_db if 'baja' not in str(a.get('estado','')).lower() and 'mal' not in str(a.get('estado','')).lower())
-        garantia = sum(1 for a in activos_db if a.get('garantia') == 'Con Garantía' or 'reg' in str(a.get('estado','')).lower() or 'man' in str(a.get('estado','')).lower())
-        bajas = sum(1 for a in activos_db if 'baja' in str(a.get('estado','')).lower() or 'mal' in str(a.get('estado','')).lower())
+        garantia = sum(1 for a in activos_db if a.get('garantia') == 'Con Garantía' or 'reg' in str(a.get('estado','')).lower() or 'man' in str(a.get('estado','')).lower() or 'mal' in str(a.get('estado','')).lower())
+        bajas = sum(1 for a in activos_db if 'baja' in str(a.get('estado','')).lower() or 'baja' in str(a.get('estado_conservacion','')).lower())
 
         # Mapear qué áreas pertenecen a qué centro de salud
         mapa_areas_centro = {}
@@ -1620,7 +1620,7 @@ HTML_ANALISIS = """
             </div>
             <div class="stat-box">
                 <div class="val" style="color: var(--red);" id="stat-baj">{{ bajas }}</div>
-                <div class="lbl">Bajas / Fuera de Servicio</div>
+                <div class="lbl">Activos de Baja</div>
             </div>
         </div>
 
@@ -2011,8 +2011,8 @@ def vista_analisis_web():
 
         total = len(activos_contexto)
         operativos = sum(1 for a in activos_contexto if 'baja' not in str(a.get('estado', '')).lower() and 'mal' not in str(a.get('estado', '')).lower())
-        garantia = sum(1 for a in activos_contexto if a.get('garantia') == 'Con Garantía' or 'reg' in str(a.get('estado', '')).lower() or 'man' in str(a.get('estado', '')).lower())
-        bajas = sum(1 for a in activos_contexto if 'baja' in str(a.get('estado', '')).lower() or 'mal' in str(a.get('estado', '')).lower())
+        garantia = sum(1 for a in activos_contexto if a.get('garantia') == 'Con Garantía' or 'reg' in str(a.get('estado', '')).lower() or 'man' in str(a.get('estado', '')).lower() or 'mal' in str(a.get('estado', '')).lower())
+        bajas = sum(1 for a in activos_contexto if 'baja' in str(a.get('estado', '')).lower() or 'baja' in str(a.get('estado_conservacion', '')).lower())
 
         # Determinar Censo Jerárquico
         censo_items = []
