@@ -304,72 +304,85 @@ class VistaMuebleria(ctk.CTkFrame):
             f_f_inner, 
             textvariable=self.busqueda_var, 
             placeholder_text="Buscar por SISPAM, BERTIN, SAPM, Descripción, Serie, Custodio, Ubicación, Red, Centro...", 
-            width=320, 
+            width=220, 
             fg_color=C_BG, 
             border_color=C_BORDER, 
             corner_radius=8
         )
-        e_buscar.pack(side="left", padx=(0, 10))
+        e_buscar.pack(side="left", padx=(0, 8))
 
         # Filtro Sector
-        ctk.CTkLabel(f_f_inner, text="Sector:", font=ctk.CTkFont(size=11, weight="bold"), text_color=C_TEXT).pack(side="left", padx=(4, 2))
+        ctk.CTkLabel(f_f_inner, text="Sector:", font=ctk.CTkFont(size=11, weight="bold"), text_color=C_TEXT).pack(side="left", padx=(3, 2))
         self.combo_filtro_sector = ctk.CTkComboBox(
             f_f_inner, 
             values=["[ Todos ]", "SALUD", "G.A.M.L.P."], 
-            width=130, 
+            width=105, 
             command=lambda e: self.refrescar_datos(), 
             fg_color=C_BG, 
             border_color=C_BORDER
         )
-        self.combo_filtro_sector.pack(side="left", padx=(0, 10))
+        self.combo_filtro_sector.pack(side="left", padx=(0, 8))
         self.combo_filtro_sector.set("[ Todos ]")
 
         # Filtro Tipo de Activo
-        ctk.CTkLabel(f_f_inner, text="Tipo:", font=ctk.CTkFont(size=11, weight="bold"), text_color=C_TEXT).pack(side="left", padx=(4, 2))
+        ctk.CTkLabel(f_f_inner, text="Tipo:", font=ctk.CTkFont(size=11, weight="bold"), text_color=C_TEXT).pack(side="left", padx=(3, 2))
         self.combo_filtro_tipo = ctk.CTkComboBox(
             f_f_inner, 
             values=["[ Todos los Activos ]", "🩺 Equipos Médicos", "💻 Computación / TI", "🪑 Mobiliario / Enseres", "📑 Otros"], 
-            width=175, 
+            width=150, 
             command=lambda e: self.refrescar_datos(), 
             fg_color=C_BG, 
             border_color=C_BORDER
         )
-        self.combo_filtro_tipo.pack(side="left", padx=(0, 10))
+        self.combo_filtro_tipo.pack(side="left", padx=(0, 8))
         self.combo_filtro_tipo.set("[ Todos los Activos ]")
 
+        # Filtro Estado de Conservación / Baja
+        ctk.CTkLabel(f_f_inner, text="Estado:", font=ctk.CTkFont(size=11, weight="bold"), text_color=C_TEXT).pack(side="left", padx=(3, 2))
+        self.combo_filtro_estado = ctk.CTkComboBox(
+            f_f_inner, 
+            values=["[ Todos ]", "Baja", "Bueno", "Regular", "Malo", "Operativo"], 
+            width=105, 
+            command=lambda e: self.refrescar_datos(), 
+            fg_color=C_BG, 
+            border_color=C_BORDER
+        )
+        self.combo_filtro_estado.pack(side="left", padx=(0, 8))
+        self.combo_filtro_estado.set("[ Todos ]")
+
         # Filtro Red de Salud
-        ctk.CTkLabel(f_f_inner, text="Red:", font=ctk.CTkFont(size=11, weight="bold"), text_color=C_TEXT).pack(side="left", padx=(4, 2))
+        ctk.CTkLabel(f_f_inner, text="Red:", font=ctk.CTkFont(size=11, weight="bold"), text_color=C_TEXT).pack(side="left", padx=(3, 2))
         sedes = self._obtener_sedes_jerarquia()
         nombres_redes = ["[ Todas las Redes ]"] + [r["nombre"] for r in sedes.get("redes", [])]
         self.combo_filtro_red = ctk.CTkComboBox(
             f_f_inner, 
             values=nombres_redes, 
-            width=170, 
+            width=145, 
             command=self._al_cambiar_filtro_red, 
             fg_color=C_BG, 
             border_color=C_BORDER
         )
-        self.combo_filtro_red.pack(side="left", padx=(0, 10))
+        self.combo_filtro_red.pack(side="left", padx=(0, 8))
         self.combo_filtro_red.set("[ Todas las Redes ]")
 
         # Filtro Centro de Salud
-        ctk.CTkLabel(f_f_inner, text="Centro:", font=ctk.CTkFont(size=11, weight="bold"), text_color=C_TEXT).pack(side="left", padx=(4, 2))
+        ctk.CTkLabel(f_f_inner, text="Centro:", font=ctk.CTkFont(size=11, weight="bold"), text_color=C_TEXT).pack(side="left", padx=(3, 2))
         self.combo_filtro_centro = ctk.CTkComboBox(
             f_f_inner, 
             values=["[ Todos los Centros ]"], 
-            width=170, 
+            width=145, 
             command=lambda e: self.refrescar_datos(), 
             fg_color=C_BG, 
             border_color=C_BORDER
         )
-        self.combo_filtro_centro.pack(side="left", padx=(0, 10))
+        self.combo_filtro_centro.pack(side="left", padx=(0, 8))
         self.combo_filtro_centro.set("[ Todos los Centros ]")
 
         # Botón Limpiar Filtros
         ctk.CTkButton(
             f_f_inner, 
             text="↺ Limpiar", 
-            width=75, 
+            width=70, 
             height=28, 
             fg_color="#E2E8F0", 
             text_color=C_TEXT, 
@@ -553,6 +566,8 @@ class VistaMuebleria(ctk.CTkFrame):
         self.busqueda_var.set("")
         self.combo_filtro_sector.set("[ Todos ]")
         self.combo_filtro_tipo.set("[ Todos los Activos ]")
+        if hasattr(self, "combo_filtro_estado"):
+            self.combo_filtro_estado.set("[ Todos ]")
         self.combo_filtro_red.set("[ Todas las Redes ]")
         self._al_cambiar_filtro_red("[ Todas las Redes ]")
 
@@ -619,7 +634,7 @@ class VistaMuebleria(ctk.CTkFrame):
         equipos_mapeados = []
         for eq in todos_equipos:
             est = str(eq.get("estado") or "").strip().lower()
-            if est in ("baja", "eliminado", "inactivo"):
+            if est in ("eliminado", "papelera"):
                 continue
             equipos_mapeados.append(self._mapear_equipo_a_activo(eq))
 
@@ -629,6 +644,7 @@ class VistaMuebleria(ctk.CTkFrame):
         q = self.busqueda_var.get().strip().lower()
         sec_f = self.combo_filtro_sector.get()
         tipo_f = self.combo_filtro_tipo.get()
+        est_f = self.combo_filtro_estado.get().strip() if hasattr(self, "combo_filtro_estado") else "[ Todos ]"
         red_f = self.combo_filtro_red.get()
         cen_f = self.combo_filtro_centro.get()
 
@@ -678,6 +694,17 @@ class VistaMuebleria(ctk.CTkFrame):
             elif tipo_f == "📑 Otros":
                 if es_eq or self._es_tipo_computacion(t_act) or self._es_tipo_muebleria(t_act):
                     continue
+
+            # Filtro Estado de Conservación / Baja
+            if est_f != "[ Todos ]":
+                m_est = str(m.get("estado_conservacion") or m.get("estado_bien") or "").strip().lower()
+                target_est = est_f.lower()
+                if target_est == "baja":
+                    if "baja" not in m_est:
+                        continue
+                else:
+                    if target_est != m_est:
+                        continue
 
             # Filtro Red
             if red_f != "[ Todas las Redes ]":
@@ -1615,25 +1642,52 @@ class VistaMuebleria(ctk.CTkFrame):
 
         items_a_exportar = self.datos_filtrados
         total_global = len(getattr(self, "_todos_activos_unificados", []))
-        if total_global > len(self.datos_filtrados):
+        est_f = self.combo_filtro_estado.get().strip() if hasattr(self, "combo_filtro_estado") else "[ Todos ]"
+        cen_f = self.combo_filtro_centro.get().strip() if hasattr(self, "combo_filtro_centro") else "[ Todos los Centros ]"
+        red_f = self.combo_filtro_red.get().strip() if hasattr(self, "combo_filtro_red") else "[ Todas las Redes ]"
+
+        filtros_activos = (len(self.datos_filtrados) < total_global)
+        if filtros_activos:
+            desc_filtro = []
+            if est_f != "[ Todos ]": desc_filtro.append(f"Estado: {est_f}")
+            if cen_f != "[ Todos los Centros ]": desc_filtro.append(f"Centro: {cen_f}")
+            elif red_f != "[ Todas las Redes ]": desc_filtro.append(f"Red: {red_f}")
+            if self.busqueda_var.get().strip(): desc_filtro.append(f"Búsqueda: '{self.busqueda_var.get().strip()}'")
+            texto_filtros = " (" + ", ".join(desc_filtro) + ")" if desc_filtro else ""
+
             resp_filtro = messagebox.askyesnocancel(
                 "Exportar Inventario a Excel",
-                f"Tiene filtros activos: se muestran {len(self.datos_filtrados)} registros de un total de {total_global} activos.\n\n"
-                f"• Presione SÍ para exportar TODOS los activos ({total_global} activos incluyendo muebles, TI y equipos médicos).\n"
-                f"• Presione NO para exportar únicamente los registros FILTRADOS ({len(self.datos_filtrados)} activos).\n"
-                f"• Presione CANCELAR para salir."
+                f"Tiene filtros activos{texto_filtros}.\n"
+                f"Se muestran {len(self.datos_filtrados)} registros en pantalla de un total de {total_global} activos.\n\n"
+                f"• Presione [SÍ] para exportar únicamente los {len(self.datos_filtrados)} registros FILTRADOS en pantalla.\n"
+                f"• Presione [NO] para exportar TODO el inventario completo ({total_global} activos sin filtros).\n"
+                f"• Presione [CANCELAR] para salir sin exportar."
             )
             if resp_filtro is None:
                 return
-            elif resp_filtro is True:
+            elif resp_filtro is False:
                 items_a_exportar = self._todos_activos_unificados
+            else:
+                items_a_exportar = self.datos_filtrados
 
-        f_def = f"Inventario_Activos_GAMLP_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M')
+        if est_f.lower() == "baja":
+            if cen_f != "[ Todos los Centros ]":
+                cen_clean = "".join(c for c in cen_f if c.isalnum() or c in (' ', '_', '-')).strip().replace(' ', '_')
+                f_def = f"Activos_Baja_{cen_clean}_{timestamp}.xlsx"
+            else:
+                f_def = f"Activos_De_Baja_GAMLP_{timestamp}.xlsx"
+        elif cen_f != "[ Todos los Centros ]":
+            cen_clean = "".join(c for c in cen_f if c.isalnum() or c in (' ', '_', '-')).strip().replace(' ', '_')
+            f_def = f"Inventario_{cen_clean}_{timestamp}.xlsx"
+        else:
+            f_def = f"Inventario_Activos_GAMLP_{timestamp}.xlsx"
+
         ruta_guardar = filedialog.asksaveasfilename(
             defaultextension=".xlsx",
             filetypes=[("Archivos de Excel (*.xlsx)", "*.xlsx")],
             initialfile=f_def,
-            title="Guardar Inventario Unificado de Activos GAMLP"
+            title="Guardar Inventario de Activos GAMLP"
         )
         if not ruta_guardar:
             return

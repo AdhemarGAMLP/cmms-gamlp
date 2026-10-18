@@ -4223,7 +4223,8 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                     const areStr = String(it.area || it.ubicacion || '').toLowerCase();
                     const serStr = String(it.numero_serie || it.serie || '').toLowerCase();
                     const perStr = String(it.persona_asignada || '').toLowerCase();
-                    return idStr.includes(q) || nomStr.includes(q) || marStr.includes(q) || modStr.includes(q) || areStr.includes(q) || serStr.includes(q) || perStr.includes(q);
+                    const estStr = String(it.estado || it.estado_conservacion || '').toLowerCase();
+                    return idStr.includes(q) || nomStr.includes(q) || marStr.includes(q) || modStr.includes(q) || areStr.includes(q) || serStr.includes(q) || perStr.includes(q) || estStr.includes(q);
                 });
             }
 
@@ -4262,9 +4263,10 @@ HTML_MOVIL_REGISTRO = """<!DOCTYPE html>
                 const sisStr = String(m.codigo_sispam || '').toLowerCase();
                 const berStr = String(m.bertin || '').toLowerCase();
                 const sapStr = String(m.sapm || '').toLowerCase();
+                const estStr = String(m.estado_conservacion || m.estado || '').toLowerCase();
                 return descStr.includes(q) || marStr.includes(q) || modStr.includes(q) ||
                        serStr.includes(q) || ubiStr.includes(q) || perStr.includes(q) ||
-                       sisStr.includes(q) || berStr.includes(q) || sapStr.includes(q);
+                       sisStr.includes(q) || berStr.includes(q) || sapStr.includes(q) || estStr.includes(q);
             });
             renderizarListaMuebles(filt);
         }
