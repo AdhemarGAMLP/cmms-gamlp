@@ -329,7 +329,7 @@ HTML_INVENTARIO = """
             margin-bottom: 20px;
         }
         @media (min-width: 600px) {
-            .stats-grid { grid-template-columns: repeat(4, 1fr); }
+            .stats-grid { grid-template-columns: repeat(3, 1fr); }
         }
         .stat-card {
             background: var(--card);
@@ -558,11 +558,7 @@ HTML_INVENTARIO = """
             </div>
             <div class="stat-card">
                 <div class="stat-num" style="color: var(--success);" id="stat-op">{{ operativos }}</div>
-                <div class="stat-lbl" id="lbl-stat-op">Operativos / Buen Estado</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-num" style="color: var(--warning);" id="stat-gar">{{ garantia }}</div>
-                <div class="stat-lbl" id="lbl-stat-gar">En Garantía / Regular</div>
+                <div class="stat-lbl" id="lbl-stat-op">Operativos</div>
             </div>
             <div class="stat-card">
                 <div class="stat-num" style="color: var(--danger);" id="stat-baj">{{ bajas }}</div>
@@ -804,8 +800,6 @@ HTML_INVENTARIO = """
                         const estLow = tEstado.toLowerCase();
                         if (estLow.includes('baja')) {
                             bajasVisibles++;
-                        } else if (estLow.includes('reg') || estLow.includes('mal') || estLow.includes('man') || tGarantia === 'Con Garantía') {
-                            garantiaVisibles++;
                         } else {
                             operativosVisibles++;
                         }
@@ -840,10 +834,11 @@ HTML_INVENTARIO = """
             if (elPillMu) elPillMu.textContent = countPillMu;
 
             // Actualizar contadores
-            document.getElementById('stat-total').textContent = totalVisibles;
-            document.getElementById('stat-op').textContent = operativosVisibles;
-            document.getElementById('stat-gar').textContent = garantiaVisibles;
-            document.getElementById('stat-baj').textContent = bajasVisibles;
+            if (document.getElementById('stat-total')) document.getElementById('stat-total').textContent = totalVisibles;
+            if (document.getElementById('stat-op')) document.getElementById('stat-op').textContent = operativosVisibles;
+            const elGar = document.getElementById('stat-gar');
+            if (elGar) elGar.textContent = 0;
+            if (document.getElementById('stat-baj')) document.getElementById('stat-baj').textContent = bajasVisibles;
 
             const noRes = document.getElementById('no-results');
             if (totalVisibles === 0) {
@@ -1084,9 +1079,9 @@ def vista_inventario_web():
         cnt_equipos = len(eqs_db)
         cnt_muebles = len(mus_db)
 
-        operativos = sum(1 for a in activos_db if 'baja' not in str(a.get('estado','')).lower() and 'mal' not in str(a.get('estado','')).lower())
-        garantia = sum(1 for a in activos_db if a.get('garantia') == 'Con Garantía' or 'reg' in str(a.get('estado','')).lower() or 'man' in str(a.get('estado','')).lower() or 'mal' in str(a.get('estado','')).lower())
+        operativos = sum(1 for a in activos_db if 'baja' not in str(a.get('estado','')).lower() and 'baja' not in str(a.get('estado_conservacion','')).lower())
         bajas = sum(1 for a in activos_db if 'baja' in str(a.get('estado','')).lower() or 'baja' in str(a.get('estado_conservacion','')).lower())
+        garantia = 0
 
         # Mapear qué áreas pertenecen a qué centro de salud
         mapa_areas_centro = {}
@@ -1612,11 +1607,7 @@ HTML_ANALISIS = """
             </div>
             <div class="stat-box">
                 <div class="val" style="color: var(--green);" id="stat-op">{{ operativos }}</div>
-                <div class="lbl">Operativos / Buen Estado</div>
-            </div>
-            <div class="stat-box">
-                <div class="val" style="color: var(--purple);" id="stat-gar">{{ garantia }}</div>
-                <div class="lbl">En Garantía / Regular</div>
+                <div class="lbl">Operativos</div>
             </div>
             <div class="stat-box">
                 <div class="val" style="color: var(--red);" id="stat-baj">{{ bajas }}</div>
@@ -2010,9 +2001,9 @@ def vista_analisis_web():
             activos_censo_gamlp = activos_unificados
 
         total = len(activos_contexto)
-        operativos = sum(1 for a in activos_contexto if 'baja' not in str(a.get('estado', '')).lower() and 'mal' not in str(a.get('estado', '')).lower())
-        garantia = sum(1 for a in activos_contexto if a.get('garantia') == 'Con Garantía' or 'reg' in str(a.get('estado', '')).lower() or 'man' in str(a.get('estado', '')).lower() or 'mal' in str(a.get('estado', '')).lower())
+        operativos = sum(1 for a in activos_contexto if 'baja' not in str(a.get('estado', '')).lower() and 'baja' not in str(a.get('estado_conservacion', '')).lower())
         bajas = sum(1 for a in activos_contexto if 'baja' in str(a.get('estado', '')).lower() or 'baja' in str(a.get('estado_conservacion', '')).lower())
+        garantia = 0
 
         # Determinar Censo Jerárquico
         censo_items = []
