@@ -78,7 +78,7 @@ from vistas.enlaces import VistaEnlaces
 # ========================================================
 # VERSIÓN DEL SISTEMA
 # ========================================================
-VERSION_APP = "v1.1"
+VERSION_APP = "v1.2"
 
 # Identificadores genéricos exentos de comprobación de duplicidad estricta
 EXENTOS_DUPLICADOS = {"", "S/C", "0", "DONACION", "SIN CODIGO", "SIN SERIE", "NINGUNO", "N/A", "NO APLICA", "S/N", "SN", "-", "BERTIN", "SISPAM", "SAPM"}
