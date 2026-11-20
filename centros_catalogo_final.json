@@ -1,0 +1,782 @@
+{
+  "ñCñ.ñSñ.ñ ñBñAñJñOñ ñTñAñCñAñGñUñAñ": {
+    "lat": -16.5103194,
+    "lon": -68.1458019,
+    "red": "RED 1 - SUR OESTE (COTAHUMA)",
+    "nivel": "Primer Nivel",
+    "direccion": "AVENIDA JULIO TELLEZ ESQUINA MANUEL JOFRE",
+    "director": "DIRECTOR.Dr. Gustavo Pereyra\t76515153",
+    "telefono": "76515153",
+    "servicios": "MEDICINA GENERAL, ODONTOLOGIA, ENFERMERIA, VACUNACION"
+  },
+  "ñCñ.ñSñ.ñPñAñSñAñNñKñEñRñYñ": {
+    "lat": -16.5229115,
+    "lon": -68.146054,
+    "red": "RED 1 - SUR OESTE (COTAHUMA)",
+    "nivel": "Primer Nivel",
+    "direccion": "AV. MARCELO QUIROGA SANTA CRUZ ESQUINA HEROES DEL CHACO",
+    "director": "DIRECTOR: Dra. Paola Delgado \t78966043",
+    "telefono": "78966043",
+    "servicios": "MEDICINA GENERAL, ODONTOLOGIA, ENFERMERIA, VACUNACION"
+  },
+  "ñCñ.ñSñ.ñEñLñ ñRñOñSñAñLñ": {
+    "lat": -16.5342288,
+    "lon": -68.1312831,
+    "red": "RED 1 - SUR OESTE (COTAHUMA)",
+    "nivel": "Primer Nivel",
+    "direccion": "AV. MARIO MERCADO ENTRE CALLES \"E\" Y \"B\"",
+    "director": "DIRECTOR: Dra. Elfride Cardoso Ledezma\t65171308",
+    "telefono": "65171308",
+    "servicios": "MEDICINA GENERAL, ODONTOLOGIA, ENFERMERIA, VACUNACION, LABORATORIO CLINICO, ECOGRAFIA"
+  },
+  "ñCñ.ñSñ.ñSñAñNñ ñLñUñIñSñ": {
+    "lat": -16.5105057,
+    "lon": -68.135706,
+    "red": "RED 1 - SUR OESTE (COTAHUMA)",
+    "nivel": "Primer Nivel",
+    "direccion": "AV. CHACO ESQUINA IGNACIO PRUDENCIO",
+    "director": "dIRECTORA Dra. Ivanoska Chávez Nuñez \t70126560",
+    "telefono": "70126560",
+    "servicios": "MEDICINA GENERAL, ODONTOLOGIA, ENFERMERIA, VACUNACION"
+  },
+  "ñCñ.ñSñ.ñ ñ8ñ ñDñEñ ñDñIñCñIñEñMñBñRñEñ": {
+    "lat": -16.5181744,
+    "lon": -68.1330671,
+    "red": "RED 1 - SUR OESTE (COTAHUMA)",
+    "nivel": "Primer Nivel",
+    "direccion": "FINAL VINCENTI ESQUINA CIRCUNVALACION",
+    "director": "DIRECTORA: Dra. Rosse Mary Yupanqui \t69844363",
+    "telefono": "69844363",
+    "servicios": "MEDICINA GENERAL, ODONTOLOGIA, ENFERMERIA, VACUNACION"
+  },
+  "ñCñ.ñSñ.ñAñLñTñOñ ñTñAñCñAñGñUñAñ": {
+    "lat": -16.5135143,
+    "lon": -68.1498035,
+    "red": "RED 1 - SUR OESTE (COTAHUMA)",
+    "nivel": "Primer Nivel",
+    "direccion": "CALLE INCA MAYU Y SANTA ROSA",
+    "director": "DIRECTOR: Dra.Jhovana Poma Torres \t73283353",
+    "telefono": "73283353",
+    "servicios": "MEDICINA GENERAL, ODONTOLOGIA, ENFERMERIA, VACUNACION"
+  },
+  "ñCñ.ñSñ.ñBñAñJñOñ ñSñAñNñ ñPñEñDñRñOñ": {
+    "lat": -16.5007976,
+    "lon": -68.1369902,
+    "red": "RED 1 - SUR OESTE (COTAHUMA)",
+    "nivel": "Primer Nivel",
+    "direccion": "CALLE INCA MAYU Y SANTA ROSA",
+    "director": "DIRECTOR: Dra. Cintia Pimentel \t72035575",
+    "telefono": "72035575",
+    "servicios": "MEDICINA GENERAL, ODONTOLOGIA, ENFERMERIA, VACUNACION, LABORATORIO CLINICO, ECOGRAFIA"
+  },
+  "ñCñ.ñSñ.ñLñAñ ñGñRñUñTñAñ": {
+    "lat": -16.5064849,
+    "lon": -68.1553216,
+    "red": "RED 1 - SUR OESTE (COTAHUMA)",
+    "nivel": "Primer Nivel",
+    "direccion": "AV. 9 DE ABRIL (CASI FARO MURILLO)",
+    "director": "DIRECTOR:;Dra. Sonia Isabel Mendoza \t77558497",
+    "telefono": "77558497",
+    "servicios": "MEDICINA GENERAL, ODONTOLOGIA, ENFERMERIA, VACUNACION"
+  },
+  "ñCñ.ñSñ.ñAñLñCñOñRñEñZñAñ": {
+    "lat": -16.5089006,
+    "lon": -68.1515612,
+    "red": "RED 1 - SUR OESTE (COTAHUMA)",
+    "nivel": "Primer Nivel",
+    "direccion": "AV. PABLO ZARATE Y COOPERATIVAS",
+    "director": "DIRECTOR Dr. Edgar Merlo\t72076290",
+    "telefono": "72076290",
+    "servicios": "MEDICINA GENERAL, ODONTOLOGIA, ENFERMERIA, VACUNACION"
+  },
+  "ñCñ.ñSñ.ñVñIñLñLñAñ ñNñUñEñVñAñ ñPñOñTñOñSñIñ": {
+    "lat": -16.5073908,
+    "lon": -68.1437839,
+    "red": "RED 1 - SUR OESTE (COTAHUMA)",
+    "nivel": "Primer Nivel",
+    "direccion": "CALLE MANUEL JOFRE ESQUINA ONDARZA S/N",
+    "director": "DIRECTOR Dr. Reynaldo Jiménez \t71507502",
+    "telefono": "71507502",
+    "servicios": "MEDICINA GENERAL, ODONTOLOGIA, ENFERMERIA, VACUNACION, LABORATORIO CLINICO, ECOGRAFIA, GINECOOBSTETRICIA"
+  },
+  "ñCñ.ñSñ.ñTñEñMñBñLñAñDñEñRñAñNñIñ": {
+    "lat": -16.5105837,
+    "lon": -68.1425536,
+    "red": "RED 1 - SUR OESTE (COTAHUMA)",
+    "nivel": "Primer Nivel",
+    "direccion": "AV. VICTOR AGUSTIN UGARTE ESQUINA JAIME ZUDAÑEZ",
+    "director": "DIRECTOR: Dra. Silvia Victoria Mendoza \t77543436",
+    "telefono": "77543436",
+    "servicios": "MEDICINA GENERAL, ODONTOLOGIA, ENFERMERIA, VACUNACION, LABORATORIO CLINICO, ECOGRAFIA"
+  },
+  "ñCñ.ñSñ.ñ ñBñIñBñLñIñOñTñEñCñAñ": {
+    "lat": -16.5049469,
+    "lon": -68.1497678,
+    "red": "RED 1 - SUR OESTE (COTAHUMA)",
+    "nivel": "Primer Nivel",
+    "direccion": "",
+    "director": "DIRECTOR: Dr. Rubén Copana\t73069373",
+    "telefono": "73069373",
+    "servicios": "MEDICINA GENERAL, ODONTOLOGIA, ENFERMERIA, VACUNACION"
+  },
+  "ñCñ.ñSñ.ñAñLñTñOñ ñTñAñCñUñAñGñUñAñ": {
+    "lat": -16.513504,
+    "lon": -68.1498008,
+    "red": "RED 1 - SUR OESTE (COTAHUMA)",
+    "nivel": "Primer Nivel",
+    "direccion": "CALLE INCA MAYU Y SANTA ROSA",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñCñ.ñSñ.ñNñIñÑñOñ ñKñOñLñLñOñ": {
+    "lat": -16.5100976,
+    "lon": -68.1491182,
+    "red": "RED 1 - SUR OESTE (COTAHUMA)",
+    "nivel": "Primer Nivel",
+    "direccion": "AVENIDA 16 DE JULIO EQUINA PABLO ZARATE WILLKA",
+    "director": "DIRECTORA:Dra. María del Carmen Guillén \t65644461",
+    "telefono": "65644461",
+    "servicios": "MEDICINA GENERAL, ODONTOLOGIA, ENFERMERIA, VACUNACION"
+  },
+  "ñHñoñsñpñiñtñañlñ ñNñuñeñsñtñrñañ ñSñeñññoñrñañ ñdñeñ ñLñañ ñPñañzñ.ñ": {
+    "lat": -16.4959112,
+    "lon": -68.1458065,
+    "red": "RED 1 - SUR OESTE (COTAHUMA)",
+    "nivel": "Primer Nivel",
+    "direccion": "alle Presbítero Medina Nº 2412",
+    "director": "",
+    "telefono": "",
+    "servicios": "Alergología e Inmunología, Cardiología, Cirugía de Columna, Cirugía General, Cirugía Plástica, Cirugía Reconstructiva, Cirugía Robótica, Cirugía Pediátrica, Cirugía Maxilofacial, Cirugía Oncológica, Dermatología, Fonoaudiología, Gastroenterología, Geriatría & Gerontología, Ginecología & Obstetricia, Imagenología, Imagenología Intervencionista, Implantología en Odontología, Medicina del Dolor, Medicina Interna, Medicina Preventiva, Medicina Paliativa, Neumología, Neurocirugía Adultos, Neurocirugía Pediátrica, Neurología Adultos, Neurología Pediátrica, Nutrición Adultos, Nutrición Pediátrica, Odontología Adultos, Odontología Pediátrica, Oftalmología, Otorrinolaringología Adultos, Otorrinolaringología Pediátrica, Pediatría, Reumatología, Psiquiatría, Psiquiatría de Adicciones, Telemedicina, Traumatología Adultos, Traumatología Pediátrica, Urología, Terapia Intensiva Neonatal, Terapia Intensiva Pediátrica, Terapia Intensiva Adultos, Servicio de Ambulancia, Servicio de Ecografía, Servicio de Emergencias, Servicio de Farmacia, Servicio de Rayos X, Servicio de Tomografía"
+  },
+  "ñCñ.ñSñ.ñZñOñNñGñOñ": {
+    "lat": -15.766634,
+    "lon": -67.668731,
+    "red": "RED 2 - NOR OESTE (MAX PAREDES)",
+    "nivel": "Primer Nivel",
+    "direccion": "COMUNIDAD ZONGO CHORO",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñCñ.ñSñ.ñZñOñNñGñOñ ñCñAñMñSñIñQñUñEñ": {
+    "lat": -15.766758,
+    "lon": -67.668725,
+    "red": "RED 2 - NOR OESTE (MAX PAREDES)",
+    "nivel": "Primer Nivel",
+    "direccion": "ZONGO",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñCñ.ñSñ.ñOñBñIñSñPñOñ ñIñNñDñAñBñUñRñOñ": {
+    "lat": -16.500422,
+    "lon": -68.149633,
+    "red": "RED 2 - NOR OESTE (MAX PAREDES)",
+    "nivel": "Primer Nivel",
+    "direccion": "CALLE RUFINO CARRASCO N° 1448 FRENTE AL COL . EDUCATIVO LIBERTAD",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñCñ.ñSñ.ñCñHñAñMñOñCñOñ ñCñHñIñCñOñ": {
+    "lat": -16.501487,
+    "lon": -68.154107,
+    "red": "RED 2 - NOR OESTE (MAX PAREDES)",
+    "nivel": "Primer Nivel",
+    "direccion": "2DO BASCONES 2DO PUENTE TOPATER",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñCñ.ñSñ.ñMñ.ñIñ.ñEñLñ ñTñEñJñAñRñ": {
+    "lat": -16.49727,
+    "lon": -68.155837,
+    "red": "RED 2 - NOR OESTE (MAX PAREDES)",
+    "nivel": "Primer Nivel",
+    "direccion": "CALLE DAMAS DE COTAGAITA S/N",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñCñ.ñSñ.ñSñAñIñDñ": {
+    "lat": -16.482207,
+    "lon": -68.150862,
+    "red": "RED 2 - NOR OESTE (MAX PAREDES)",
+    "nivel": "Primer Nivel",
+    "direccion": "CALLE 21 DE ENERO N°29",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñCñ.ñSñ.ñPñAñNñTñIñ ñSñIñRñPñAñ": {
+    "lat": -16.460022,
+    "lon": -68.158397,
+    "red": "RED 2 - NOR OESTE (MAX PAREDES)",
+    "nivel": "Primer Nivel",
+    "direccion": "FRENTE ESCUELA LUCIO VELASCO",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñCñ.ñSñ.ñAñLñTñOñ ñMñAñRñIñSñCñAñLñ ñSñAñNñTñAñ ñCñRñUñZñ": {
+    "lat": -16.493758,
+    "lon": -68.162315,
+    "red": "RED 2 - NOR OESTE (MAX PAREDES)",
+    "nivel": "Primer Nivel",
+    "direccion": "AV. 2DO BASCONESPARADA MINIBUS N° 395 A 3 CUADRAS DEL COLEGIO ITALIA",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñCñ.ñSñ.ñBñAñJñOñ ñEñLñ ñTñEñJñAñRñ": {
+    "lat": -16.495302,
+    "lon": -68.154242,
+    "red": "RED 2 - NOR OESTE (MAX PAREDES)",
+    "nivel": "Primer Nivel",
+    "direccion": "PLAZA 27 DE MAYO SEDE JUNTA DE VECINOS",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñCñ.ñSñ.ñVñIñLñLñAñ ñVñIñCñTñOñRñIñAñ": {
+    "lat": -16.49105,
+    "lon": -68.15573,
+    "red": "RED 2 - NOR OESTE (MAX PAREDES)",
+    "nivel": "Primer Nivel",
+    "direccion": "REP. ESQ.TUPIZA N° 1896",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñCñ.ñSñ.ñ ñAñPñUñMñAñLñLñAñ": {
+    "lat": -16.493004,
+    "lon": -68.150441,
+    "red": "RED 2 - NOR OESTE (MAX PAREDES)",
+    "nivel": "Primer Nivel",
+    "direccion": "AV. APUMALLA ESQ. CALLE PEÑA S/N",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñCñ.ñSñ.ñMñUñNñAñYñPñAñTñAñ": {
+    "lat": -16.487243,
+    "lon": -68.159236,
+    "red": "RED 2 - NOR OESTE (MAX PAREDES)",
+    "nivel": "Primer Nivel",
+    "direccion": "AV. NACIONES UNIDAS FRENTE 61 (CURVA COMPLEJO DEPORTIVO)",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñCñIñUñDñAñDñEñLñAñ ñFñEñRñRñOñVñIñAñRñIñAñ": {
+    "lat": -16.457302,
+    "lon": -68.150092,
+    "red": "RED 2 - NOR OESTE (MAX PAREDES)",
+    "nivel": "Primer Nivel",
+    "direccion": "CALLE 1",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñHñOñSñPñIñTñAñLñ ñLñAñ ñPñAñZñ": {
+    "lat": -16.495712,
+    "lon": -68.145871,
+    "red": "RED 2 - NOR OESTE (MAX PAREDES)",
+    "nivel": "Primer Nivel",
+    "direccion": "PL GARITA DE LIMA Y MAX PAREDES",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñRñEñDñ ñ2ñ": {
+    "lat": -16.49999,
+    "lon": -68.14956,
+    "red": "RED 2 - NOR OESTE (MAX PAREDES)",
+    "nivel": "Primer Nivel",
+    "direccion": "",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñCñeñnñtñrñoñ ñdñeñ ñSñañlñuñdñ ñlñlñoñjñeñtñañ": {
+    "lat": -16.5326372,
+    "lon": -68.1402867,
+    "red": "RED 2 - NOR OESTE (MAX PAREDES)",
+    "nivel": "Primer Nivel",
+    "direccion": "AV. MARIO MERCADO, PLAZA 3 MARIAS",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñHñoñsñpñiñtñañlñ ñlñañ ñPñoñrñtñañdñañ": {
+    "lat": -16.4890118,
+    "lon": -68.1657554,
+    "red": "RED 2 - NOR OESTE (MAX PAREDES)",
+    "nivel": "Primer Nivel",
+    "direccion": "LA PORTADA lado IGLESIA",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñCñ.ñSñ.ñSñAñNñ ñJñOñSñEñ ñDñEñ ñNñAñTñIñVñIñDñAñDñ": {
+    "lat": -16.475488,
+    "lon": -68.114172,
+    "red": "RED 3 - NORTE CENTRAL (PERIFERICA)",
+    "nivel": "Primer Nivel",
+    "direccion": "AC.COSTANERA NRO, 26 ZONA SAN JOSE DE VIILA FATINA",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñSñ.ñCñ.ñ ñCñHñUñQñUñIñAñGñUñIñLñLñOñ": {
+    "lat": -16.459179,
+    "lon": -68.10234,
+    "red": "RED 3 - NORTE CENTRAL (PERIFERICA)",
+    "nivel": "Primer Nivel",
+    "direccion": "AV. RAMIRO CASTRILLO S/N",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñCñ.ñSñ.ñSñAñNñ ñJñUñAñNñ ñLñAñZñAñRñEñTñOñ": {
+    "lat": -16.49463,
+    "lon": -68.12593,
+    "red": "RED 3 - NORTE CENTRAL (PERIFERICA)",
+    "nivel": "Primer Nivel",
+    "direccion": "AV. TEJADA SORZANO- EXPROSALUD",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñCñ.ñSñ.ñPñLñAñNñ ñAñUñTñOñPñIñSñTñAñ": {
+    "lat": -16.45739,
+    "lon": -68.146657,
+    "red": "RED 3 - NORTE CENTRAL (PERIFERICA)",
+    "nivel": "Primer Nivel",
+    "direccion": "CALLE MANZANO \"E\" S/N LADO COMPLEJO DEPORTIVO PLAN AUTOPISTA",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñCñ.ñSñ.ñ ñAñSñIñSñTñEñNñCñIñAñ ñPñUñBñLñIñCñAñ": {
+    "lat": -16.5001,
+    "lon": -68.13142,
+    "red": "RED 3 - NORTE CENTRAL (PERIFERICA)",
+    "nivel": "Primer Nivel",
+    "direccion": "AV CAMACHO Nº 1519 ZONA CENTRAL",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñCñ.ñSñ ñJñUñAñNñCñIñTñOñ ñPñIñNñTñOñ": {
+    "lat": -16.494039,
+    "lon": -68.13942,
+    "red": "RED 3 - NORTE CENTRAL (PERIFERICA)",
+    "nivel": "Primer Nivel",
+    "direccion": "CALLE GRANEROS Y MURILLO- SEDE SOCIAL JUNTA DE VECINOS",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñCñ.ñSñ.ñ ñEñLñ ñCñAñLñVñAñRñIñOñ": {
+    "lat": -16.482998,
+    "lon": -68.129372,
+    "red": "RED 3 - NORTE CENTRAL (PERIFERICA)",
+    "nivel": "Primer Nivel",
+    "direccion": "AV. PERIFERICA CALLE 7 Nº 10",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñCñ.ñSñ.ñAñCñHñAñCñHñIñCñAñLñAñ": {
+    "lat": -16.475532,
+    "lon": -68.15102,
+    "red": "RED 3 - NORTE CENTRAL (PERIFERICA)",
+    "nivel": "Primer Nivel",
+    "direccion": "Av. Chacaltaya frente a la escuela Pedro Domingo",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñCñ.ñSñ.ñVñiñlñlñañ ñFñañtñiñmñañ": {
+    "lat": -16.473868,
+    "lon": -68.120934,
+    "red": "RED 3 - NORTE CENTRAL (PERIFERICA)",
+    "nivel": "Primer Nivel",
+    "direccion": "CALLE SAN JOSE Y CALLE CHICALOMA ZONA LAS DELICIAS - VILLA FATIMA",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñCñ.ñSñ.ñVñIñNñOñ ñTñIñNñTñOñ": {
+    "lat": -16.482939,
+    "lon": -68.141945,
+    "red": "RED 3 - NORTE CENTRAL (PERIFERICA)",
+    "nivel": "Primer Nivel",
+    "direccion": "AV. BALTAZAR DE SALAS Nº 57 VINO TINTO",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñCñ.ñSñ.ñ ñ1ñ8ñ ñDñEñ ñMñAñYñOñ": {
+    "lat": -16.478,
+    "lon": -68.146248,
+    "red": "RED 3 - NORTE CENTRAL (PERIFERICA)",
+    "nivel": "Primer Nivel",
+    "direccion": "SEDE SOCIAL Nº 104 ZONA 18 DE MAYO - VINO TINTO",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñCñ.ñSñ.ñ ñAñGñUñAñ ñDñEñ ñLñAñ ñVñIñDñAñ": {
+    "lat": -16.494196,
+    "lon": -68.129886,
+    "red": "RED 3 - NORTE CENTRAL (PERIFERICA)",
+    "nivel": "Primer Nivel",
+    "direccion": "PJE. LA BANDERA S/N ENTRE CALLE COLON Y AV. LA BANDERA",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñCñ.ñSñ.ñ ñ3ñ ñDñEñ ñMñAñYñOñ": {
+    "lat": -16.463838,
+    "lon": -68.113513,
+    "red": "RED 3 - NORTE CENTRAL (PERIFERICA)",
+    "nivel": "Primer Nivel",
+    "direccion": "Entre Calle B Y C",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñCñ.ñSñ.ñAñLñTñOñ ñMñIñRñAñFñLñOñRñEñSñ": {
+    "lat": -16.479019,
+    "lon": -68.125974,
+    "red": "RED 3 - NORTE CENTRAL (PERIFERICA)",
+    "nivel": "Primer Nivel",
+    "direccion": "CALLE URIAS RODRIGUEZ ESQ. ADRIANA PARIENTE S/N ZONA BARRIO GRAFICO - CHAPUMA",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñCñ.ñSñ.ñ ñLñAñSñ ñDñEñLñIñCñIñAñSñ": {
+    "lat": -16.473838,
+    "lon": -68.120851,
+    "red": "RED 3 - NORTE CENTRAL (PERIFERICA)",
+    "nivel": "Primer Nivel",
+    "direccion": "C/ SAN JOSE, ESQUINA TIPUANI S/N",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñHñoñsñpñiñtñañlñ ñAñrñcñoñ ñIñrñiñsñ": {
+    "lat": -16.484192,
+    "lon": -68.120258,
+    "red": "RED 3 - NORTE CENTRAL (PERIFERICA)",
+    "nivel": "Primer Nivel",
+    "direccion": "C Eusebio Guillarte y Calle 15 de Abril",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñHñOñSñPñIñTñAñLñ ñLñAñ ñMñEñRñCñEñDñ": {
+    "lat": -16.471002,
+    "lon": -68.117708,
+    "red": "RED 3 - NORTE CENTRAL (PERIFERICA)",
+    "nivel": "Primer Nivel",
+    "direccion": "CALLE Villa Aspiazu Villa Zona Villa Fatima",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñrñeñdñ ñ3ñ": {
+    "lat": -16.492074,
+    "lon": -68.13937,
+    "red": "RED 3 - NORTE CENTRAL (PERIFERICA)",
+    "nivel": "Primer Nivel",
+    "direccion": "",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñCñ.ñSñ.ñCñHñOñQñUñEñCñHñIñHñUñAñNñIñ": {
+    "lat": -16.450153,
+    "lon": -68.04545,
+    "red": "RED 4 - ESTE (SAN ANTONIO)",
+    "nivel": "Primer Nivel",
+    "direccion": "AREA RURAL",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñCñ.ñSñ.ñPñAñMñPñAñHñAñSñIñ ñ ñAñLñTñOñ": {
+    "lat": -16.491135,
+    "lon": -68.103719,
+    "red": "RED 4 - ESTE (SAN ANTONIO)",
+    "nivel": "Primer Nivel",
+    "direccion": "LADO MERCADO SAN JUAN PARADA MIN. 332",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñCñ.ñSñ.ñ ñKñUñPñIñNñIñ": {
+    "lat": -16.512114,
+    "lon": -68.098491,
+    "red": "RED 4 - ESTE (SAN ANTONIO)",
+    "nivel": "Primer Nivel",
+    "direccion": "ZONA KUPINI LADO CANCHA KUPINI",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñCñ.ñSñ.ñEñSñCñOñBñAñRñ ñUñRñIñAñ": {
+    "lat": -16.492642,
+    "lon": -68.108909,
+    "red": "RED 4 - ESTE (SAN ANTONIO)",
+    "nivel": "Primer Nivel",
+    "direccion": "CALLE NO. 6",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñCñ.ñSñ.ñPñAñMñPñAñHñAñSñIñ ñBñAñJñOñ": {
+    "lat": -16.5047,
+    "lon": -68.101435,
+    "red": "RED 4 - ESTE (SAN ANTONIO)",
+    "nivel": "Primer Nivel",
+    "direccion": "CALLE 7. LADO COLEGIO DELIA GAMBERTE PARADA MIN 849",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñCñ.ñSñ.ñSñAñNñ ñAñNñTñOñNñIñOñ ñAñLñTñOñ": {
+    "lat": -16.500059,
+    "lon": -68.108006,
+    "red": "RED 4 - ESTE (SAN ANTONIO)",
+    "nivel": "Primer Nivel",
+    "direccion": "AV. JOSEFA MUJICA LADO. SUB ALCALDIA",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñCñ.ñSñ.ñBñAñJñOñ ñSñAñNñ ñAñNñTñOñBñIñOñ": {
+    "lat": -16.498817,
+    "lon": -68.116014,
+    "red": "RED 4 - ESTE (SAN ANTONIO)",
+    "nivel": "Primer Nivel",
+    "direccion": "AV. COSTANERA S/N",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñCñ.ñSñ.ñSñAñNñ ñIñSñIñDñRñOñ": {
+    "lat": -16.514208,
+    "lon": -68.108401,
+    "red": "RED 4 - ESTE (SAN ANTONIO)",
+    "nivel": "Primer Nivel",
+    "direccion": "PLAZA ELIZARDO PEREZ PARADA MIN. 210",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñCñ.ñSñ.ñVñAñLñLñEñ ñHñEñRñMñOñSñOñ": {
+    "lat": -16.48959,
+    "lon": -68.110083,
+    "red": "RED 4 - ESTE (SAN ANTONIO)",
+    "nivel": "Primer Nivel",
+    "direccion": "Z. VALLE HERMOSO CALLE 7.",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñCñ.ñSñ.ñVñIñLñLñAñ ñAñRñMñOñNñIñAñ": {
+    "lat": -16.507594,
+    "lon": -68.111111,
+    "red": "RED 4 - ESTE (SAN ANTONIO)",
+    "nivel": "Primer Nivel",
+    "direccion": "AV. JHON KENNEDY LADO IGLESIA SR. DE LA SENTENCIA",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñCñ.ñSñ.ñVñIñLñLñAñ ñCñOñPñAñCñAñBñAñNñAñ": {
+    "lat": -16.484167,
+    "lon": -68.117297,
+    "red": "RED 4 - ESTE (SAN ANTONIO)",
+    "nivel": "Primer Nivel",
+    "direccion": "Z. VALLE PACASA FINAL CALLE UNION",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñCñ.ñSñ.ñVñIñLñLñAñ ñSñAñLñOñMñEñ": {
+    "lat": -16.486711,
+    "lon": -68.095762,
+    "red": "RED 4 - ESTE (SAN ANTONIO)",
+    "nivel": "Primer Nivel",
+    "direccion": "AV. LA PAZ DE AYACUCHO",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñHñOñSñPñIñTñAñLñ ñSñAñNñ ñGñAñBñRñIñEñLñ": {
+    "lat": -16.491424,
+    "lon": -68.116539,
+    "red": "RED 4 - ESTE (SAN ANTONIO)",
+    "nivel": "Primer Nivel",
+    "direccion": "C PEDRO VILLAMIL",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñCñ.ñSñ.ñAñLñTñOñ ñOñBñRñAñJñEñSñ": {
+    "lat": -16.5235,
+    "lon": -68.105556,
+    "red": "RED 5 - SUR (SUR / MALLASA)",
+    "nivel": "Primer Nivel",
+    "direccion": "AV. DEL MAESTRO ALTO OBRAJES",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñCñ.ñSñ.ñ ñAñLñTñOñ ñIñRñPñAñVñIñ": {
+    "lat": -16.515162,
+    "lon": -68.084083,
+    "red": "RED 5 - SUR (SUR / MALLASA)",
+    "nivel": "Primer Nivel",
+    "direccion": "CALLE 2 No. 10 SECTOR PEÑA AZUL, ALTO IRPAVI",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñCñ.ñSñ.ñAñLñTñOñ ñSñEñGñUñEñNñCñOñMñAñ": {
+    "lat": -16.538781,
+    "lon": -68.099924,
+    "red": "RED 5 - SUR (SUR / MALLASA)",
+    "nivel": "Primer Nivel",
+    "direccion": "PLAZA CIVICA PARADA MINIBUS 237 A. SEGUENCOMA",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñCñ.ñSñ.ñBñOñLñOñBñNñIñAñ": {
+    "lat": -16.525641,
+    "lon": -68.087244,
+    "red": "RED 5 - SUR (SUR / MALLASA)",
+    "nivel": "Primer Nivel",
+    "direccion": "AAV. CABALLERO ESQ. CALLE 5, DETRÁS MERCADO IRPAVI",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñCñ.ñ ñSñ.ñ ñMñAñLñLñAñSñAñ": {
+    "lat": -16.569256,
+    "lon": -68.089677,
+    "red": "RED 5 - SUR (SUR / MALLASA)",
+    "nivel": "Primer Nivel",
+    "direccion": "PLAZA 2 DE FEBRERO, MALLASA",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñCñ.ñSñ.ñ ñOñBñRñAñJñEñSñ": {
+    "lat": -16.529622,
+    "lon": -68.102458,
+    "red": "RED 5 - SUR (SUR / MALLASA)",
+    "nivel": "Primer Nivel",
+    "direccion": "C/16 Y C/ ORMACHEA, OBRAJES",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñCñ.ñSñ.ñMñAñTñEñRñNñOñ ñIñNñFñAñNñTñIñLñ ñBñEñLñLñAñ ñVñIñSñTñAñ": {
+    "lat": -16.530282,
+    "lon": -68.094895,
+    "red": "RED 5 - SUR (SUR / MALLASA)",
+    "nivel": "Primer Nivel",
+    "direccion": "C/PROLONGACION No 20 BELLA VISTA",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñCñ.ñSñ.ñ ñMñAñLñLñAñSñIñLñLñAñ": {
+    "lat": -16.565752,
+    "lon": -68.098984,
+    "red": "RED 5 - SUR (SUR / MALLASA)",
+    "nivel": "Primer Nivel",
+    "direccion": "MALLASILLA CALLE D ENTRE CALLE 5 Y 6",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñCñ.ñSñ.ñ ñCñHñAñSñQñUñIñPñAñMñPñAñ": {
+    "lat": -16.538255,
+    "lon": -68.047886,
+    "red": "RED 5 - SUR (SUR / MALLASA)",
+    "nivel": "Primer Nivel",
+    "direccion": "C/51 Y C/9 No 80, CHASQUIPAMPA",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñCñ.ñSñ.ñ ñAñCñHñUñMñAñNñIñ": {
+    "lat": -16.530939,
+    "lon": -68.074886,
+    "red": "RED 5 - SUR (SUR / MALLASA)",
+    "nivel": "Primer Nivel",
+    "direccion": "Av. Jose Manuel Chinchilla Esq. Calle 15 Achumani",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñCñ.ñSñ.ñBñAñJñOñ ñLñLñEñJñEñTñAñ": {
+    "lat": -16.5259,
+    "lon": -68.116866,
+    "red": "RED 5 - SUR (SUR / MALLASA)",
+    "nivel": "Primer Nivel",
+    "direccion": "AV. LOS SARGENTOS LADO RETEN POLICIAL",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñHñOñSñPñIñTñAñLñ ñLñOñSñ ñPñIñNñOñSñ": {
+    "lat": -16.542376,
+    "lon": -68.071713,
+    "red": "RED 5 - SUR (SUR / MALLASA)",
+    "nivel": "Primer Nivel",
+    "direccion": "Calle 25  a media cuadra de la Calle Fernando -inchauste Montalvo",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñHñOñSñPñIñTñAñLñ ñMñEñTñOñDñIñSñTñAñ": {
+    "lat": -16.527077,
+    "lon": -68.104475,
+    "red": "RED 5 - SUR (SUR / MALLASA)",
+    "nivel": "Primer Nivel",
+    "direccion": "av. 14 de septiembre y calle 13 Obrajes Clinica Amiga",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "ñRñEñDñ ñ5ñ ñSñUñRñ": {
+    "lat": -16.568,
+    "lon": -68.08929,
+    "red": "RED 5 - SUR (SUR / MALLASA)",
+    "nivel": "Primer Nivel",
+    "direccion": "",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "HOSPITAL MUNICIPAL COTAHUMA": {
+    "lat": -16.5173,
+    "lon": -68.1408,
+    "red": "RED 1 - SUR OESTE (COTAHUMA)",
+    "nivel": "Segundo Nivel",
+    "direccion": "Av. Jaimes Freyre esq. Victor Sanjinez (Cotahuma)",
+    "director": "Director Médico Hospital Cotahuma",
+    "telefono": "2422323",
+    "servicios": "Emergencias 24h, Cirugía, Medicina Interna, Pediatría, Ginecoobstetricia, Imagenología, Laboratorio"
+  }
+}

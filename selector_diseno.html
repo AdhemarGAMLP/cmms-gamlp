@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SGEM GAMLP — Selección de Diseño UI/UX</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Montserrat:wght@400;600;700;800;900&family=Nunito:wght@400;600;700;800&family=Poppins:wght@300;400;500;600;700;800&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0F0F13;
+            color: white;
+            min-height: 100vh;
+        }
+
+        /* ── HERO ── */
+        .hero {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            padding: 60px 24px 40px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+        .hero-badge {
+            display: inline-block;
+            background: rgba(99, 102, 241, 0.2);
+            border: 1px solid rgba(99, 102, 241, 0.4);
+            color: #A5B4FC;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            padding: 6px 16px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+        }
+        .hero h1 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: clamp(28px, 5vw, 48px);
+            font-weight: 900;
+            line-height: 1.15;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, #fff 0%, #A5B4FC 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .hero p {
+            font-size: 16px;
+            color: #94A3B8;
+            max-width: 560px;
+            margin: 0 auto 30px;
+            line-height: 1.6;
+        }
+        .hero-steps {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .step {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 8px 16px;
+            font-size: 13px;
+            color: #CBD5E1;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .step-num {
+            background: #6366F1;
+            color: white;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 800;
+            flex-shrink: 0;
+        }
+
+        /* ── NAV TABS ── */
+        .nav-bar {
+            background: #0F0F13;
+            padding: 20px 24px;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+        .theme-tab {
+            padding: 8px 20px;
+            border-radius: 12px;
+            border: 1.5px solid rgba(255,255,255,0.12);
+            background: transparent;
+            color: #94A3B8;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s;
+            font-family: 'Inter', sans-serif;
+        }
+        .theme-tab:hover { border-color: rgba(255,255,255,0.3); color: white; }
+        .theme-tab.active { color: white; }
+
+        /* ── MAIN CONTENT ── */
+        .main { max-width: 1200px; margin: 0 auto; padding: 40px 24px 80px; }
+
+        /* ── THEME PANEL ── */
+        .theme-panel { display: none; }
+        .theme-panel.active { display: block; }
+
+        /* ── THEME HEADER ── */
+        .theme-header {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 24px;
+            align-items: start;
+            margin-bottom: 32px;
+        }
+        .theme-title { font-size: 13px; color: #64748B; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+        .theme-name { font-family: 'Montserrat', sans-serif; font-size: 32px; font-weight: 900; margin-bottom: 8px; }
+        .theme-desc { color: #94A3B8; font-size: 15px; line-height: 1.6; max-width: 520px; }
+
+        /* ── COLOR PALETTE ── */
+        .palette {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+        .swatch {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+        .swatch-color {
+            width: 52px;
+            height: 52px;
+            border-radius: 12px;
+            border: 2px solid rgba(255,255,255,0.08);
+        }
+        .swatch-label { font-size: 10px; font-weight: 700; color: #64748B; text-align: center; letter-spacing: 0.5px; }
+        .swatch-hex { font-size: 10px; color: #475569; font-family: monospace; }
+
+        /* ── TYPOGRAPHY CARD ── */
+        .typography-card {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 16px;
+            padding: 20px;
+        }
+        .typo-row { margin-bottom: 12px; }
+        .typo-label { font-size: 10px; color: #475569; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+
+        /* ── PREVIEW FRAME ── */
+        .preview-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .preview-label::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: rgba(255,255,255,0.06);
+        }
+
+        /* ── SELECTOR BUTTON ── */
+        .select-btn {
+            padding: 14px 32px;
+            border-radius: 14px;
+            border: none;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .select-btn:active { transform: scale(0.97); }
+
+        /* ── RESULT BANNER ── */
+        #result-banner {
+            display: none;
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #10B981;
+            color: white;
+            padding: 16px 32px;
+            border-radius: 16px;
+            font-weight: 700;
+            font-size: 15px;
+            box-shadow: 0 8px 32px rgba(16, 185, 129, 0.4);
+            z-index: 999;
+            text-align: center;
+            animation: slideUp 0.4s ease;
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+
+        /* ── COMPARISON GRID ── */
+        .compare-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 14px;
+            margin-top: 40px;
+        }
+        .compare-card {
+            border-radius: 16px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+        }
+        .compare-card:hover { transform: translateY(-3px); }
+        .compare-name { font-weight: 800; font-size: 14px; margin-bottom: 4px; }
+        .compare-desc { font-size: 12px; opacity: 0.7; }
+        .compare-dots { display: flex; gap: 6px; margin-top: 12px; }
+        .compare-dot { width: 20px; height: 20px; border-radius: 50%; }
+
+        /* ══════════════════════════════════════════════════════
+           THEME 1: INSTITUCIONAL AZUL GAMLP
+        ══════════════════════════════════════════════════════ */
+        [data-theme="t1"] .theme-name { color: #60A5FA; }
+        [data-theme="t1"] .select-btn { background: #2563EB; color: white; }
+        [data-theme="t1"] .select-btn:hover { background: #1D4ED8; }
+        [data-theme="t1"] .theme-tab-indicator { background: #2563EB; }
+
+        .preview-t1 {
+            background: #F8FAFC;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid #E2E8F0;
+            color: #0F172A;
+        }
+        .pv1-header {
+            background: linear-gradient(135deg, #1E3A5F 0%, #2563EB 100%);
+            color: white;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .pv1-logo { font-family: 'Montserrat', sans-serif; font-weight: 900; font-size: 16px; letter-spacing: -0.5px; }
+        .pv1-nav { display: flex; gap: 8px; }
+        .pv1-nav-item { padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; background: rgba(255,255,255,0.15); cursor: pointer; }
+        .pv1-nav-item.act { background: white; color: #2563EB; }
+        .pv1-body { padding: 24px; }
+        .pv1-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+        .pv1-stat { background: white; border: 1px solid #E2E8F0; border-radius: 12px; padding: 14px; text-align: center; }
+        .pv1-stat .num { font-size: 24px; font-weight: 800; color: #2563EB; font-family: 'Montserrat', sans-serif; }
+        .pv1-stat .lbl { font-size: 10px; color: #64748B; font-weight: 600; margin-top: 2px; }
+        .pv1-table { background: white; border: 1px solid #E2E8F0; border-radius: 12px; overflow: hidden; }
+        .pv1-th { background: #F1F5F9; padding: 10px 14px; font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase; display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 10px; }
+        .pv1-tr { padding: 12px 14px; font-size: 13px; border-top: 1px solid #F1F5F9; display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 10px; align-items: center; }
+        .pv1-badge { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; }
+        .pv1-op { background: #ECFDF5; color: #065F46; }
+        .pv1-baja { background: #FEE2E2; color: #991B1B; }
+        .pv1-btn { background: #2563EB; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; }
+
+        /* ══════════════════════════════════════════════════════
+           THEME 2: SALUD VERDE BOLIVIANA
+        ══════════════════════════════════════════════════════ */
+        [data-theme="t2"] .theme-name { color: #34D399; }
+        [data-theme="t2"] .select-btn { background: #059669; color: white; }
+        [data-theme="t2"] .select-btn:hover { background: #047857; }
+
+        .preview-t2 {
+            background: #F0FDF4;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid #BBF7D0;
+            color: #052E16;
+        }
+        .pv2-header {
+            background: linear-gradient(135deg, #064E3B 0%, #059669 100%);
+            color: white;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .pv2-logo { font-family: 'Nunito', sans-serif; font-weight: 900; font-size: 16px; }
+        .pv2-nav { display: flex; gap: 8px; }
+        .pv2-nav-item { padding: 5px 12px; border-radius: 8px; font-size: 12px; font-weight: 700; background: rgba(255,255,255,0.15); }
+        .pv2-nav-item.act { background: white; color: #059669; }
+        .pv2-body { padding: 24px; }
+        .pv2-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+        .pv2-stat { background: white; border: 2px solid #BBF7D0; border-radius: 14px; padding: 14px; text-align: center; }
+        .pv2-stat .num { font-size: 24px; font-weight: 800; color: #059669; font-family: 'Nunito', sans-serif; }
+        .pv2-stat .lbl { font-size: 10px; color: #6B7280; font-weight: 600; margin-top: 2px; }
+        .pv2-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .pv2-card { background: white; border: 1.5px solid #BBF7D0; border-radius: 12px; padding: 14px; }
+        .pv2-card-icon { font-size: 24px; margin-bottom: 8px; }
+        .pv2-card-title { font-family: 'Nunito', sans-serif; font-weight: 800; font-size: 13px; color: #052E16; margin-bottom: 4px; }
+        .pv2-card-sub { font-size: 11px; color: #6B7280; margin-bottom: 10px; }
+        .pv2-card-btn { background: #059669; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer; font-family: 'Nunito', sans-serif; width: 100%; }
+        .pv2-pill { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: 700; background: #DCFCE7; color: #166534; margin-top: 4px; }
+
+        /* ══════════════════════════════════════════════════════
+           THEME 3: TECNOLOGÍA OSCURA (DARK MODE)
+        ══════════════════════════════════════════════════════ */
+        [data-theme="t3"] .theme-name { color: #38BDF8; }
+        [data-theme="t3"] .select-btn { background: #0EA5E9; color: white; }
+        [data-theme="t3"] .select-btn:hover { background: #0284C7; }
+
+        .preview-t3 {
+            background: #0D1117;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid #21262D;
+            color: #C9D1D9;
+        }
+        .pv3-header {
+            background: #161B22;
+            border-bottom: 1px solid #21262D;
+            padding: 14px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .pv3-logo { font-family: 'IBM Plex Sans', sans-serif; font-weight: 700; font-size: 15px; color: #58A6FF; letter-spacing: -0.3px; }
+        .pv3-nav { display: flex; gap: 6px; }
+        .pv3-nav-item { padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: 500; color: #8B949E; cursor: pointer; font-family: 'IBM Plex Sans', sans-serif; }
+        .pv3-nav-item.act { background: rgba(88, 166, 255, 0.15); color: #58A6FF; }
+        .pv3-body { padding: 20px; display: grid; grid-template-columns: 200px 1fr; gap: 16px; }
+        .pv3-sidebar { background: #161B22; border: 1px solid #21262D; border-radius: 10px; padding: 14px; }
+        .pv3-sidebar-item { padding: 8px 10px; border-radius: 6px; font-size: 12px; color: #8B949E; margin-bottom: 2px; display: flex; align-items: center; gap: 8px; cursor: pointer; font-family: 'IBM Plex Sans', sans-serif; }
+        .pv3-sidebar-item.act { background: rgba(88, 166, 255, 0.1); color: #58A6FF; }
+        .pv3-sidebar-dot { width: 6px; height: 6px; border-radius: 50%; background: #21262D; }
+        .pv3-sidebar-item.act .pv3-sidebar-dot { background: #58A6FF; }
+        .pv3-main { }
+        .pv3-metrics { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 12px; }
+        .pv3-metric { background: #161B22; border: 1px solid #21262D; border-radius: 10px; padding: 12px; }
+        .pv3-metric .num { font-size: 22px; font-weight: 700; color: #58A6FF; font-family: 'IBM Plex Sans', sans-serif; }
+        .pv3-metric .lbl { font-size: 10px; color: #8B949E; margin-top: 2px; font-family: 'IBM Plex Sans', sans-serif; }
+        .pv3-table-wrap { background: #161B22; border: 1px solid #21262D; border-radius: 10px; overflow: hidden; }
+        .pv3-th { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 8px; padding: 8px 12px; border-bottom: 1px solid #21262D; font-size: 10px; color: #8B949E; font-family: 'IBM Plex Sans', sans-serif; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+        .pv3-tr { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 8px; padding: 10px 12px; border-bottom: 1px solid #21262D; font-size: 12px; font-family: 'IBM Plex Sans', sans-serif; }
+        .pv3-badge { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 700; }
+        .pv3-ok { background: rgba(46, 160, 67, 0.15); color: #3FB950; }
+        .pv3-warn { background: rgba(210, 153, 34, 0.15); color: #D29922; }
+        .pv3-err { background: rgba(248, 81, 73, 0.15); color: #F85149; }
+        .pv3-status-bar { display: flex; gap: 8px; align-items: center; padding: 8px 12px; background: #0D1117; border-top: 1px solid #21262D; font-size: 10px; color: #8B949E; font-family: 'IBM Plex Sans', sans-serif; }
+        .pv3-dot { width: 6px; height: 6px; border-radius: 50%; background: #3FB950; }
+
+        /* ══════════════════════════════════════════════════════
+           THEME 4: CÁLIDO Y ACCESIBLE
+        ══════════════════════════════════════════════════════ */
+        [data-theme="t4"] .theme-name { color: #FB923C; }
+        [data-theme="t4"] .select-btn { background: #EA580C; color: white; }
+        [data-theme="t4"] .select-btn:hover { background: #C2410C; }
+
+        .preview-t4 {
+            background: #FFFBF5;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid #FED7AA;
+            color: #1C1917;
+        }
+        .pv4-header {
+            background: #1C1917;
+            padding: 14px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .pv4-logo { font-family: 'Poppins', sans-serif; font-weight: 800; font-size: 15px; color: white; }
+        .pv4-logo span { color: #FB923C; }
+        .pv4-nav { display: flex; gap: 8px; }
+        .pv4-nav-item { padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; color: #A8A29E; font-family: 'Poppins', sans-serif; }
+        .pv4-nav-item.act { background: #FB923C; color: white; }
+        .pv4-body { padding: 20px; }
+        .pv4-banner { background: linear-gradient(135deg, #EA580C 0%, #FB923C 100%); border-radius: 14px; padding: 18px 20px; margin-bottom: 16px; color: white; display: flex; justify-content: space-between; align-items: center; }
+        .pv4-banner h2 { font-family: 'Poppins', sans-serif; font-size: 16px; font-weight: 800; margin-bottom: 4px; }
+        .pv4-banner p { font-size: 12px; opacity: 0.85; }
+        .pv4-banner-num { font-family: 'Poppins', sans-serif; font-size: 40px; font-weight: 900; opacity: 0.9; }
+        .pv4-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .pv4-card { background: white; border: 1.5px solid #FED7AA; border-radius: 14px; padding: 16px; transition: all 0.2s; }
+        .pv4-card:hover { border-color: #FB923C; }
+        .pv4-card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .pv4-card-icon { width: 40px; height: 40px; border-radius: 10px; background: #FFF7ED; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+        .pv4-card-badge { font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 6px; background: #ECFDF5; color: #065F46; }
+        .pv4-card-num { font-family: 'Poppins', sans-serif; font-size: 22px; font-weight: 800; color: #1C1917; }
+        .pv4-card-lbl { font-size: 12px; color: #78716C; margin-top: 2px; font-family: 'Poppins', sans-serif; }
+        .pv4-card-bar { height: 4px; background: #FEF3C7; border-radius: 2px; margin-top: 12px; }
+        .pv4-card-bar-fill { height: 4px; border-radius: 2px; background: #FB923C; }
+
+        /* ══════════════════════════════════════════════════════
+           THEME 5: MINIMALISTA NEUTRAL PREMIUM
+        ══════════════════════════════════════════════════════ */
+        [data-theme="t5"] .theme-name { color: #E2E8F0; }
+        [data-theme="t5"] .select-btn { background: #0F172A; color: white; border: 1.5px solid rgba(255,255,255,0.2); }
+        [data-theme="t5"] .select-btn:hover { background: #1E293B; }
+
+        .preview-t5 {
+            background: #FFFFFF;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid #E2E8F0;
+            color: #0F172A;
+        }
+        .pv5-header {
+            background: white;
+            border-bottom: 1px solid #E2E8F0;
+            padding: 14px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .pv5-logo { font-family: 'Inter', sans-serif; font-weight: 800; font-size: 15px; color: #0F172A; letter-spacing: -0.5px; }
+        .pv5-logo span { color: #64748B; font-weight: 400; }
+        .pv5-nav { display: flex; gap: 4px; }
+        .pv5-nav-item { padding: 5px 14px; border-radius: 8px; font-size: 12px; font-weight: 500; color: #64748B; font-family: 'Inter', sans-serif; }
+        .pv5-nav-item.act { background: #0F172A; color: white; }
+        .pv5-body { padding: 24px; display: flex; gap: 20px; }
+        .pv5-left { flex: 1; }
+        .pv5-right { width: 200px; }
+        .pv5-kpi { background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+        .pv5-kpi-num { font-size: 32px; font-weight: 900; color: #0F172A; font-family: 'Inter', sans-serif; letter-spacing: -1px; }
+        .pv5-kpi-lbl { font-size: 12px; color: #64748B; font-weight: 500; margin-top: 2px; }
+        .pv5-kpi-change { font-size: 11px; font-weight: 700; color: #10B981; margin-top: 6px; }
+        .pv5-list { background: white; border: 1px solid #E2E8F0; border-radius: 12px; overflow: hidden; }
+        .pv5-list-item { padding: 12px 16px; border-bottom: 1px solid #F1F5F9; display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
+        .pv5-list-item:last-child { border-bottom: none; }
+        .pv5-list-name { font-weight: 600; color: #0F172A; }
+        .pv5-list-sub { font-size: 11px; color: #94A3B8; margin-top: 1px; }
+        .pv5-badge { font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 6px; }
+        .pv5-ok { background: #F1F5F9; color: #334155; }
+        .pv5-right-section { display: flex; flex-direction: column; gap: 10px; }
+        .pv5-action { background: #0F172A; color: white; border: none; padding: 10px 14px; border-radius: 10px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; width: 100%; text-align: left; }
+        .pv5-action-sec { background: #F8FAFC; color: #0F172A; border: 1px solid #E2E8F0; padding: 10px 14px; border-radius: 10px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; width: 100%; text-align: left; }
+
+        /* Responsive */
+        @media (max-width: 700px) {
+            .pv1-stats, .pv2-stats { grid-template-columns: repeat(2, 1fr); }
+            .pv2-cards, .pv4-grid { grid-template-columns: repeat(2, 1fr); }
+            .pv3-body { grid-template-columns: 1fr; }
+            .pv3-sidebar { display: none; }
+            .pv5-body { flex-direction: column; }
+            .pv5-right { width: 100%; }
+            .theme-header { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- HERO -->
+    <div class="hero">
+        <div class="hero-badge">SGEM GAMLP • UI/UX Design Selection</div>
+        <h1>Elige el diseño<br>de tu sistema</h1>
+        <p>5 propuestas de diseño completas con paletas de colores, tipografía y preview interactivo de los componentes reales del sistema.</p>
+        <div class="hero-steps">
+            <div class="step"><div class="step-num">1</div> Explora cada tema</div>
+            <div class="step"><div class="step-num">2</div> Revisa el preview</div>
+            <div class="step"><div class="step-num">3</div> Selecciona tu favorito</div>
+        </div>
+    </div>
+
+    <!-- NAV TABS -->
+    <div class="nav-bar">
+        <button class="theme-tab active" onclick="showTheme('t1', this)" style="border-color: #2563EB; color: #60A5FA;">🏛️ Institucional Azul</button>
+        <button class="theme-tab" onclick="showTheme('t2', this)" style="">🌿 Salud Verde</button>
+        <button class="theme-tab" onclick="showTheme('t3', this)">🌙 Tech Oscuro</button>
+        <button class="theme-tab" onclick="showTheme('t4', this)">🔥 Cálido Accesible</button>
+        <button class="theme-tab" onclick="showTheme('t5', this)">✦ Minimalista</button>
+    </div>
+
+    <!-- MAIN -->
+    <div class="main">
+
+        <!-- ═══ THEME 1: INSTITUCIONAL AZUL ═══ -->
+        <div class="theme-panel active" id="panel-t1" data-theme="t1">
+            <div class="theme-header">
+                <div>
+                    <div class="theme-title">Propuesta 1 de 5</div>
+                    <div class="theme-name">Institucional Azul GAMLP</div>
+                    <div class="theme-desc">Transmite seriedad, confianza y autoridad institucional. Ideal para un organismo municipal. Usa el azul como el color oficial del Estado Plurinacional de Bolivia. La tipografía Montserrat + Open Sans le da modernidad sin perder formalidad.</div>
+                    <div class="palette">
+                        <div class="swatch"><div class="swatch-color" style="background:#1E3A5F;"></div><div class="swatch-label">Primario<br>Oscuro</div><div class="swatch-hex">#1E3A5F</div></div>
+                        <div class="swatch"><div class="swatch-color" style="background:#2563EB;"></div><div class="swatch-label">Primario<br>Principal</div><div class="swatch-hex">#2563EB</div></div>
+                        <div class="swatch"><div class="swatch-color" style="background:#60A5FA;"></div><div class="swatch-label">Acento<br>Claro</div><div class="swatch-hex">#60A5FA</div></div>
+                        <div class="swatch"><div class="swatch-color" style="background:#F8FAFC; border: 1px solid #E2E8F0;"></div><div class="swatch-label">Fondo</div><div class="swatch-hex">#F8FAFC</div></div>
+                        <div class="swatch"><div class="swatch-color" style="background:#10B981;"></div><div class="swatch-label">Éxito /<br>Operativo</div><div class="swatch-hex">#10B981</div></div>
+                        <div class="swatch"><div class="swatch-color" style="background:#EF4444;"></div><div class="swatch-label">Alerta /<br>Baja</div><div class="swatch-hex">#EF4444</div></div>
+                    </div>
+                </div>
+                <div class="typography-card" style="min-width: 220px;">
+                    <div class="typo-row">
+                        <div class="typo-label">Títulos</div>
+                        <div style="font-family:'Montserrat',sans-serif;font-weight:900;font-size:20px;color:white;">Montserrat Black</div>
+                    </div>
+                    <div class="typo-row">
+                        <div class="typo-label">Cuerpo</div>
+                        <div style="font-family:'Inter',sans-serif;font-weight:400;font-size:14px;color:#94A3B8;">Inter Regular — legible en datos clínicos</div>
+                    </div>
+                    <div class="typo-row">
+                        <div class="typo-label">Números / KPIs</div>
+                        <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:28px;color:#60A5FA;">347</div>
+                    </div>
+                    <button class="select-btn" onclick="seleccionar('Institucional Azul GAMLP', '#2563EB')" style="background:#2563EB;color:white;width:100%;justify-content:center;margin-top:12px;">✅ Seleccionar este diseño</button>
+                </div>
+            </div>
+            <div class="preview-label">Preview de Componentes Reales</div>
+            <div class="preview-t1">
+                <div class="pv1-header">
+                    <div class="pv1-logo">⚕ SGEM · GAMLP</div>
+                    <div class="pv1-nav">
+                        <div class="pv1-nav-item act">📦 Inventario</div>
+                        <div class="pv1-nav-item">📊 Análisis</div>
+                        <div class="pv1-nav-item">🏛️ Histórico</div>
+                    </div>
+                </div>
+                <div class="pv1-body">
+                    <div class="pv1-stats">
+                        <div class="pv1-stat"><div class="num">347</div><div class="lbl">Total Activos</div></div>
+                        <div class="pv1-stat"><div class="num" style="color:#10B981;">298</div><div class="lbl">Operativos</div></div>
+                        <div class="pv1-stat"><div class="num" style="color:#F59E0B;">32</div><div class="lbl">En Garantía</div></div>
+                        <div class="pv1-stat"><div class="num" style="color:#EF4444;">17</div><div class="lbl">Bajas</div></div>
+                    </div>
+                    <div class="pv1-table">
+                        <div class="pv1-th"><div>Equipo / Activo</div><div>Centro</div><div>Estado</div><div>Acción</div></div>
+                        <div class="pv1-tr"><div style="font-weight:700;font-size:13px;">Monitor de Signos Vitales</div><div style="color:#64748B;font-size:12px;">C.S. Bajo San Pedro</div><div><span class="pv1-badge pv1-op">Operativo</span></div><div><button class="pv1-btn">Ver Ficha</button></div></div>
+                        <div class="pv1-tr"><div style="font-weight:700;font-size:13px;">Desfibrilador BeneHeart D6</div><div style="color:#64748B;font-size:12px;">C.S. Villa Fátima</div><div><span class="pv1-badge pv1-op">Operativo</span></div><div><button class="pv1-btn">Ver Ficha</button></div></div>
+                        <div class="pv1-tr"><div style="font-weight:700;font-size:13px;">Equipo de Rayos X Digital</div><div style="color:#64748B;font-size:12px;">C.S. Periférico</div><div><span class="pv1-badge pv1-baja">Baja</span></div><div><button class="pv1-btn" style="background:#EF4444;">Ver Ficha</button></div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ THEME 2: SALUD VERDE ═══ -->
+        <div class="theme-panel" id="panel-t2" data-theme="t2">
+            <div class="theme-header">
+                <div>
+                    <div class="theme-title">Propuesta 2 de 5</div>
+                    <div class="theme-name">Salud Verde Boliviana</div>
+                    <div class="theme-desc">Vincula el sistema directamente con la salud y la medicina. El verde transmite bienestar, esperanza y naturaleza. Muy reconocible en contextos sanitarios. La tipografía Nunito le da calidez y accesibilidad sin ser informal.</div>
+                    <div class="palette">
+                        <div class="swatch"><div class="swatch-color" style="background:#064E3B;"></div><div class="swatch-label">Primario<br>Oscuro</div><div class="swatch-hex">#064E3B</div></div>
+                        <div class="swatch"><div class="swatch-color" style="background:#059669;"></div><div class="swatch-label">Primario<br>Principal</div><div class="swatch-hex">#059669</div></div>
+                        <div class="swatch"><div class="swatch-color" style="background:#34D399;"></div><div class="swatch-label">Acento<br>Claro</div><div class="swatch-hex">#34D399</div></div>
+                        <div class="swatch"><div class="swatch-color" style="background:#F0FDF4; border: 1px solid #BBF7D0;"></div><div class="swatch-label">Fondo</div><div class="swatch-hex">#F0FDF4</div></div>
+                        <div class="swatch"><div class="swatch-color" style="background:#2563EB;"></div><div class="swatch-label">Secundario /<br>Info</div><div class="swatch-hex">#2563EB</div></div>
+                        <div class="swatch"><div class="swatch-color" style="background:#EF4444;"></div><div class="swatch-label">Alerta /<br>Baja</div><div class="swatch-hex">#EF4444</div></div>
+                    </div>
+                </div>
+                <div class="typography-card" style="min-width: 220px;">
+                    <div class="typo-row">
+                        <div class="typo-label">Títulos</div>
+                        <div style="font-family:'Nunito',sans-serif;font-weight:900;font-size:20px;color:white;">Nunito Black</div>
+                    </div>
+                    <div class="typo-row">
+                        <div class="typo-label">Cuerpo</div>
+                        <div style="font-family:'Nunito',sans-serif;font-weight:400;font-size:14px;color:#94A3B8;">Nunito Regular — amigable y legible</div>
+                    </div>
+                    <div class="typo-row">
+                        <div class="typo-label">Números / KPIs</div>
+                        <div style="font-family:'Nunito',sans-serif;font-weight:900;font-size:28px;color:#34D399;">347</div>
+                    </div>
+                    <button class="select-btn" onclick="seleccionar('Salud Verde Boliviana', '#059669')" style="background:#059669;color:white;width:100%;justify-content:center;margin-top:12px;">✅ Seleccionar este diseño</button>
+                </div>
+            </div>
+            <div class="preview-label">Preview de Componentes Reales</div>
+            <div class="preview-t2">
+                <div class="pv2-header">
+                    <div class="pv2-logo">🌿 SGEM · GAMLP</div>
+                    <div class="pv2-nav">
+                        <div class="pv2-nav-item act">📦 Inventario</div>
+                        <div class="pv2-nav-item">📊 Análisis</div>
+                        <div class="pv2-nav-item">🏛️ Histórico</div>
+                    </div>
+                </div>
+                <div class="pv2-body">
+                    <div class="pv2-stats">
+                        <div class="pv2-stat"><div class="num">347</div><div class="lbl">Total Activos</div></div>
+                        <div class="pv2-stat"><div class="num" style="color:#10B981;">298</div><div class="lbl">Operativos</div></div>
+                        <div class="pv2-stat"><div class="num" style="color:#D97706;">32</div><div class="lbl">En Garantía</div></div>
+                        <div class="pv2-stat"><div class="num" style="color:#EF4444;">17</div><div class="lbl">Bajas</div></div>
+                    </div>
+                    <div class="pv2-cards">
+                        <div class="pv2-card">
+                            <div class="pv2-card-icon">🩺</div>
+                            <div class="pv2-card-title">Monitor de Signos Vitales</div>
+                            <div class="pv2-card-sub">C.S. Bajo San Pedro · Red 1</div>
+                            <div><span class="pv2-pill">✅ Operativo</span></div>
+                            <button class="pv2-card-btn" style="margin-top:10px;">Ver Ficha Técnica</button>
+                        </div>
+                        <div class="pv2-card">
+                            <div class="pv2-card-icon">💊</div>
+                            <div class="pv2-card-title">Desfibrilador BeneHeart D6</div>
+                            <div class="pv2-card-sub">C.S. Villa Fátima · Red 3</div>
+                            <div><span class="pv2-pill">✅ Operativo</span></div>
+                            <button class="pv2-card-btn" style="margin-top:10px;">Ver Ficha Técnica</button>
+                        </div>
+                        <div class="pv2-card">
+                            <div class="pv2-card-icon">☢️</div>
+                            <div class="pv2-card-title">Equipo Rayos X Digital</div>
+                            <div class="pv2-card-sub">C.S. Periférico · Red 5</div>
+                            <div><span class="pv2-pill" style="background:#FEE2E2;color:#991B1B;">🛑 Baja</span></div>
+                            <button class="pv2-card-btn" style="margin-top:10px; background:#EF4444;">Ver Ficha Técnica</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ THEME 3: TECH OSCURO ═══ -->
+        <div class="theme-panel" id="panel-t3" data-theme="t3">
+            <div class="theme-header">
+                <div>
+                    <div class="theme-title">Propuesta 3 de 5</div>
+                    <div class="theme-name">Tecnología Oscura</div>
+                    <div class="theme-desc">Diseño inspirado en herramientas técnicas profesionales. Reduce la fatiga visual en sesiones largas. Muy bueno para técnicos que usan el sistema 8 horas al día. El azul cian y el fondo oscuro crean alto contraste. IBM Plex Sans es la tipografía estándar de IBM para sistemas técnicos.</div>
+                    <div class="palette">
+                        <div class="swatch"><div class="swatch-color" style="background:#0D1117;"></div><div class="swatch-label">Fondo<br>Principal</div><div class="swatch-hex">#0D1117</div></div>
+                        <div class="swatch"><div class="swatch-color" style="background:#161B22;"></div><div class="swatch-label">Superficies /<br>Tarjetas</div><div class="swatch-hex">#161B22</div></div>
+                        <div class="swatch"><div class="swatch-color" style="background:#58A6FF;"></div><div class="swatch-label">Acento<br>Azul Cian</div><div class="swatch-hex">#58A6FF</div></div>
+                        <div class="swatch"><div class="swatch-color" style="background:#3FB950;"></div><div class="swatch-label">Éxito /<br>Online</div><div class="swatch-hex">#3FB950</div></div>
+                        <div class="swatch"><div class="swatch-color" style="background:#D29922;"></div><div class="swatch-label">Advertencia</div><div class="swatch-hex">#D29922</div></div>
+                        <div class="swatch"><div class="swatch-color" style="background:#F85149;"></div><div class="swatch-label">Error /<br>Baja</div><div class="swatch-hex">#F85149</div></div>
+                    </div>
+                </div>
+                <div class="typography-card" style="min-width: 220px; background: rgba(22,27,34,0.8); border-color: #21262D;">
+                    <div class="typo-row">
+                        <div class="typo-label">Títulos</div>
+                        <div style="font-family:'IBM Plex Sans',sans-serif;font-weight:700;font-size:20px;color:white;">IBM Plex Sans Bold</div>
+                    </div>
+                    <div class="typo-row">
+                        <div class="typo-label">Cuerpo</div>
+                        <div style="font-family:'IBM Plex Sans',sans-serif;font-weight:400;font-size:14px;color:#8B949E;">IBM Plex Sans — diseñada para interfaces técnicas</div>
+                    </div>
+                    <div class="typo-row">
+                        <div class="typo-label">Números / KPIs</div>
+                        <div style="font-family:'IBM Plex Sans',sans-serif;font-weight:700;font-size:28px;color:#58A6FF;">347</div>
+                    </div>
+                    <button class="select-btn" onclick="seleccionar('Tecnología Oscura', '#58A6FF')" style="background:#58A6FF;color:#0D1117;width:100%;justify-content:center;margin-top:12px;">✅ Seleccionar este diseño</button>
+                </div>
+            </div>
+            <div class="preview-label">Preview de Componentes Reales</div>
+            <div class="preview-t3">
+                <div class="pv3-header">
+                    <div class="pv3-logo">⚡ SGEM · GAMLP</div>
+                    <div class="pv3-nav">
+                        <div class="pv3-nav-item act">Inventario</div>
+                        <div class="pv3-nav-item">Análisis</div>
+                        <div class="pv3-nav-item">Histórico</div>
+                    </div>
+                </div>
+                <div class="pv3-body">
+                    <div class="pv3-sidebar">
+                        <div class="pv3-sidebar-item act"><div class="pv3-sidebar-dot"></div>Inventario</div>
+                        <div class="pv3-sidebar-item"><div class="pv3-sidebar-dot"></div>Análisis</div>
+                        <div class="pv3-sidebar-item"><div class="pv3-sidebar-dot"></div>Mantenimiento</div>
+                        <div class="pv3-sidebar-item"><div class="pv3-sidebar-dot"></div>Repuestos</div>
+                        <div class="pv3-sidebar-item"><div class="pv3-sidebar-dot"></div>Histórico</div>
+                        <div class="pv3-sidebar-item"><div class="pv3-sidebar-dot"></div>Usuarios</div>
+                    </div>
+                    <div class="pv3-main">
+                        <div class="pv3-metrics">
+                            <div class="pv3-metric"><div class="num">347</div><div class="lbl">Total Activos</div></div>
+                            <div class="pv3-metric"><div class="num" style="color:#3FB950;">298</div><div class="lbl">Operativos</div></div>
+                            <div class="pv3-metric"><div class="num" style="color:#D29922;">32</div><div class="lbl">En Revisión</div></div>
+                            <div class="pv3-metric"><div class="num" style="color:#F85149;">17</div><div class="lbl">Bajas</div></div>
+                        </div>
+                        <div class="pv3-table-wrap">
+                            <div class="pv3-th"><div>Activo</div><div>Centro</div><div>Estado</div></div>
+                            <div class="pv3-tr"><div>Monitor Signos Vitales</div><div style="color:#8B949E;">C.S. Bajo San Pedro</div><div><span class="pv3-badge pv3-ok">Operativo</span></div></div>
+                            <div class="pv3-tr"><div>Desfibrilador Mindray D6</div><div style="color:#8B949E;">C.S. Villa Fátima</div><div><span class="pv3-badge pv3-warn">Mantenimiento</span></div></div>
+                            <div class="pv3-tr"><div>Rayos X Digital</div><div style="color:#8B949E;">C.S. Periférico</div><div><span class="pv3-badge pv3-err">Baja</span></div></div>
+                        </div>
+                        <div class="pv3-status-bar">
+                            <div class="pv3-dot"></div>
+                            <span>SGEM conectado · PostgreSQL activo · Última sync: hace 2 min</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ THEME 4: CÁLIDO ACCESIBLE ═══ -->
+        <div class="theme-panel" id="panel-t4" data-theme="t4">
+            <div class="theme-header">
+                <div>
+                    <div class="theme-title">Propuesta 4 de 5</div>
+                    <div class="theme-name">Cálido y Accesible</div>
+                    <div class="theme-desc">Diseño enérgico y humano. El naranja/coral comunica urgencia controlada e innovación. Muy accesible para adultos mayores y personas con poca experiencia digital. Alta legibilidad. La tipografía Poppins es moderna, redondeada y muy legible en pantallas pequeñas y celulares.</div>
+                    <div class="palette">
+                        <div class="swatch"><div class="swatch-color" style="background:#1C1917;"></div><div class="swatch-label">Oscuro<br>Header</div><div class="swatch-hex">#1C1917</div></div>
+                        <div class="swatch"><div class="swatch-color" style="background:#EA580C;"></div><div class="swatch-label">Primario<br>Coral</div><div class="swatch-hex">#EA580C</div></div>
+                        <div class="swatch"><div class="swatch-color" style="background:#FB923C;"></div><div class="swatch-label">Acento<br>Naranja</div><div class="swatch-hex">#FB923C</div></div>
+                        <div class="swatch"><div class="swatch-color" style="background:#FFFBF5; border: 1px solid #FED7AA;"></div><div class="swatch-label">Fondo<br>Cálido</div><div class="swatch-hex">#FFFBF5</div></div>
+                        <div class="swatch"><div class="swatch-color" style="background:#059669;"></div><div class="swatch-label">Éxito /<br>Operativo</div><div class="swatch-hex">#059669</div></div>
+                        <div class="swatch"><div class="swatch-color" style="background:#EF4444;"></div><div class="swatch-label">Alerta</div><div class="swatch-hex">#EF4444</div></div>
+                    </div>
+                </div>
+                <div class="typography-card" style="min-width: 220px;">
+                    <div class="typo-row">
+                        <div class="typo-label">Títulos</div>
+                        <div style="font-family:'Poppins',sans-serif;font-weight:800;font-size:20px;color:white;">Poppins ExtraBold</div>
+                    </div>
+                    <div class="typo-row">
+                        <div class="typo-label">Cuerpo</div>
+                        <div style="font-family:'Poppins',sans-serif;font-weight:400;font-size:14px;color:#94A3B8;">Poppins Regular — muy legible en móviles</div>
+                    </div>
+                    <div class="typo-row">
+                        <div class="typo-label">Números / KPIs</div>
+                        <div style="font-family:'Poppins',sans-serif;font-weight:900;font-size:28px;color:#FB923C;">347</div>
+                    </div>
+                    <button class="select-btn" onclick="seleccionar('Cálido y Accesible', '#EA580C')" style="background:#EA580C;color:white;width:100%;justify-content:center;margin-top:12px;">✅ Seleccionar este diseño</button>
+                </div>
+            </div>
+            <div class="preview-label">Preview de Componentes Reales</div>
+            <div class="preview-t4">
+                <div class="pv4-header">
+                    <div class="pv4-logo">SGEM <span>GAMLP</span></div>
+                    <div class="pv4-nav">
+                        <div class="pv4-nav-item act">Inventario</div>
+                        <div class="pv4-nav-item">Análisis</div>
+                        <div class="pv4-nav-item">Histórico</div>
+                    </div>
+                </div>
+                <div class="pv4-body">
+                    <div class="pv4-banner">
+                        <div>
+                            <h2>Inventario GAMLP 2026</h2>
+                            <p>Redes de Salud · La Paz, Bolivia</p>
+                        </div>
+                        <div class="pv4-banner-num">347</div>
+                    </div>
+                    <div class="pv4-grid">
+                        <div class="pv4-card">
+                            <div class="pv4-card-top">
+                                <div class="pv4-card-icon">🩺</div>
+                                <div class="pv4-card-badge">+8% mes</div>
+                            </div>
+                            <div class="pv4-card-num">298</div>
+                            <div class="pv4-card-lbl">Equipos Operativos</div>
+                            <div class="pv4-card-bar"><div class="pv4-card-bar-fill" style="width:86%;"></div></div>
+                        </div>
+                        <div class="pv4-card">
+                            <div class="pv4-card-top">
+                                <div class="pv4-card-icon">🛋️</div>
+                                <div class="pv4-card-badge" style="background:#FEF3C7;color:#92400E;">Pendiente</div>
+                            </div>
+                            <div class="pv4-card-num" style="color:#D97706;">32</div>
+                            <div class="pv4-card-lbl">En Garantía / Revisión</div>
+                            <div class="pv4-card-bar"><div class="pv4-card-bar-fill" style="width:28%;background:#D97706;"></div></div>
+                        </div>
+                        <div class="pv4-card">
+                            <div class="pv4-card-top">
+                                <div class="pv4-card-icon">🛑</div>
+                                <div class="pv4-card-badge" style="background:#FEE2E2;color:#991B1B;">Urgente</div>
+                            </div>
+                            <div class="pv4-card-num" style="color:#EF4444;">17</div>
+                            <div class="pv4-card-lbl">Bajas / Fuera de Servicio</div>
+                            <div class="pv4-card-bar"><div class="pv4-card-bar-fill" style="width:15%;background:#EF4444;"></div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ THEME 5: MINIMALISTA ═══ -->
+        <div class="theme-panel" id="panel-t5" data-theme="t5">
+            <div class="theme-header">
+                <div>
+                    <div class="theme-title">Propuesta 5 de 5</div>
+                    <div class="theme-name">Minimalista Neutral Premium</div>
+                    <div class="theme-desc">Diseño ultra limpio inspirado en Linear, Notion y herramientas SaaS premium. Elimina todo lo decorativo para que los datos hablen solos. Ideal para directivos y gerentes que revisan informes. Inter es la tipografía #1 para interfaces digitales profesionales en 2025.</div>
+                    <div class="palette">
+                        <div class="swatch"><div class="swatch-color" style="background:#0F172A;"></div><div class="swatch-label">Texto<br>Principal</div><div class="swatch-hex">#0F172A</div></div>
+                        <div class="swatch"><div class="swatch-color" style="background:#334155;"></div><div class="swatch-label">Texto<br>Secundario</div><div class="swatch-hex">#334155</div></div>
+                        <div class="swatch"><div class="swatch-color" style="background:#94A3B8;"></div><div class="swatch-label">Texto<br>Muted</div><div class="swatch-hex">#94A3B8</div></div>
+                        <div class="swatch"><div class="swatch-color" style="background:#F8FAFC; border: 1px solid #E2E8F0;"></div><div class="swatch-label">Fondo</div><div class="swatch-hex">#F8FAFC</div></div>
+                        <div class="swatch"><div class="swatch-color" style="background:#FFFFFF; border: 1px solid #E2E8F0;"></div><div class="swatch-label">Superficies</div><div class="swatch-hex">#FFFFFF</div></div>
+                        <div class="swatch"><div class="swatch-color" style="background:#10B981;"></div><div class="swatch-label">Acento<br>Funcional</div><div class="swatch-hex">#10B981</div></div>
+                    </div>
+                </div>
+                <div class="typography-card" style="min-width: 220px;">
+                    <div class="typo-row">
+                        <div class="typo-label">Títulos</div>
+                        <div style="font-family:'Inter',sans-serif;font-weight:900;font-size:20px;color:white;letter-spacing:-0.5px;">Inter Black</div>
+                    </div>
+                    <div class="typo-row">
+                        <div class="typo-label">Cuerpo</div>
+                        <div style="font-family:'Inter',sans-serif;font-weight:400;font-size:14px;color:#94A3B8;">Inter Regular — estándar de la industria 2025</div>
+                    </div>
+                    <div class="typo-row">
+                        <div class="typo-label">Números / KPIs</div>
+                        <div style="font-family:'Inter',sans-serif;font-weight:900;font-size:28px;color:white;letter-spacing:-1px;">347</div>
+                    </div>
+                    <button class="select-btn" onclick="seleccionar('Minimalista Neutral Premium', '#0F172A')" style="background:white;color:#0F172A;width:100%;justify-content:center;margin-top:12px;">✅ Seleccionar este diseño</button>
+                </div>
+            </div>
+            <div class="preview-label">Preview de Componentes Reales</div>
+            <div class="preview-t5">
+                <div class="pv5-header">
+                    <div class="pv5-logo">SGEM <span>· Sistema de Gestión de Equipamiento Médico</span></div>
+                    <div class="pv5-nav">
+                        <div class="pv5-nav-item act">Inventario</div>
+                        <div class="pv5-nav-item">Análisis</div>
+                        <div class="pv5-nav-item">Histórico</div>
+                    </div>
+                </div>
+                <div class="pv5-body">
+                    <div class="pv5-left">
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+                            <div class="pv5-kpi"><div class="pv5-kpi-num">347</div><div class="pv5-kpi-lbl">Total de Activos Registrados</div><div class="pv5-kpi-change">↑ 12 este mes</div></div>
+                            <div class="pv5-kpi"><div class="pv5-kpi-num" style="color:#10B981;">86%</div><div class="pv5-kpi-lbl">Tasa de Operatividad</div><div class="pv5-kpi-change">↑ 3% vs mes anterior</div></div>
+                        </div>
+                        <div class="pv5-list">
+                            <div class="pv5-list-item">
+                                <div><div class="pv5-list-name">Monitor de Signos Vitales</div><div class="pv5-list-sub">C.S. Bajo San Pedro · Red 1</div></div>
+                                <span class="pv5-badge pv5-ok">Operativo</span>
+                            </div>
+                            <div class="pv5-list-item">
+                                <div><div class="pv5-list-name">Desfibrilador BeneHeart D6</div><div class="pv5-list-sub">C.S. Villa Fátima · Red 3</div></div>
+                                <span class="pv5-badge" style="background:#FEF3C7;color:#92400E;">Revisión</span>
+                            </div>
+                            <div class="pv5-list-item">
+                                <div><div class="pv5-list-name">Equipo Rayos X Digital</div><div class="pv5-list-sub">C.S. Periférico · Red 5</div></div>
+                                <span class="pv5-badge" style="background:#FEE2E2;color:#991B1B;">Baja</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="pv5-right">
+                        <div class="pv5-right-section">
+                            <button class="pv5-action">+ Registrar Equipo</button>
+                            <button class="pv5-action-sec">📊 Ver Análisis</button>
+                            <button class="pv5-action-sec">🛠️ Mantenimiento</button>
+                            <button class="pv5-action-sec">📥 Exportar Excel</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- COMPARISON SECTION -->
+        <div style="margin-top: 60px;">
+            <div class="preview-label">Comparativa Rápida — Haz clic para ir a cualquier propuesta</div>
+            <div class="compare-grid">
+                <div class="compare-card" style="background:linear-gradient(135deg,#1E3A5F,#2563EB);" onclick="showTheme('t1', null)">
+                    <div class="compare-name">Institucional Azul</div>
+                    <div class="compare-desc">Formal, confiable, gobierno</div>
+                    <div class="compare-dots">
+                        <div class="compare-dot" style="background:#1E3A5F;border:2px solid rgba(255,255,255,0.3);"></div>
+                        <div class="compare-dot" style="background:#2563EB;"></div>
+                        <div class="compare-dot" style="background:#60A5FA;"></div>
+                        <div class="compare-dot" style="background:#10B981;"></div>
+                    </div>
+                </div>
+                <div class="compare-card" style="background:linear-gradient(135deg,#064E3B,#059669);" onclick="showTheme('t2', null)">
+                    <div class="compare-name">Salud Verde</div>
+                    <div class="compare-desc">Médico, natural, esperanza</div>
+                    <div class="compare-dots">
+                        <div class="compare-dot" style="background:#064E3B;border:2px solid rgba(255,255,255,0.3);"></div>
+                        <div class="compare-dot" style="background:#059669;"></div>
+                        <div class="compare-dot" style="background:#34D399;"></div>
+                        <div class="compare-dot" style="background:#2563EB;"></div>
+                    </div>
+                </div>
+                <div class="compare-card" style="background:linear-gradient(135deg,#0D1117,#161B22);border:1px solid #21262D;" onclick="showTheme('t3', null)">
+                    <div class="compare-name">Tech Oscuro</div>
+                    <div class="compare-desc">Técnico, moderno, sin fatiga</div>
+                    <div class="compare-dots">
+                        <div class="compare-dot" style="background:#0D1117;border:2px solid rgba(255,255,255,0.3);"></div>
+                        <div class="compare-dot" style="background:#161B22;border:1px solid #21262D;"></div>
+                        <div class="compare-dot" style="background:#58A6FF;"></div>
+                        <div class="compare-dot" style="background:#3FB950;"></div>
+                    </div>
+                </div>
+                <div class="compare-card" style="background:linear-gradient(135deg,#1C1917,#EA580C);" onclick="showTheme('t4', null)">
+                    <div class="compare-name">Cálido Accesible</div>
+                    <div class="compare-desc">Energético, humano, móvil</div>
+                    <div class="compare-dots">
+                        <div class="compare-dot" style="background:#1C1917;border:2px solid rgba(255,255,255,0.3);"></div>
+                        <div class="compare-dot" style="background:#EA580C;"></div>
+                        <div class="compare-dot" style="background:#FB923C;"></div>
+                        <div class="compare-dot" style="background:#059669;"></div>
+                    </div>
+                </div>
+                <div class="compare-card" style="background:linear-gradient(135deg,#1E293B,#334155);border:1px solid rgba(255,255,255,0.1);" onclick="showTheme('t5', null)">
+                    <div class="compare-name">Minimalista Neutral</div>
+                    <div class="compare-desc">Premium, limpio, datos primero</div>
+                    <div class="compare-dots">
+                        <div class="compare-dot" style="background:#0F172A;border:2px solid rgba(255,255,255,0.3);"></div>
+                        <div class="compare-dot" style="background:#334155;"></div>
+                        <div class="compare-dot" style="background:#94A3B8;"></div>
+                        <div class="compare-dot" style="background:#10B981;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- RESULT BANNER -->
+    <div id="result-banner"></div>
+
+    <script>
+        function showTheme(themeId, tabEl) {
+            // Hide all panels
+            document.querySelectorAll('.theme-panel').forEach(p => p.classList.remove('active'));
+            document.getElementById('panel-' + themeId).classList.add('active');
+
+            // Update tabs
+            document.querySelectorAll('.theme-tab').forEach(t => {
+                t.classList.remove('active');
+                t.style.borderColor = 'rgba(255,255,255,0.12)';
+                t.style.color = '#94A3B8';
+            });
+
+            if (tabEl) {
+                tabEl.classList.add('active');
+                tabEl.style.borderColor = 'rgba(255,255,255,0.4)';
+                tabEl.style.color = 'white';
+            } else {
+                // Find corresponding tab by index
+                const tabs = document.querySelectorAll('.theme-tab');
+                const idx = {'t1':0,'t2':1,'t3':2,'t4':3,'t5':4}[themeId];
+                if (tabs[idx]) {
+                    tabs[idx].classList.add('active');
+                    tabs[idx].style.borderColor = 'rgba(255,255,255,0.4)';
+                    tabs[idx].style.color = 'white';
+                }
+            }
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function seleccionar(nombre, color) {
+            const banner = document.getElementById('result-banner');
+            banner.innerHTML = `✅ <strong>¡Seleccionaste: ${nombre}!</strong><br><small>Dile a tu agente "quiero el diseño ${nombre}" para implementarlo.</small>`;
+            banner.style.background = color;
+            banner.style.display = 'block';
+
+            setTimeout(() => {
+                banner.style.display = 'none';
+            }, 6000);
+        }
+    </script>
+</body>
+</html>

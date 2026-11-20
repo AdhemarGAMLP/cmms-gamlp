@@ -1,0 +1,695 @@
+{
+  "C.S. BAJO TACAGUA": {
+    "lat": -16.5103194,
+    "lon": -68.1458019,
+    "red": "RED 1",
+    "direccion": "AVENIDA JULIO TELLEZ ESQUINA MANUEL JOFRE",
+    "director": "DIRECTOR.Dr. Gustavo Pereyra\t76515153",
+    "telefono": "76515153",
+    "servicios": "MEDICINA GENERAL, ODONTOLOGIA, ENFERMERIA, VACUNACION"
+  },
+  "C.S.PASANKERY": {
+    "lat": -16.5229115,
+    "lon": -68.146054,
+    "red": "RED 1",
+    "direccion": "AV. MARCELO QUIROGA SANTA CRUZ ESQUINA HEROES DEL CHACO",
+    "director": "DIRECTOR: Dra. Paola Delgado \t78966043",
+    "telefono": "78966043",
+    "servicios": "MEDICINA GENERAL, ODONTOLOGIA, ENFERMERIA, VACUNACION"
+  },
+  "C.S.EL ROSAL": {
+    "lat": -16.5342288,
+    "lon": -68.1312831,
+    "red": "RED 1",
+    "direccion": "AV. MARIO MERCADO ENTRE CALLES \"E\" Y \"B\"",
+    "director": "DIRECTOR: Dra. Elfride Cardoso Ledezma\t65171308",
+    "telefono": "65171308",
+    "servicios": "MEDICINA GENERAL, ODONTOLOGIA, ENFERMERIA, VACUNACION, LABORATORIO CLINICO, ECOGRAFIA"
+  },
+  "C.S.SAN LUIS": {
+    "lat": -16.5105057,
+    "lon": -68.135706,
+    "red": "RED 1",
+    "direccion": "AV. CHACO ESQUINA IGNACIO PRUDENCIO",
+    "director": "dIRECTORA Dra. Ivanoska Chávez Nuñez \t70126560",
+    "telefono": "70126560",
+    "servicios": "MEDICINA GENERAL, ODONTOLOGIA, ENFERMERIA, VACUNACION"
+  },
+  "C.S. 8 DE DICIEMBRE": {
+    "lat": -16.5181744,
+    "lon": -68.1330671,
+    "red": "RED 1",
+    "direccion": "FINAL VINCENTI ESQUINA CIRCUNVALACION",
+    "director": "DIRECTORA: Dra. Rosse Mary Yupanqui \t69844363",
+    "telefono": "69844363",
+    "servicios": "MEDICINA GENERAL, ODONTOLOGIA, ENFERMERIA, VACUNACION"
+  },
+  "C.S.ALTO TACAGUA": {
+    "lat": -16.5135143,
+    "lon": -68.1498035,
+    "red": "RED 1",
+    "direccion": "CALLE INCA MAYU Y SANTA ROSA",
+    "director": "DIRECTOR: Dra.Jhovana Poma Torres \t73283353",
+    "telefono": "73283353",
+    "servicios": "MEDICINA GENERAL, ODONTOLOGIA, ENFERMERIA, VACUNACION"
+  },
+  "C.S.BAJO SAN PEDRO": {
+    "lat": -16.5007976,
+    "lon": -68.1369902,
+    "red": "RED 1",
+    "direccion": "CALLE INCA MAYU Y SANTA ROSA",
+    "director": "DIRECTOR: Dra. Cintia Pimentel \t72035575",
+    "telefono": "72035575",
+    "servicios": "MEDICINA GENERAL, ODONTOLOGIA, ENFERMERIA, VACUNACION, LABORATORIO CLINICO, ECOGRAFIA"
+  },
+  "C.S.LA GRUTA": {
+    "lat": -16.5064849,
+    "lon": -68.1553216,
+    "red": "RED 1",
+    "direccion": "AV. 9 DE ABRIL (CASI FARO MURILLO)",
+    "director": "DIRECTOR:;Dra. Sonia Isabel Mendoza \t77558497",
+    "telefono": "77558497",
+    "servicios": "MEDICINA GENERAL, ODONTOLOGIA, ENFERMERIA, VACUNACION"
+  },
+  "C.S.ALCOREZA": {
+    "lat": -16.5089006,
+    "lon": -68.1515612,
+    "red": "RED 1",
+    "direccion": "AV. PABLO ZARATE Y COOPERATIVAS",
+    "director": "DIRECTOR Dr. Edgar Merlo\t72076290",
+    "telefono": "72076290",
+    "servicios": "MEDICINA GENERAL, ODONTOLOGIA, ENFERMERIA, VACUNACION"
+  },
+  "C.S.VILLA NUEVA POTOSI": {
+    "lat": -16.5073908,
+    "lon": -68.1437839,
+    "red": "RED 1",
+    "direccion": "CALLE MANUEL JOFRE ESQUINA ONDARZA S/N",
+    "director": "DIRECTOR Dr. Reynaldo Jiménez \t71507502",
+    "telefono": "71507502",
+    "servicios": "MEDICINA GENERAL, ODONTOLOGIA, ENFERMERIA, VACUNACION, LABORATORIO CLINICO, ECOGRAFIA, GINECOOBSTETRICIA"
+  },
+  "C.S.TEMBLADERANI": {
+    "lat": -16.5105837,
+    "lon": -68.1425536,
+    "red": "RED 1",
+    "direccion": "AV. VICTOR AGUSTIN UGARTE ESQUINA JAIME ZUDAÑEZ",
+    "director": "DIRECTOR: Dra. Silvia Victoria Mendoza \t77543436",
+    "telefono": "77543436",
+    "servicios": "MEDICINA GENERAL, ODONTOLOGIA, ENFERMERIA, VACUNACION, LABORATORIO CLINICO, ECOGRAFIA"
+  },
+  "C.S. BIBLIOTECA": {
+    "lat": -16.5049469,
+    "lon": -68.1497678,
+    "red": "RED 1",
+    "direccion": "",
+    "director": "DIRECTOR: Dr. Rubén Copana\t73069373",
+    "telefono": "73069373",
+    "servicios": "MEDICINA GENERAL, ODONTOLOGIA, ENFERMERIA, VACUNACION"
+  },
+  "C.S.ALTO TACUAGUA": {
+    "lat": -16.513504,
+    "lon": -68.1498008,
+    "red": "RED 1",
+    "direccion": "CALLE INCA MAYU Y SANTA ROSA",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "C.S.NIÑO KOLLO": {
+    "lat": -16.5100976,
+    "lon": -68.1491182,
+    "red": "RED 1",
+    "direccion": "AVENIDA 16 DE JULIO EQUINA PABLO ZARATE WILLKA",
+    "director": "DIRECTORA:Dra. María del Carmen Guillén \t65644461",
+    "telefono": "65644461",
+    "servicios": "MEDICINA GENERAL, ODONTOLOGIA, ENFERMERIA, VACUNACION"
+  },
+  "Hospital Nuestra Señora de La Paz.": {
+    "lat": -16.4959112,
+    "lon": -68.1458065,
+    "red": "RED 1",
+    "direccion": "alle Presbítero Medina Nº 2412",
+    "director": "",
+    "telefono": "",
+    "servicios": "Alergología e Inmunología, Cardiología, Cirugía de Columna, Cirugía General, Cirugía Plástica, Cirugía Reconstructiva, Cirugía Robótica, Cirugía Pediátrica, Cirugía Maxilofacial, Cirugía Oncológica, Dermatología, Fonoaudiología, Gastroenterología, Geriatría & Gerontología, Ginecología & Obstetricia, Imagenología, Imagenología Intervencionista, Implantología en Odontología, Medicina del Dolor, Medicina Interna, Medicina Preventiva, Medicina Paliativa, Neumología, Neurocirugía Adultos, Neurocirugía Pediátrica, Neurología Adultos, Neurología Pediátrica, Nutrición Adultos, Nutrición Pediátrica, Odontología Adultos, Odontología Pediátrica, Oftalmología, Otorrinolaringología Adultos, Otorrinolaringología Pediátrica, Pediatría, Reumatología, Psiquiatría, Psiquiatría de Adicciones, Telemedicina, Traumatología Adultos, Traumatología Pediátrica, Urología, Terapia Intensiva Neonatal, Terapia Intensiva Pediátrica, Terapia Intensiva Adultos, Servicio de Ambulancia, Servicio de Ecografía, Servicio de Emergencias, Servicio de Farmacia, Servicio de Rayos X, Servicio de Tomografía"
+  },
+  "C.S.ZONGO": {
+    "lat": -15.766634,
+    "lon": -67.668731,
+    "red": "red 2",
+    "direccion": "COMUNIDAD ZONGO CHORO",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "C.S.ZONGO CAMSIQUE": {
+    "lat": -15.766758,
+    "lon": -67.668725,
+    "red": "red 2",
+    "direccion": "ZONGO",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "C.S.OBISPO INDABURO": {
+    "lat": -16.500422,
+    "lon": -68.149633,
+    "red": "red 2",
+    "direccion": "CALLE RUFINO CARRASCO N° 1448 FRENTE AL COL . EDUCATIVO LIBERTAD",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "C.S.CHAMOCO CHICO": {
+    "lat": -16.501487,
+    "lon": -68.154107,
+    "red": "red 2",
+    "direccion": "2DO BASCONES 2DO PUENTE TOPATER",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "C.S.M.I.EL TEJAR": {
+    "lat": -16.49727,
+    "lon": -68.155837,
+    "red": "red 2",
+    "direccion": "CALLE DAMAS DE COTAGAITA S/N",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "C.S.SAID": {
+    "lat": -16.482207,
+    "lon": -68.150862,
+    "red": "red 2",
+    "direccion": "CALLE 21 DE ENERO N°29",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "C.S.PANTI SIRPA": {
+    "lat": -16.460022,
+    "lon": -68.158397,
+    "red": "red 2",
+    "direccion": "FRENTE ESCUELA LUCIO VELASCO",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "C.S.ALTO MARISCAL SANTA CRUZ": {
+    "lat": -16.493758,
+    "lon": -68.162315,
+    "red": "red 2",
+    "direccion": "AV. 2DO BASCONESPARADA MINIBUS N° 395 A 3 CUADRAS DEL COLEGIO ITALIA",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "C.S.BAJO EL TEJAR": {
+    "lat": -16.495302,
+    "lon": -68.154242,
+    "red": "red 2",
+    "direccion": "PLAZA 27 DE MAYO SEDE JUNTA DE VECINOS",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "C.S.VILLA VICTORIA": {
+    "lat": -16.49105,
+    "lon": -68.15573,
+    "red": "red 2",
+    "direccion": "REP. ESQ.TUPIZA N° 1896",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "C.S. APUMALLA": {
+    "lat": -16.493004,
+    "lon": -68.150441,
+    "red": "red 2",
+    "direccion": "AV. APUMALLA ESQ. CALLE PEÑA S/N",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "C.S.MUNAYPATA": {
+    "lat": -16.487243,
+    "lon": -68.159236,
+    "red": "red 2",
+    "direccion": "AV. NACIONES UNIDAS FRENTE 61 (CURVA COMPLEJO DEPORTIVO)",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "CIUDADELA FERROVIARIA": {
+    "lat": -16.457302,
+    "lon": -68.150092,
+    "red": "red 2",
+    "direccion": "CALLE 1",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "HOSPITAL LA PAZ": {
+    "lat": -16.495712,
+    "lon": -68.145871,
+    "red": "red 2",
+    "direccion": "PL GARITA DE LIMA Y MAX PAREDES",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "RED 2": {
+    "lat": -16.49999,
+    "lon": -68.14956,
+    "red": "red 2",
+    "direccion": "",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "Centro de Salud llojeta": {
+    "lat": -16.5326372,
+    "lon": -68.1402867,
+    "red": "red 2",
+    "direccion": "AV. MARIO MERCADO, PLAZA 3 MARIAS",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "Hospital la Portada": {
+    "lat": -16.4890118,
+    "lon": -68.1657554,
+    "red": "red 2",
+    "direccion": "LA PORTADA lado IGLESIA",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "C.S.SAN JOSE DE NATIVIDAD": {
+    "lat": -16.475488,
+    "lon": -68.114172,
+    "red": "Red 3 Salud",
+    "direccion": "AC.COSTANERA NRO, 26 ZONA SAN JOSE DE VIILA FATINA",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "S.C. CHUQUIAGUILLO": {
+    "lat": -16.459179,
+    "lon": -68.10234,
+    "red": "Red 3 Salud",
+    "direccion": "AV. RAMIRO CASTRILLO S/N",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "C.S.SAN JUAN LAZARETO": {
+    "lat": -16.49463,
+    "lon": -68.12593,
+    "red": "Red 3 Salud",
+    "direccion": "AV. TEJADA SORZANO- EXPROSALUD",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "C.S.PLAN AUTOPISTA": {
+    "lat": -16.45739,
+    "lon": -68.146657,
+    "red": "Red 3 Salud",
+    "direccion": "CALLE MANZANO \"E\" S/N LADO COMPLEJO DEPORTIVO PLAN AUTOPISTA",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "C.S. ASISTENCIA PUBLICA": {
+    "lat": -16.5001,
+    "lon": -68.13142,
+    "red": "Red 3 Salud",
+    "direccion": "AV CAMACHO Nº 1519 ZONA CENTRAL",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "C.S JUANCITO PINTO": {
+    "lat": -16.494039,
+    "lon": -68.13942,
+    "red": "Red 3 Salud",
+    "direccion": "CALLE GRANEROS Y MURILLO- SEDE SOCIAL JUNTA DE VECINOS",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "C.S. EL CALVARIO": {
+    "lat": -16.482998,
+    "lon": -68.129372,
+    "red": "Red 3 Salud",
+    "direccion": "AV. PERIFERICA CALLE 7 Nº 10",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "C.S.ACHACHICALA": {
+    "lat": -16.475532,
+    "lon": -68.15102,
+    "red": "Red 3 Salud",
+    "direccion": "Av. Chacaltaya frente a la escuela Pedro Domingo",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "C.S.Villa Fatima": {
+    "lat": -16.473868,
+    "lon": -68.120934,
+    "red": "Red 3 Salud",
+    "direccion": "CALLE SAN JOSE Y CALLE CHICALOMA ZONA LAS DELICIAS - VILLA FATIMA",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "C.S.VINO TINTO": {
+    "lat": -16.482939,
+    "lon": -68.141945,
+    "red": "Red 3 Salud",
+    "direccion": "AV. BALTAZAR DE SALAS Nº 57 VINO TINTO",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "C.S. 18 DE MAYO": {
+    "lat": -16.478,
+    "lon": -68.146248,
+    "red": "Red 3 Salud",
+    "direccion": "SEDE SOCIAL Nº 104 ZONA 18 DE MAYO - VINO TINTO",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "C.S. AGUA DE LA VIDA": {
+    "lat": -16.494196,
+    "lon": -68.129886,
+    "red": "Red 3 Salud",
+    "direccion": "PJE. LA BANDERA S/N ENTRE CALLE COLON Y AV. LA BANDERA",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "C.S. 3 DE MAYO": {
+    "lat": -16.463838,
+    "lon": -68.113513,
+    "red": "Red 3 Salud",
+    "direccion": "Entre Calle B Y C",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "C.S.ALTO MIRAFLORES": {
+    "lat": -16.479019,
+    "lon": -68.125974,
+    "red": "Red 3 Salud",
+    "direccion": "CALLE URIAS RODRIGUEZ ESQ. ADRIANA PARIENTE S/N ZONA BARRIO GRAFICO - CHAPUMA",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "C.S. LAS DELICIAS": {
+    "lat": -16.473838,
+    "lon": -68.120851,
+    "red": "Red 3 Salud",
+    "direccion": "C/ SAN JOSE, ESQUINA TIPUANI S/N",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "Hospital Arco Iris": {
+    "lat": -16.484192,
+    "lon": -68.120258,
+    "red": "Red 3 Salud",
+    "direccion": "C Eusebio Guillarte y Calle 15 de Abril",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "HOSPITAL LA MERCED": {
+    "lat": -16.471002,
+    "lon": -68.117708,
+    "red": "Red 3 Salud",
+    "direccion": "CALLE Villa Aspiazu Villa Zona Villa Fatima",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "red 3": {
+    "lat": -16.492074,
+    "lon": -68.13937,
+    "red": "Red 3 Salud",
+    "direccion": "",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "C.S.CHOQUECHIHUANI": {
+    "lat": -16.450153,
+    "lon": -68.04545,
+    "red": "RED 4",
+    "direccion": "AREA RURAL",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "C.S.PAMPAHASI  ALTO": {
+    "lat": -16.491135,
+    "lon": -68.103719,
+    "red": "RED 4",
+    "direccion": "LADO MERCADO SAN JUAN PARADA MIN. 332",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "C.S. KUPINI": {
+    "lat": -16.512114,
+    "lon": -68.098491,
+    "red": "RED 4",
+    "direccion": "ZONA KUPINI LADO CANCHA KUPINI",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "C.S.ESCOBAR URIA": {
+    "lat": -16.492642,
+    "lon": -68.108909,
+    "red": "RED 4",
+    "direccion": "CALLE NO. 6",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "C.S.PAMPAHASI BAJO": {
+    "lat": -16.5047,
+    "lon": -68.101435,
+    "red": "RED 4",
+    "direccion": "CALLE 7. LADO COLEGIO DELIA GAMBERTE PARADA MIN 849",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "C.S.SAN ANTONIO ALTO": {
+    "lat": -16.500059,
+    "lon": -68.108006,
+    "red": "RED 4",
+    "direccion": "AV. JOSEFA MUJICA LADO. SUB ALCALDIA",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "C.S.BAJO SAN ANTOBIO": {
+    "lat": -16.498817,
+    "lon": -68.116014,
+    "red": "RED 4",
+    "direccion": "AV. COSTANERA S/N",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "C.S.SAN ISIDRO": {
+    "lat": -16.514208,
+    "lon": -68.108401,
+    "red": "RED 4",
+    "direccion": "PLAZA ELIZARDO PEREZ PARADA MIN. 210",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "C.S.VALLE HERMOSO": {
+    "lat": -16.48959,
+    "lon": -68.110083,
+    "red": "RED 4",
+    "direccion": "Z. VALLE HERMOSO CALLE 7.",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "C.S.VILLA ARMONIA": {
+    "lat": -16.507594,
+    "lon": -68.111111,
+    "red": "RED 4",
+    "direccion": "AV. JHON KENNEDY LADO IGLESIA SR. DE LA SENTENCIA",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "C.S.VILLA COPACABANA": {
+    "lat": -16.484167,
+    "lon": -68.117297,
+    "red": "RED 4",
+    "direccion": "Z. VALLE PACASA FINAL CALLE UNION",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "C.S.VILLA SALOME": {
+    "lat": -16.486711,
+    "lon": -68.095762,
+    "red": "RED 4",
+    "direccion": "AV. LA PAZ DE AYACUCHO",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "HOSPITAL SAN GABRIEL": {
+    "lat": -16.491424,
+    "lon": -68.116539,
+    "red": "RED 4",
+    "direccion": "C PEDRO VILLAMIL",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "C.S.ALTO OBRAJES": {
+    "lat": -16.5235,
+    "lon": -68.105556,
+    "red": "red 5",
+    "direccion": "AV. DEL MAESTRO ALTO OBRAJES",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "C.S. ALTO IRPAVI": {
+    "lat": -16.515162,
+    "lon": -68.084083,
+    "red": "red 5",
+    "direccion": "CALLE 2 No. 10 SECTOR PEÑA AZUL, ALTO IRPAVI",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "C.S.ALTO SEGUENCOMA": {
+    "lat": -16.538781,
+    "lon": -68.099924,
+    "red": "red 5",
+    "direccion": "PLAZA CIVICA PARADA MINIBUS 237 A. SEGUENCOMA",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "C.S.BOLOBNIA": {
+    "lat": -16.525641,
+    "lon": -68.087244,
+    "red": "red 5",
+    "direccion": "AAV. CABALLERO ESQ. CALLE 5, DETRÁS MERCADO IRPAVI",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "C. S. MALLASA": {
+    "lat": -16.569256,
+    "lon": -68.089677,
+    "red": "red 5",
+    "direccion": "PLAZA 2 DE FEBRERO, MALLASA",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "C.S. OBRAJES": {
+    "lat": -16.529622,
+    "lon": -68.102458,
+    "red": "red 5",
+    "direccion": "C/16 Y C/ ORMACHEA, OBRAJES",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "C.S.MATERNO INFANTIL BELLA VISTA": {
+    "lat": -16.530282,
+    "lon": -68.094895,
+    "red": "red 5",
+    "direccion": "C/PROLONGACION No 20 BELLA VISTA",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "C.S. MALLASILLA": {
+    "lat": -16.565752,
+    "lon": -68.098984,
+    "red": "red 5",
+    "direccion": "MALLASILLA CALLE D ENTRE CALLE 5 Y 6",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "C.S. CHASQUIPAMPA": {
+    "lat": -16.538255,
+    "lon": -68.047886,
+    "red": "red 5",
+    "direccion": "C/51 Y C/9 No 80, CHASQUIPAMPA",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "C.S. ACHUMANI": {
+    "lat": -16.530939,
+    "lon": -68.074886,
+    "red": "red 5",
+    "direccion": "Av. Jose Manuel Chinchilla Esq. Calle 15 Achumani",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "C.S.BAJO LLEJETA": {
+    "lat": -16.5259,
+    "lon": -68.116866,
+    "red": "red 5",
+    "direccion": "AV. LOS SARGENTOS LADO RETEN POLICIAL",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "HOSPITAL LOS PINOS": {
+    "lat": -16.542376,
+    "lon": -68.071713,
+    "red": "red 5",
+    "direccion": "Calle 25  a media cuadra de la Calle Fernando -inchauste Montalvo",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "HOSPITAL METODISTA": {
+    "lat": -16.527077,
+    "lon": -68.104475,
+    "red": "red 5",
+    "direccion": "av. 14 de septiembre y calle 13 Obrajes Clinica Amiga",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  },
+  "RED 5 SUR": {
+    "lat": -16.568,
+    "lon": -68.08929,
+    "red": "red 5",
+    "direccion": "",
+    "director": "",
+    "telefono": "",
+    "servicios": "Medicina General, Enfermería, Vacunación"
+  }
+}
